@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { io } from "socket.io-client";
+// io 제거됨
 import {
   FiLogOut,
   FiBox,
@@ -11,9 +11,11 @@ import {
   FiSmile,
   FiAward,
   FiMessageCircle,
+  FiUsers,
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
+import socket from "../../utils/socket";
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -25,8 +27,7 @@ const MainPage = () => {
   const [loginNotifications, setLoginNotifications] = useState([]);
 
   useEffect(() => {
-    // 소켓 초기 연결
-    const socket = io("http://localhost:8000");
+    // 전역 socket 싱글톤 객체 사용 (선언 불필요)
 
     socket.on("update_user_count", (count) => {
       setActiveUserCount(count);
@@ -85,7 +86,8 @@ const MainPage = () => {
 
     return () => {
       channel.close();
-      socket.disconnect(); // 언마운트 시 소켓 통신 해제
+      socket.off("update_user_count");
+      socket.off("new_user_login");
     };
   }, [navigate]);
 
@@ -138,6 +140,7 @@ const MainPage = () => {
               },
               { icon: FiAward, label: "명예의 전당", path: "/ranking" },
               { icon: FiMessageCircle, label: "대화하기", path: "/chat" },
+              { icon: FiUsers, label: "라운지", path: "/lounge" },
               { icon: FiBox, label: "DD 모듈", path: "/dd" },
               { icon: FiCloud, label: "MS 모듈", path: "/ms" },
               { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
