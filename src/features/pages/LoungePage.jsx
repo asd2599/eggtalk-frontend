@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-// (io 제거됨)
 import axios from "axios";
 import {
   FiLogOut,
@@ -18,7 +17,6 @@ import {
   FiRefreshCw,
 } from "react-icons/fi";
 import Pet from "../pets/pet";
-
 import socket from "../../utils/socket";
 
 const LoungePage = () => {
@@ -27,18 +25,13 @@ const LoungePage = () => {
   const [loading, setLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // 방 목록 상태
   const [rooms, setRooms] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
 
-  // 테마 초기화 및 유저 정보 불러오기
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    const isDark =
-      savedTheme === "dark" ||
-      (!savedTheme &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const isDark = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
     if (isDark) {
       document.documentElement.classList.add("dark");
       setIsDarkMode(true);
@@ -47,10 +40,7 @@ const LoungePage = () => {
     const fetchPetData = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          navigate("/");
-          return;
-        }
+        if (!token) { navigate("/"); return; }
         const response = await axios.get("http://localhost:8000/api/pets/my", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -70,7 +60,6 @@ const LoungePage = () => {
     fetchPetData();
   }, [navigate]);
 
-  // 방 목록 가져오기 (REST API)
   const fetchRooms = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -84,14 +73,10 @@ const LoungePage = () => {
     }
   };
 
-  // 마운트 시 최초 방 목록 조회 및 다른 유저/지연 퇴장 로직 처리에 따른 갱신 이벤트 수신
   useEffect(() => {
     fetchRooms();
-
     socket.on("rooms_updated", fetchRooms);
-    return () => {
-      socket.off("rooms_updated", fetchRooms);
-    };
+    return () => { socket.off("rooms_updated", fetchRooms); };
   }, []);
 
   const toggleTheme = () => {
@@ -100,16 +85,11 @@ const LoungePage = () => {
     setIsDarkMode(isDark);
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
+  const handleLogout = () => { localStorage.removeItem("token"); navigate("/"); };
 
-  // 새 채팅방 만들기 (REST API)
   const handleCreateRoom = async (e) => {
     e.preventDefault();
     if (!newRoomName.trim() || !petData) return;
-
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
@@ -117,20 +97,17 @@ const LoungePage = () => {
         { roomName: newRoomName, petName: petData.name },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-
       if (response.data.success) {
-        socket.emit("trigger_rooms_update"); // 다른 클라이언트들 방 목록 갱신 트리거
+        socket.emit("trigger_rooms_update");
         setShowCreateModal(false);
         setNewRoomName("");
         navigate(`/dating/${response.data.roomId}`);
       }
     } catch (err) {
-      console.error("방 생성 실패:", err);
       alert("채팅방을 생성하지 못했습니다.");
     }
   };
 
-  // 기존 채팅방 들어가기 (REST API)
   const handleJoinRoom = async (roomId) => {
     if (!petData) return;
     try {
@@ -140,44 +117,36 @@ const LoungePage = () => {
         { petName: petData.name },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-
       if (response.data.success) {
-        socket.emit("trigger_rooms_update"); // 다른 클라이언트들 방 방 목록 갱신 트리거
+        socket.emit("trigger_rooms_update");
         navigate(`/dating/${roomId}`);
       }
     } catch (err) {
-      console.error("방 입장 불가:", err);
       alert(err.response?.data?.message || "방 입장에 실패했습니다.");
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-white dark:bg-[#0b0f1a]">
-        <div className="w-8 h-8 border-2 border-gray-100 border-t-gray-900 dark:border-t-white rounded-full animate-spin" />
-      </div>
-    );
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-screen bg-white dark:bg-[#0b0f1a]">
+      <div className="w-8 h-8 border-2 border-gray-100 border-t-gray-900 dark:border-t-white rounded-full animate-spin" />
+    </div>
+  );
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans overflow-hidden">
+      
       {/* 테마 버튼 */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 lg:top-6 lg:right-6 p-2.5 rounded-2xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border border-gray-100 dark:border-gray-800 text-gray-500 z-[60] shadow-sm active:scale-90 transition-all"
+        className="fixed top-4 right-4 lg:top-8 lg:right-8 p-3 rounded-2xl bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 text-gray-500 z-[60] shadow-sm active:scale-90 transition-all hover:scale-110"
       >
-        {isDarkMode ? (
-          <FiSun className="text-xs" />
-        ) : (
-          <FiMoon className="text-xs" />
-        )}
+        {isDarkMode ? <FiSun className="text-sm text-amber-500" /> : <FiMoon className="text-sm text-indigo-500" />}
       </button>
 
-      {/* 사이드바 */}
-      <aside className="fixed bottom-0 w-full h-16 lg:relative lg:w-64 lg:h-full border-t lg:border-t-0 lg:border-r border-gray-100 dark:border-gray-900 bg-white/90 dark:bg-[#0b0f1a]/90 backdrop-blur-xl z-50 flex lg:flex-col justify-between items-center lg:items-stretch">
+      {/* 사이드바 & 하단바 */}
+      <aside className="fixed bottom-0 w-full h-16 lg:relative lg:w-64 lg:h-full border-t lg:border-t-0 lg:border-r border-gray-100 dark:border-gray-900 bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl z-50 flex lg:flex-col justify-between items-center lg:items-stretch shadow-lg lg:shadow-none">
         <div className="flex lg:flex-col items-center justify-around w-full lg:p-10">
-          <h2 className="hidden lg:block text-xs font-black text-gray-900 dark:text-white mb-10 tracking-[0.3em] text-center uppercase">
-            Dashboard
-          </h2>
+          <h2 className="hidden lg:block text-xs font-black text-gray-900 dark:text-white mb-10 tracking-[0.3em] text-center uppercase">Dashboard</h2>
           <nav className="flex lg:flex-col gap-1 lg:gap-3 w-full px-2 lg:px-0">
             {[
               { icon: FiSmile, label: "내 펫 상태", path: "/main" },
@@ -188,94 +157,72 @@ const LoungePage = () => {
               { icon: FiCloud, label: "MS 모듈", path: "/ms" },
               { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
             ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.path)}
-                className={`flex flex-col lg:flex-row items-center gap-1 lg:gap-4 p-2 lg:px-5 lg:py-3.5 rounded-xl lg:rounded-2xl transition-all flex-1 lg:flex-none ${item.active ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl" : "text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"}`}
-              >
+              <button key={item.label} onClick={() => navigate(item.path)} className={`flex flex-col lg:flex-row items-center gap-1 lg:gap-4 p-2 lg:px-5 lg:py-3.5 rounded-xl lg:rounded-2xl transition-all flex-1 lg:flex-none ${item.active ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl" : "text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"}`}>
                 <item.icon className="text-xl lg:text-lg" />
-                <span className="text-[9px] lg:text-[13px] font-bold">
-                  {item.label}
-                </span>
+                <span className="text-[9px] lg:text-[13px] font-bold">{item.label}</span>
               </button>
             ))}
           </nav>
         </div>
-        <div className="p-10 border-t border-gray-50 dark:border-gray-900">
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-center gap-3 w-full text-[12px] font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest group"
-          >
-            <FiLogOut /> Sign Out
+        <div className="hidden lg:block p-10 border-t border-gray-50 dark:border-gray-900">
+          <button onClick={handleLogout} className="flex items-center justify-center gap-3 w-full text-[12px] font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest group">
+            <FiLogOut /> <span>Sign Out</span>
           </button>
         </div>
       </aside>
 
-      {/* 라운지 영역 */}
-      <main className="flex-1 flex flex-col items-stretch p-4 lg:p-8 gap-4 lg:gap-8 bg-[#fcfcfc] dark:bg-[#0b0f1a] h-[calc(100vh-64px)] lg:h-full overflow-y-auto lg:overflow-hidden custom-scrollbar">
-        {/* 라운지 헤더 */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 p-6 lg:p-8 rounded-[2rem] lg:rounded-[3rem] shadow-sm flex-shrink-0">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white tracking-tighter italic">
-              Lounge Area
-            </h1>
-            <p className="text-xs lg:text-sm font-bold text-gray-400 mt-2">
-              다른 펫들과 실시간으로 만나 1:1 대화를 나눠보세요.
-            </p>
+      {/* 라운지 메인 콘텐츠 */}
+      <main className="flex-1 flex flex-col items-stretch p-4 lg:p-8 gap-0 bg-slate-50 dark:bg-[#0b0f1a] h-full overflow-y-auto lg:overflow-hidden custom-scrollbar pb-24 lg:pb-8 transition-all">
+        
+        {/* 통합형 라운지 헤더 */}
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-4 bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 p-6 lg:px-10 lg:py-7 rounded-t-[2.5rem] lg:rounded-t-[3rem] shadow-[0_-1px_0_rgba(0,0,0,0.05)] border-b-0 flex-shrink-0 transition-colors">
+          <div className="text-center lg:text-left">
+            <div className="flex items-center justify-center lg:justify-start gap-3">
+               <h1 className="text-xl lg:text-2xl font-black text-gray-900 dark:text-white tracking-tighter italic">Lounge Area</h1>
+               <span className="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
+            </div>
+            <p className="text-sm lg:text-[11px] font-bold text-gray-400 mt-1 uppercase tracking-[0.2em]">다른 펫들과 실시간으로 1:1 대화를 나눠보세요.</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={fetchRooms}
-              className="p-3 lg:px-4 lg:py-3 bg-gray-50 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-2xl font-bold flex items-center gap-2 transition-all shadow-sm active:scale-95 text-sm"
-            >
-              <FiRefreshCw /> <span className="hidden lg:inline">새로고침</span>
+
+          {/* 버튼 영역 */}
+          <div className="flex items-center gap-3 w-auto lg:w-auto">
+            {/* 새로고침 버튼 */}
+            <button onClick={fetchRooms} className="p-3 bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 hover:text-amber-500 rounded-2xl transition-all shadow-sm active:scale-95">
+              <FiRefreshCw className="text-lg" />
             </button>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 text-sm"
-            >
-              <FiPlus /> 방 만들기
+            {/* 방 만들기 버튼 */}
+            <button onClick={() => setShowCreateModal(true)} className="p-3 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-xl flex items-center justify-center">
+              <FiPlus className="text-xl" />
             </button>
           </div>
         </div>
 
-        {/* 방 목록 리스트 */}
-        <div className="flex-1 bg-white dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 rounded-[2rem] lg:rounded-[3rem] shadow-sm p-6 overflow-y-auto custom-scrollbar">
+        {/* 방 목록 컨테이너 */}
+        <div className="flex-1 bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 rounded-b-[2.5rem] lg:rounded-b-[3rem] shadow-sm p-6 lg:p-10 overflow-y-auto custom-scrollbar transition-colors">
           {Object.keys(rooms).length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
-              <FiUsers className="text-4xl opacity-50" />
-              <p className="text-sm font-bold">
-                현재 개설된 방이 없습니다. 새로운 방을 만들어보세요!
-              </p>
+            <div className="flex flex-col items-center justify-center h-full text-gray-300 space-y-4 py-20">
+              <div className="w-16 h-16 bg-gray-50 dark:bg-gray-900 rounded-full flex items-center justify-center">
+                <FiUsers className="text-3xl opacity-20" />
+              </div>
+              <p className="text-[12px] font-bold tracking-tight uppercase opacity-50">만들어진 방이 없습니다.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {Object.entries(rooms).map(([roomId, room]) => {
                 const isFull = room.users.length >= 2;
                 return (
-                  <div
-                    key={roomId}
-                    className="flex flex-col justify-between p-6 bg-gray-50 dark:bg-gray-800/50 rounded-[1.8rem] border border-gray-100 dark:border-gray-700 transition-all hover:-translate-y-1 hover:shadow-md"
-                  >
+                  <div key={roomId} className="flex flex-col justify-between p-7 bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 rounded-[2rem] transition-all hover:border-amber-400 dark:hover:border-amber-500 group hover:shadow-2xl hover:shadow-amber-100/10">
                     <div>
-                      <div className="flex justify-between items-start mb-4">
-                        <h3 className="text-lg font-black text-gray-900 dark:text-white break-words">
-                          {room.name}
-                        </h3>
-                        <span
-                          className={`px-3 py-1 text-xs font-bold rounded-full ${isFull ? "bg-rose-100 text-rose-600" : "bg-emerald-100 text-emerald-600"}`}
-                        >
-                          {room.users.length} / 2 명
+                      <div className="flex justify-between items-start mb-6">
+                        <h3 className="text-lg font-black text-gray-900 dark:text-white break-words pr-2 leading-tight">{room.name}</h3>
+                        <span className={`px-2.5 py-1 text-[9px] font-black rounded-full uppercase ${isFull ? "bg-rose-50 text-rose-500 border border-rose-100" : "bg-emerald-50 text-emerald-500 border border-emerald-100"}`}>
+                          {room.users.length}/2명
                         </span>
                       </div>
                       <div className="space-y-2">
                         {room.users.map((u, i) => (
-                          <div
-                            key={i}
-                            className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2"
-                          >
-                            <FiSmile className="opacity-70" /> {u.petName} 님
-                            대기중
+                          <div key={i} className="text-[11px] font-bold text-gray-400 flex items-center gap-2 bg-slate-50/50 dark:bg-gray-900/50 py-1.5 px-3 rounded-lg border border-slate-100 dark:border-gray-800">
+                            <FiSmile className="text-amber-500" /> <span className="text-gray-600 dark:text-gray-300">{u.petName}</span>
                           </div>
                         ))}
                       </div>
@@ -283,15 +230,9 @@ const LoungePage = () => {
                     <button
                       onClick={() => handleJoinRoom(roomId)}
                       disabled={isFull}
-                      className={`mt-6 w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${isFull ? "bg-gray-200 dark:bg-gray-700 text-gray-400 cursor-not-allowed" : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:scale-[1.02] active:scale-95 shadow-sm"}`}
+                      className={`mt-8 w-full py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] transition-all ${isFull ? "bg-gray-100 dark:bg-gray-900 text-gray-400 cursor-not-allowed" : "bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:scale-[1.02] shadow-lg group-hover:bg-amber-500 group-hover:text-white dark:group-hover:bg-amber-400"}`}
                     >
-                      {isFull ? (
-                        "입장 불가 (가득 참)"
-                      ) : (
-                        <>
-                          입장하기 <FiArrowRight />
-                        </>
-                      )}
+                      {isFull ? "방이 가득 찼어요" : "들어가기"}
                     </button>
                   </div>
                 );
@@ -303,40 +244,27 @@ const LoungePage = () => {
 
       {/* 방 만들기 모달 */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl relative animate-fade-in-up">
-            <h2 className="text-xl font-black text-gray-900 dark:text-white mb-6">
-              새로운 채팅방 개설
-            </h2>
+        <div className="fixed inset-0 z-[100] bg-[#0b0f1a]/60 backdrop-blur-xl flex items-center justify-center p-6 animate-fade-in">
+          <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-md rounded-[3rem] p-10 shadow-2xl border border-gray-100 dark:border-gray-800 relative animate-fade-in-up">
+            <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center mb-6">
+               <FiPlus className="text-xl text-amber-500" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 dark:text-white mb-2 tracking-tighter">방 만들기</h2>
+            <p className="text-[11px] font-bold text-gray-400 mb-8 uppercase tracking-widest italic">Open a new communication line</p>
             <form onSubmit={handleCreateRoom}>
-              <div className="mb-6">
-                <label className="block text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">
-                  방 제목
-                </label>
+              <div className="mb-10">
                 <input
                   type="text"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  className="w-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl px-5 py-3.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white text-sm"
-                  placeholder="예: 즐거운 대화 나눠요!"
+                  className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl px-6 py-4 focus:outline-none focus:ring-1 focus:ring-amber-500/50 dark:text-white font-bold text-sm shadow-inner transition-all"
+                  placeholder="방 이름"
                   autoFocus
                 />
               </div>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 py-3.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-2xl font-bold transition-colors"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  disabled={!newRoomName.trim()}
-                  className="flex-1 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-indigo-500/30"
-                >
-                  생성 및 입장
-                </button>
+              <div className="flex gap-4">
+                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-4 bg-gray-100 dark:bg-gray-900 text-gray-500 rounded-2xl font-black text-[10px] uppercase tracking-widest">취소</button>
+                <button type="submit" disabled={!newRoomName.trim()} className="flex-1 py-4 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl shadow-gray-200 dark:shadow-none">방 만들기</button>
               </div>
             </form>
           </div>

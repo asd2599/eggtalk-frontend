@@ -7,7 +7,7 @@ import {
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
-import socket from "../../utils/socket"; // ✅ 싱글톤 소켓 사용 (HB님 방식 채택)
+import socket from "../../utils/socket"; // 싱글톤 소켓 사용
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -18,7 +18,7 @@ const MainPage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const petNameRef = useRef(null);
 
-  // 1. 다크모드 초기화 (develop 브랜치 기능 살림)
+  // 1. 다크모드 초기화
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -79,7 +79,7 @@ const MainPage = () => {
 
     fetchPetData();
 
-    // BroadcastChannel 설정 (다른 탭 연동 - HB 방식)
+    // 다른 탭 연동
     const channel = new BroadcastChannel("pet_update_channel");
     channel.onmessage = (event) => {
       if (event.data?.type === "UPDATE_PET" && event.data?.pet) {
@@ -101,7 +101,6 @@ const MainPage = () => {
   );
 
   return (
-    // ✅ 전체 컨테이너에도 custom-scrollbar를 적용하여 일관성 유지
     <div className="flex flex-col lg:flex-row w-full h-screen bg-slate-50 dark:bg-[#0b0f1a] transition-colors duration-500 font-sans relative overflow-hidden custom-scrollbar">
       
       {/* 테마 토글 버튼 */}
@@ -150,7 +149,7 @@ const MainPage = () => {
         </div>
       </aside>
 
-      {/* ✅ 메인 콘텐츠 영역: h-full과 overflow-y-auto, 그리고 custom-scrollbar 적용 */}
+      {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 h-full overflow-y-auto pt-10 pb-24 lg:pb-10 px-4 lg:px-8 custom-scrollbar relative z-10 scroll-smooth">
         {/* 중앙 정렬을 위한 래퍼 div */}
         <div className="flex flex-col items-center w-full min-h-full">
