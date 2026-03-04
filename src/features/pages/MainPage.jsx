@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { io } from "socket.io-client";
-import { FiLogOut, FiBox, FiCloud, FiMonitor, FiSmile, FiAward, FiMessageCircle, FiZap, FiMoon, FiSun } from "react-icons/fi";
+import {
+  FiLogOut, FiBox, FiCpu, FiCloud, FiMonitor, FiSmile,
+  FiAward, FiMessageCircle, FiUsers, FiZap, FiMoon, FiSun
+} from "react-icons/fi";
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
-
-// test
+import socket from "../../utils/socket"; // ✅ 싱글톤 소켓 사용 (HB님 방식 채택)
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const MainPage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const petNameRef = useRef(null);
 
+  // 1. 다크모드 초기화 (develop 브랜치 기능 살림)
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -32,9 +34,14 @@ const MainPage = () => {
     setIsDarkMode(isDark);
   };
 
+  // 2. 데이터 페칭 및 소켓 이벤트 연결
   useEffect(() => {
-    const socket = io("http://localhost:8000");
-    socket.on("update_user_count", (count) => setActiveUserCount(count));
+    // 실시간 접속자 수 업데이트
+    socket.on("update_user_count", (count) => {
+      setActiveUserCount(count);
+    });
+
+    // 다른 유저 로그인 알림
     socket.on("new_user_login", (incomingPetName) => {
       if (petNameRef.current && incomingPetName !== petNameRef.current) {
         const id = Date.now() + Math.random();
@@ -47,21 +54,44 @@ const MainPage = () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) { navigate("/"); return; }
+        
         const response = await axios.get("http://localhost:8000/api/pets/my", {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         if (response.data.pet) {
           const loadedPet = new Pet(response.data.pet);
           setPetData(loadedPet);
           petNameRef.current = loadedPet.name; 
+          // 접속 알림 보내기
           socket.emit("user_login", loadedPet.name);
-        } else { navigate("/create-pet"); }
+        } else {
+          navigate("/create-pet");
+        }
       } catch (error) {
-        localStorage.removeItem("token"); navigate("/");
-      } finally { setLoading(false); }
+        console.error("Fetch error:", error);
+        localStorage.removeItem("token");
+        navigate("/");
+      } finally {
+        setLoading(false);
+      }
     };
+
     fetchPetData();
-    return () => { socket.disconnect(); };
+
+    // BroadcastChannel 설정 (다른 탭 연동 - HB 방식)
+    const channel = new BroadcastChannel("pet_update_channel");
+    channel.onmessage = (event) => {
+      if (event.data?.type === "UPDATE_PET" && event.data?.pet) {
+        setPetData(new Pet(event.data.pet));
+      }
+    };
+
+    return () => {
+      channel.close();
+      socket.off("update_user_count");
+      socket.off("new_user_login");
+    };
   }, [navigate]);
 
   if (loading) return (
@@ -103,6 +133,7 @@ const MainPage = () => {
               { icon: FiSmile, label: "내 펫 상태", path: "/main", active: true },
               { icon: FiAward, label: "명예의 전당", path: "/ranking" },
               { icon: FiMessageCircle, label: "대화하기", path: "/chat" },
+              { icon: FiUsers, label: "라운지", path: "/lounge" },
               { icon: FiBox, label: "DD 모듈", path: "/dd" },
               { icon: FiCloud, label: "MS 모듈", path: "/ms" },
               { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
