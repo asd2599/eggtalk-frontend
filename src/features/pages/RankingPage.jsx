@@ -11,6 +11,7 @@ import {
   FiMessageCircle,
   FiMoon,
   FiSun,
+  FiUsers,
 } from "react-icons/fi";
 
 const RankingPage = () => {
@@ -70,7 +71,6 @@ const RankingPage = () => {
   }
 
   return (
-    // ✅ 전체 컨테이너에도 custom-scrollbar를 적용하여 일관성 유지
     <div className="flex flex-col lg:flex-row h-screen bg-[#fcfcfc] dark:bg-[#0b0f1a] transition-colors duration-500 font-sans overflow-hidden relative custom-scrollbar">
       
       {/* 테마 토글 버튼 */}
@@ -91,6 +91,7 @@ const RankingPage = () => {
               { icon: FiSmile, label: "내 펫 상태", path: "/main" },
               { icon: FiAward, label: "명예의 전당", path: "/ranking", active: true },
               { icon: FiMessageCircle, label: "대화하기", path: "/chat" },
+              { icon: FiUsers, label: "라운지", path: "/lounge" },
               { icon: FiBox, label: "DD 모듈", path: "/dd" },
               { icon: FiCloud, label: "MS 모듈", path: "/ms" },
               { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
@@ -118,7 +119,7 @@ const RankingPage = () => {
         </div>
       </aside>
 
-      {/* ✅ 메인 콘텐츠: custom-scrollbar와 h-full 적용 */}
+      {/* 메인 콘텐츠 */}
       <main className="flex-1 h-full overflow-y-auto custom-scrollbar px-6 pt-12 pb-32 lg:px-20 lg:py-20 bg-white dark:bg-[#0b0f1a] transition-all scroll-smooth">
         <div className="max-w-[800px] mx-auto">
           
@@ -183,8 +184,6 @@ const RankingPage = () => {
               )}
             </div>
           )}
-
-          {/* test */}
 
           {/* 나머지 리스트 */}
           <div className="space-y-3 pt-12 border-t border-gray-50 dark:border-gray-900">

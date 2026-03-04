@@ -7,8 +7,6 @@ import {
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 
-// test
-
 const ChatPage = () => {
   const navigate = useNavigate();
   const [petData, setPetData] = useState(null);
@@ -119,7 +117,7 @@ const ChatPage = () => {
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans overflow-hidden">
       
-      {/* ✅ 테마 버튼 스타일 통일 (MainPage/RankingPage와 일치) */}
+      {/* 테마 버튼 */}
       <button 
         onClick={toggleTheme} 
         className="fixed top-4 right-4 lg:top-8 lg:right-8 p-3 rounded-2xl bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 text-gray-500 z-[60] shadow-sm active:scale-90 transition-all hover:scale-110"
@@ -127,7 +125,7 @@ const ChatPage = () => {
         {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
 
-      {/* 사이드바 & 하단바 (스타일 유지) */}
+      {/* 사이드바 & 하단바 */}
       <aside className="fixed bottom-0 w-full h-16 lg:relative lg:w-64 lg:h-full border-t lg:border-t-0 lg:border-r border-gray-100 dark:border-gray-900 bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl z-50 flex lg:flex-col justify-between items-center lg:items-stretch shadow-lg lg:shadow-none">
         <div className="flex lg:flex-col items-center justify-around w-full lg:p-10">
           <h2 className="hidden lg:block text-xs font-black text-gray-900 dark:text-white mb-10 tracking-[0.3em] text-center uppercase">Dashboard</h2>
@@ -136,6 +134,7 @@ const ChatPage = () => {
               { icon: FiSmile, label: "내 펫 상태", path: "/main" },
               { icon: FiAward, label: "명예의 전당", path: "/ranking" },
               { icon: FiMessageCircle, label: "대화하기", path: "/chat", active: true },
+              { icon: FiUsers, label: "라운지", path: "/lounge" },
               { icon: FiBox, label: "DD 모듈", path: "/dd" },
               { icon: FiCloud, label: "MS 모듈", path: "/ms" },
               { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
@@ -154,7 +153,7 @@ const ChatPage = () => {
         </div>
       </aside>
 
-      {/* 메인 콘텐츠 영역 (MainPage 배경색 통일) */}
+      {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 flex flex-col lg:flex-row items-stretch p-3 lg:p-8 gap-4 lg:gap-8 bg-slate-50 dark:bg-[#0b0f1a] h-full overflow-y-auto lg:overflow-hidden custom-scrollbar pb-24 lg:pb-8 transition-all">
         
         {/* 좌측: 스탯 영역 */}

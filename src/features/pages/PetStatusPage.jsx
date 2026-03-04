@@ -40,7 +40,7 @@ const PetStatusPage = ({ petData }) => {
         
         {/* [왼쪽 프로필 영역] */}
         <div className="w-full lg:w-[320px] flex flex-col items-center lg:items-stretch flex-shrink-0">
-          {/* 펫 이미지 박스 배경도 동일하게 적용 */}
+          {/* 펫 이미지 박스 */}
           <div className="aspect-square w-full max-w-[260px] lg:max-w-none bg-gray-50 dark:bg-[#0b0f1a] rounded-[3rem] border border-gray-100 dark:border-gray-800 mb-8 flex items-center justify-center shadow-inner relative overflow-hidden group">
             {petData && petData.draw("w-40 h-40 lg:w-52 lg:h-52 group-hover:scale-110 transition-transform duration-500 drop-shadow-2xl")}
           </div>
