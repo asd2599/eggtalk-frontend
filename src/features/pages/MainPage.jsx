@@ -6,6 +6,8 @@ import { FiLogOut, FiBox, FiCloud, FiMonitor, FiSmile, FiAward, FiMessageCircle,
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
 
+// test
+
 const MainPage = () => {
   const navigate = useNavigate();
   const [petData, setPetData] = useState(null);

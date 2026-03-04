@@ -7,6 +7,8 @@ const PetStatusPage = ({ petData }) => {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
 
+  // test
+
   // 초기 테마 설정 및 경험치 애니메이션
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
