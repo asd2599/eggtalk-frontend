@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+/* test */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer utilities {
   .animate-blob {
     animation: blob 7s infinite;

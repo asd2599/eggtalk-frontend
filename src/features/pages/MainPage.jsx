@@ -1,53 +1,60 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { io } from "socket.io-client";
 import {
-  FiLogOut,
-  FiBox,
-  FiCpu,
-  FiCloud,
-  FiMonitor,
-  FiSmile,
-  FiAward,
-  FiMessageCircle,
+  FiLogOut, FiBox, FiCpu, FiCloud, FiMonitor, FiSmile,
+  FiAward, FiMessageCircle, FiUsers, FiZap, FiMoon, FiSun
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
+import socket from "../../utils/socket"; // 싱글톤 소켓 사용
 
 const MainPage = () => {
   const navigate = useNavigate();
   const [petData, setPetData] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Socket.io 통신 관리 State
   const [activeUserCount, setActiveUserCount] = useState(1);
   const [loginNotifications, setLoginNotifications] = useState([]);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const petNameRef = useRef(null);
 
+  // 1. 다크모드 초기화
   useEffect(() => {
-    // 소켓 초기 연결
-    const socket = io("http://localhost:8000");
+    const savedTheme = localStorage.getItem("theme");
+    const isDark = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+      setIsDarkMode(true);
+    }
+  }, []);
 
+  const toggleTheme = () => {
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    setIsDarkMode(isDark);
+  };
+
+  // 2. 데이터 페칭 및 소켓 이벤트 연결
+  useEffect(() => {
+    // 실시간 접속자 수 업데이트
     socket.on("update_user_count", (count) => {
       setActiveUserCount(count);
     });
 
-    socket.on("new_user_login", (petName) => {
-      const id = Date.now() + Math.random();
-      setLoginNotifications((prev) => [...prev, { id, petName }]);
-      setTimeout(() => {
-        setLoginNotifications((prev) => prev.filter((n) => n.id !== id));
-      }, 3000);
+    // 다른 유저 로그인 알림
+    socket.on("new_user_login", (incomingPetName) => {
+      if (petNameRef.current && incomingPetName !== petNameRef.current) {
+        const id = Date.now() + Math.random();
+        setLoginNotifications((prev) => [...prev, { id, petName: incomingPetName }]);
+        setTimeout(() => setLoginNotifications((prev) => prev.filter((n) => n.id !== id)), 3000);
+      }
     });
 
     const fetchPetData = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          navigate("/");
-          return;
-        }
-
+        if (!token) { navigate("/"); return; }
+        
         const response = await axios.get("http://localhost:8000/api/pets/my", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -55,16 +62,14 @@ const MainPage = () => {
         if (response.data.pet) {
           const loadedPet = new Pet(response.data.pet);
           setPetData(loadedPet);
-
-          // 로그인 성공을 다른 서버에 있는 소켓(유저)들에게 알림 발송
+          petNameRef.current = loadedPet.name; 
+          // 접속 알림 보내기
           socket.emit("user_login", loadedPet.name);
         } else {
-          // 펫이 없으면 강제로 생성페이지 이동
           navigate("/create-pet");
         }
       } catch (error) {
-        console.error("펫 정보를 불러오는 중 에러 발생:", error);
-        alert("세션이 만료되었거나 펫 정보를 가져올 수 없습니다.");
+        console.error("Fetch error:", error);
         localStorage.removeItem("token");
         navigate("/");
       } finally {
@@ -74,128 +79,99 @@ const MainPage = () => {
 
     fetchPetData();
 
-    // 다른 브라우저 탭(MS 등)에서 발생한 동작을 실시간으로 메인 페이지에 반영
+    // 다른 탭 연동
     const channel = new BroadcastChannel("pet_update_channel");
     channel.onmessage = (event) => {
       if (event.data?.type === "UPDATE_PET" && event.data?.pet) {
-        // 이미 가져온 클래스가 있다면 새 데이터로 덮어씌워 렌더링
         setPetData(new Pet(event.data.pet));
       }
     };
 
     return () => {
       channel.close();
-      socket.disconnect(); // 언마운트 시 소켓 통신 해제
+      socket.off("update_user_count");
+      socket.off("new_user_login");
     };
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-screen bg-slate-50 text-slate-500">
-        <p className="text-xl font-bold animate-pulse">
-          펫 정보를 불러오는 중...
-        </p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex justify-center items-center min-h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500">
+      <div className="w-8 h-8 border-2 border-gray-100 border-t-gray-900 dark:border-t-white rounded-full animate-spin" />
+    </div>
+  );
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden relative">
-      {/* Background decoration */}
-      <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob pointer-events-none"></div>
-      <div className="absolute bottom-[-20%] right-[-10%] w-80 h-80 bg-cyan-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000 pointer-events-none"></div>
-
-      {/* 왼쪽 네비게이션 사이드바 */}
-      <aside className="w-20 lg:w-64 border-r border-gray-50 dark:border-gray-900 flex flex-col justify-between bg-white dark:bg-[#0b0f1a] z-40">
-        <div className="p-8 lg:p-10">
-          <h2 className="hidden lg:block text-sm font-black text-gray-900 dark:text-white mb-6 tracking-[0.3em] text-center uppercase">
-            Dashboard
-          </h2>
-
-          {/* Socket.io: 접속 중인 유저 수 위젯 */}
-          <div className="hidden lg:flex mb-8 mx-auto bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/50 rounded-xl py-2 px-3 items-center justify-center gap-2 shadow-sm">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 tracking-wider">
-              On Air: {activeUserCount}명
-            </span>
+    <div className="flex flex-col lg:flex-row w-full h-screen bg-slate-50 dark:bg-[#0b0f1a] transition-colors duration-500 font-sans relative overflow-hidden custom-scrollbar">
+      
+      {/* 테마 토글 버튼 */}
+      <button 
+        onClick={toggleTheme} 
+        className="fixed top-4 right-4 lg:top-8 lg:right-8 p-3 rounded-2xl bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 text-gray-500 z-[60] shadow-sm active:scale-90 transition-all hover:scale-110"
+      >
+        {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
+      </button>
+      
+      {/* 사이드바 & 하단바 */}
+      <aside className="fixed bottom-0 lg:relative w-full lg:w-64 h-16 lg:h-screen border-t lg:border-t-0 lg:border-r border-gray-100 dark:border-gray-900 bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl z-50 flex lg:flex-col justify-between items-center lg:items-stretch shadow-lg lg:shadow-none">
+        <div className="flex lg:flex-col items-center justify-around w-full lg:p-10">
+          <h2 className="hidden lg:block text-xs font-black text-gray-900 dark:text-white mb-10 tracking-[0.3em] text-center uppercase">Dashboard</h2>
+          
+          <div className="hidden lg:flex mb-12 items-center justify-center gap-2 group cursor-default">
+            <div className="relative flex h-4 w-4 items-center justify-center">
+              <span className="animate-ping absolute h-full w-full rounded-full bg-red-400 opacity-20"></span>
+              <span className="relative h-1.5 w-1.5 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.7)]"></span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-black text-gray-300 uppercase tracking-[0.4em] italic transition-colors group-hover:text-gray-400">Live</span>
+              <span className="text-[13px] font-black text-gray-900 dark:text-white">{activeUserCount} <span className="text-[10px] text-gray-400">Users</span></span>
+            </div>
           </div>
 
-          <nav className="flex flex-col gap-3">
+          <nav className="flex lg:flex-col gap-1 lg:gap-3 w-full px-4 lg:px-0">
             {[
-              {
-                icon: FiSmile,
-                label: "내 펫 상태",
-                path: "/main",
-                active: true,
-              },
+              { icon: FiSmile, label: "내 펫 상태", path: "/main", active: true },
               { icon: FiAward, label: "명예의 전당", path: "/ranking" },
               { icon: FiMessageCircle, label: "대화하기", path: "/chat" },
+              { icon: FiUsers, label: "라운지", path: "/lounge" },
               { icon: FiBox, label: "DD 모듈", path: "/dd" },
               { icon: FiCloud, label: "MS 모듈", path: "/ms" },
               { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
             ].map((item) => (
-              <button
-                key={item.label}
-                onClick={() => navigate(item.path)}
-                className={`flex items-center gap-4 p-3 lg:px-5 lg:py-3.5 rounded-2xl transition-all ${
-                  item.active
-                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl shadow-gray-200 dark:shadow-none"
-                    : "text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"
-                }`}
-              >
-                <item.icon className="text-xl" />
-                <span className="hidden lg:block text-[13px] font-bold">
-                  {item.label}
-                </span>
+              <button key={item.label} onClick={() => navigate(item.path)} className={`flex flex-col lg:flex-row items-center gap-1 lg:gap-4 p-2 lg:px-5 lg:py-3.5 rounded-xl lg:rounded-2xl transition-all flex-1 lg:flex-none ${item.active ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-xl" : "text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-900"}`}>
+                <item.icon className="text-xl lg:text-lg" />
+                <span className="text-[9px] lg:text-[13px] font-bold">{item.label}</span>
               </button>
             ))}
           </nav>
         </div>
-
-        {/* 로그아웃 섹션 */}
-        <div className="p-8 lg:p-10 border-t border-gray-50 dark:border-gray-900">
-          <button
-            onClick={handleLogout}
-            className="flex items-center justify-center lg:justify-center gap-3 w-full text-[12px] font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest group"
-          >
-            <FiLogOut className="text-lg group-hover:scale-110 transition-transform" />
-            <span className="hidden lg:block">Sign Out</span>
-          </button>
+        <div className="hidden lg:block p-10 border-t border-gray-50 dark:border-gray-900">
+          <button onClick={() => {localStorage.removeItem("token"); navigate("/");}} className="flex items-center justify-center gap-3 w-full text-[12px] font-bold text-gray-400 hover:text-red-500 transition-colors uppercase tracking-widest group"><FiLogOut className="text-lg" /> <span>Sign Out</span></button>
         </div>
       </aside>
 
-      {/* 우측 하단 Socket.io 로그인 알림 토스트 (Toast) 플로팅 영역 */}
-      <div className="fixed bottom-6 right-6 z-100 flex flex-col gap-3 pointer-events-none">
+      {/* 메인 콘텐츠 영역 */}
+      <main className="flex-1 h-full overflow-y-auto pt-10 pb-24 lg:pb-10 px-4 lg:px-8 custom-scrollbar relative z-10 scroll-smooth">
+        {/* 중앙 정렬을 위한 래퍼 div */}
+        <div className="flex flex-col items-center w-full min-h-full">
+           <PetStatusPage petData={petData} />
+        </div>
+      </main>
+
+      {/* 타인 접속 토스트 알림 */}
+      <div className="fixed bottom-24 lg:bottom-10 right-6 lg:right-10 z-[100] flex flex-col gap-3 pointer-events-none">
         {loginNotifications.map((noti) => (
-          <div
-            key={noti.id}
-            className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-emerald-100 dark:border-emerald-900/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-2xl p-4 flex items-center gap-3 animate-fade-in-up"
-          >
-            <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 rounded-full flex items-center justify-center font-bold text-[14px]">
-              🎉
+          <div key={noti.id} className="bg-white/90 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-gray-100 dark:border-gray-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 animate-fade-in-up pointer-events-auto transition-all">
+            <div className="relative flex items-center justify-center w-9 h-9 rounded-2xl bg-gray-50 dark:bg-gray-800">
+              <FiZap className="text-amber-500 text-[16px] stroke-[2.5]" />
+              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
             </div>
-            <div className="text-[12px] font-bold text-gray-700 dark:text-gray-200">
-              <span className="text-emerald-500 font-black">
-                {noti.petName}
-              </span>{" "}
-              님이 세상에 접속했어요!
+            <div className="text-[13px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">
+              <span className="text-amber-600 dark:text-amber-500 font-black mr-1.5">{noti.petName}</span>
+              님이 접속했습니다!
             </div>
           </div>
         ))}
       </div>
-
-      {/* 중앙 메인 콘텐츠 (펫 정보 렌더링) */}
-      <main className="flex-1 flex flex-col items-center justify-center p-6 z-10 overflow-y-auto">
-        <PetStatusPage petData={petData} />
-      </main>
     </div>
   );
 };
