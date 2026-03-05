@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 // io 제거됨
-import axios from "axios";
+import api from "../../utils/config";
 import {
   FiLogOut,
   FiArrowLeft,
@@ -46,10 +46,9 @@ const DatingPage = () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await axios.get(
-          `http://localhost:8000/api/rooms/${roomId}`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
+        const res = await api.get(`/api/rooms/${roomId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (res.data.success) {
           setRoomUsers(res.data.room.users);
@@ -99,7 +98,7 @@ const DatingPage = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:8000/api/pets/my", {
+        const response = await api.get("/api/pets/my", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -144,8 +143,8 @@ const DatingPage = () => {
 
         try {
           const token = localStorage.getItem("token");
-          await axios.post(
-            `http://localhost:8000/api/rooms/${roomId}/leave`,
+          await api.post(
+            `/api/rooms/${roomId}/leave`,
             { petName: petData.name },
             { headers: { Authorization: `Bearer ${token}` } },
           );

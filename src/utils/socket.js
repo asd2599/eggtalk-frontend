@@ -1,8 +1,9 @@
 import { io } from "socket.io-client";
+import { SERVER_URL } from "./config";
 
 // 애플리케이션 전역에서 사용할 단일(Singleton) 소켓 인스턴스
 // 폴링 에러 및 중복 연결 문제를 방지합니다.
-const socket = io("http://localhost:8000", {
+const socket = io(SERVER_URL, {
   autoConnect: true,
   reconnection: true, // 자동 재연결 활성화
   reconnectionDelay: 1000,
