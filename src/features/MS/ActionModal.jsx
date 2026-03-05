@@ -1,91 +1,93 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../../utils/config";
+
 const ACTIONS_DATA = [
   {
     key: 1001,
-    category: 'Eating',
-    name: 'Eating',
-    increaseStatus: 'health_hp',
+    category: "Eating",
+    name: "Eating",
+    increaseStatus: "health_hp",
     increaseValue: 5,
-    decreaseStatus: 'hunger',
+    decreaseStatus: "hunger",
     decreaseValue: -20,
     exp: 10,
   },
   {
     key: 1002,
-    category: 'Cleaning',
-    name: 'Cleaning',
-    increaseStatus: 'cleanliness',
+    category: "Cleaning",
+    name: "Cleaning",
+    increaseStatus: "cleanliness",
     increaseValue: 30,
-    decreaseStatus: 'stress',
+    decreaseStatus: "stress",
     decreaseValue: -5,
     exp: 5,
   },
   {
     key: 1003,
-    category: 'Sleep',
-    name: 'Sleep 1',
-    increaseStatus: 'health_hp',
+    category: "Sleep",
+    name: "Sleep 1",
+    increaseStatus: "health_hp",
     increaseValue: 40,
-    decreaseStatus: 'stress',
+    decreaseStatus: "stress",
     decreaseValue: -30,
     exp: 5,
   },
   {
     key: 1004,
-    category: 'Sleep',
-    name: 'Sleep 2',
-    increaseStatus: 'health_hp',
+    category: "Sleep",
+    name: "Sleep 2",
+    increaseStatus: "health_hp",
     increaseValue: 40,
-    decreaseStatus: 'hunger',
+    decreaseStatus: "hunger",
     decreaseValue: 20,
     exp: 5,
   },
   {
     key: 1005,
-    category: 'Playing',
-    name: 'Playing 1',
-    increaseStatus: 'affection',
+    category: "Playing",
+    name: "Playing 1",
+    increaseStatus: "affection",
     increaseValue: 10,
-    decreaseStatus: 'hunger',
+    decreaseStatus: "hunger",
     decreaseValue: 10,
     exp: 15,
   },
   {
     key: 1006,
-    category: 'Playing',
-    name: 'Playing 2',
-    increaseStatus: 'hunger',
+    category: "Playing",
+    name: "Playing 2",
+    increaseStatus: "hunger",
     increaseValue: 10,
-    decreaseStatus: 'stress',
+    decreaseStatus: "stress",
     decreaseValue: -15,
     exp: 20,
   },
   {
     key: 1007,
-    category: 'Volunteer',
-    name: 'Volunteer 1',
-    increaseStatus: 'altruism',
+    category: "Volunteer",
+    name: "Volunteer 1",
+    increaseStatus: "altruism",
     increaseValue: 10,
-    decreaseStatus: 'health_hp',
+    decreaseStatus: "health_hp",
     decreaseValue: -5,
     exp: 25,
   },
   {
     key: 1008,
-    category: 'Volunteer',
-    name: 'Volunteer 2',
-    increaseStatus: 'empathy',
+    category: "Volunteer",
+    name: "Volunteer 2",
+    increaseStatus: "empathy",
     increaseValue: 5,
-    decreaseStatus: 'health_hp',
+    decreaseStatus: "health_hp",
     decreaseValue: -10,
     exp: 25,
   },
   {
     key: 1009,
-    category: 'Chat',
-    name: 'Chat 1',
-    increaseStatus: 'empathy',
+    category: "Chat",
+    name: "Chat 1",
+    increaseStatus: "empathy",
     increaseValue: 5,
     decreaseStatus: null,
     decreaseValue: null,
@@ -93,9 +95,9 @@ const ACTIONS_DATA = [
   },
   {
     key: 1010,
-    category: 'Chat',
-    name: 'Chat 2',
-    increaseStatus: 'affection',
+    category: "Chat",
+    name: "Chat 2",
+    increaseStatus: "affection",
     increaseValue: 5,
     decreaseStatus: null,
     decreaseValue: null,
@@ -103,9 +105,9 @@ const ACTIONS_DATA = [
   },
   {
     key: 1011,
-    category: 'Chat',
-    name: 'Chat 3',
-    increaseStatus: 'knowledge',
+    category: "Chat",
+    name: "Chat 3",
+    increaseStatus: "knowledge",
     increaseValue: 5,
     decreaseStatus: null,
     decreaseValue: null,
@@ -113,11 +115,11 @@ const ACTIONS_DATA = [
   },
   {
     key: 1012,
-    category: 'Playing',
-    name: 'Playing 3',
-    increaseStatus: 'logic',
+    category: "Playing",
+    name: "Playing 3",
+    increaseStatus: "logic",
     increaseValue: 10,
-    decreaseStatus: 'stress',
+    decreaseStatus: "stress",
     decreaseValue: -5,
     exp: 15,
   },
@@ -125,26 +127,16 @@ const ACTIONS_DATA = [
 
 const ActionModal = ({ category, onClose, onUpdate }) => {
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState("");
   const actions = ACTIONS_DATA.filter((a) => a.category === category);
 
   const handleAction = async (actionKey) => {
     setLoading(true);
-    setMessage('');
+    setMessage("");
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8000/api/pets/action', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ actionKey }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Action failed');
-      }
+      const response = await api.post("/api/pets/action", { actionKey });
+      const data = response.data;
+
       setMessage(`성공적으로 수행했습니다! 펫 상태가 업데이트 되었습니다.`);
 
       // 액션 성공 시 상위 컴포넌트(MS.jsx)에 갱신된 펫 정보 전달
@@ -154,8 +146,8 @@ const ActionModal = ({ category, onClose, onUpdate }) => {
 
       // 다른 브라우저 창/탭(Main 페이지 등)을 켜두었을 경우 실시간 동기화를 위해 브로드캐스트 이벤트 발송
       if (data.pet) {
-        const channel = new BroadcastChannel('pet_update_channel');
-        channel.postMessage({ type: 'UPDATE_PET', pet: data.pet });
+        const channel = new BroadcastChannel("pet_update_channel");
+        channel.postMessage({ type: "UPDATE_PET", pet: data.pet });
         channel.close();
       }
 
@@ -165,7 +157,11 @@ const ActionModal = ({ category, onClose, onUpdate }) => {
       }, 1500);
     } catch (error) {
       console.error(error);
-      setMessage(`오류 발생: ${error.message}`);
+      const errMsg =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message;
+      setMessage(`오류 발생: ${errMsg}`);
     } finally {
       setLoading(false);
     }
@@ -186,7 +182,7 @@ const ActionModal = ({ category, onClose, onUpdate }) => {
 
         {message && (
           <div
-            className={`p-3 mb-4 rounded-lg text-sm text-center ${message.includes('오류') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}
+            className={`p-3 mb-4 rounded-lg text-sm text-center ${message.includes("오류") ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}
           >
             {message}
           </div>
@@ -229,17 +225,17 @@ const ActionModal = ({ category, onClose, onUpdate }) => {
                   <td className="px-3 py-3">
                     <span className="text-green-600 font-bold">
                       +{action.increaseValue}
-                    </span>{' '}
+                    </span>{" "}
                     {action.increaseStatus}
                   </td>
                   <td className="px-3 py-3">
                     {action.decreaseStatus ? (
                       <span
-                        className={`${action.decreaseValue < 0 ? 'text-red-500' : 'text-blue-500'} font-bold`}
+                        className={`${action.decreaseValue < 0 ? "text-red-500" : "text-blue-500"} font-bold`}
                       >
                         {action.decreaseValue > 0
                           ? `+${action.decreaseValue}`
-                          : action.decreaseValue}{' '}
+                          : action.decreaseValue}{" "}
                         {action.decreaseStatus}
                       </span>
                     ) : (
