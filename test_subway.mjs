@@ -1,7 +1,11 @@
 import axios from 'axios';
 import { SUBWAY_STATION_COORDS } from './src/features/MS/subwayCoords.js';
 
-const KEY = '4f64766647796f7536377341644e65';
+// //! [Original Code] 하드코딩된 API Key
+// const KEY = '4f64766647796f7536377341644e65';
+
+// //* [Modified Code] 환경 변수(.env)에서 API Key를 불러오도록 수정. 실행 시 node --env-file=.env test_subway.mjs 로 실행하세요.
+const KEY = process.env.VITE_SUBWAY_API_KEY;
 
 async function test() {
   const lineName = '2호선';

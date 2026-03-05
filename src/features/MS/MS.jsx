@@ -7,6 +7,7 @@ import { SUBWAY_STATION_COORDS } from './subwayCoords';
 import { SUBWAY_PATHS } from './subwayPaths';
 import SubwayIcon from './components/SubwayIcon';
 import { SUBWAY_LINE_MAP } from './subwayLineMap';
+import { SERVER_URL } from '../../utils/config';
 
 // //* [Mentor's Tip] 두 좌표(위경도) 사이의 각도(Bearing)를 계산하는 수학 함수입니다.
 // 0도는 북쪽, 90도는 동쪽, 180도는 남쪽, 270도는 서쪽을 가리킵니다.
@@ -72,7 +73,10 @@ const MS = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) return;
-        const res = await axios.get('http://localhost:8000/api/pets/my', {
+        // //! [Original Code] 하드코딩된 로컬 연결 주소
+        // const res = await axios.get('http://localhost:8000/api/pets/my', {
+        // //* [Modified Code] 로컬호스트 주소를 SERVER_URL 상수로 치환
+        const res = await axios.get(`${SERVER_URL}/api/pets/my`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data && res.data.pet) {
