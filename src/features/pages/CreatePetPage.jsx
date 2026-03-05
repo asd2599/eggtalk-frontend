@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SERVER_URL } from "../../utils/config";
 
 /**
  * 펫 생성 페이지 컴포넌트
@@ -22,7 +23,7 @@ const CreatePetPage = () => {
     try {
       const token = localStorage.getItem("token"); // 예시: 로그인 된 유저의 토큰 가져오기 (실제 로직에 맞춰 변경)
 
-      const response = await fetch("http://localhost:8000/api/pets", {
+      const response = await fetch(`${SERVER_URL}/api/pets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

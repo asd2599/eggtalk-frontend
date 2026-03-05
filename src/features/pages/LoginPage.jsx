@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/config";
 import { FiMail, FiLock, FiLogIn, FiMoon, FiSun } from "react-icons/fi"; // FiMoon, FiSun 추가
 
 const LoginPage = () => {
@@ -12,8 +12,10 @@ const LoginPage = () => {
   // 초기 테마 설정 확인 및 적용 (회원가입 페이지와 동일한 로직)
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    const isDark = savedTheme === "dark" ||
-      (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const isDark =
+      savedTheme === "dark" ||
+      (!savedTheme &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
 
     if (isDark) {
       document.documentElement.classList.add("dark");
@@ -41,7 +43,7 @@ const LoginPage = () => {
     try {
       localStorage.removeItem("token");
 
-      const response = await axios.post("http://localhost:8000/login", {
+      const response = await api.post("/login", {
         email,
         password,
       });
@@ -68,7 +70,11 @@ const LoginPage = () => {
         onClick={toggleTheme}
         className="absolute top-6 right-6 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:scale-110 transition-all z-50"
       >
-        {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
+        {isDarkMode ? (
+          <FiSun className="text-sm" />
+        ) : (
+          <FiMoon className="text-sm" />
+        )}
       </button>
 
       <div className="w-full max-w-[340px] px-6">
@@ -76,8 +82,12 @@ const LoginPage = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gray-50 dark:bg-gray-900 mb-4 border border-gray-100 dark:border-gray-800 transition-colors">
             <FiLogIn className="text-gray-900 dark:text-gray-100 text-xl" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">환영합니다!</h2>
-          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">서비스 이용을 위해 로그인해 주세요</p>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white tracking-tight">
+            환영합니다!
+          </h2>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1.5">
+            서비스 이용을 위해 로그인해 주세요
+          </p>
         </div>
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <div className="relative">
@@ -122,7 +132,8 @@ const LoginPage = () => {
             onClick={() => navigate("/signup")}
             className="text-[12px] text-gray-400 dark:text-gray-500 hover:text-gray-900 dark:hover:text-gray-300 transition-colors"
           >
-            아직 계정이 없으신가요? <span className="underline underline-offset-4 ml-1">회원가입</span>
+            아직 계정이 없으신가요?{" "}
+            <span className="underline underline-offset-4 ml-1">회원가입</span>
           </button>
         </div>
       </div>
