@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { api } from "../../utils/config"; // develop의 api 유틸 사용
+import { api } from "../../utils/config"; 
 import { FiSun, FiMoon, FiZap } from "react-icons/fi";
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
@@ -12,9 +12,9 @@ const MainPage = () => {
   const [petData, setPetData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeUserCount, setActiveUserCount] = useState(1);
-  const [loginNotifications, setLoginNotifications] = useState([]); // develop의 알림 기능
+  const [loginNotifications, setLoginNotifications] = useState([]); 
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const petNameRef = useRef(null); // 알림 필터링용 Ref
+  const petNameRef = useRef(null); 
 
   // 1. 테마 초기 설정
   useEffect(() => {
@@ -39,7 +39,7 @@ const MainPage = () => {
     // 실시간 접속자 수 업데이트
     socket.on("update_user_count", (count) => setActiveUserCount(count));
 
-    // 다른 유저 로그인 알림 (develop 기능)
+    // 다른 유저 로그인 알림 
     socket.on("new_user_login", (incomingPetName) => {
       if (petNameRef.current && incomingPetName !== petNameRef.current) {
         const id = Date.now() + Math.random();
@@ -55,7 +55,7 @@ const MainPage = () => {
         const token = localStorage.getItem("token");
         if (!token) { navigate("/"); return; }
 
-        const response = await api.get("/api/pets/my"); // api 유틸 사용
+        const response = await api.get("/api/pets/my");
 
         if (response.data.pet) {
           const loadedPet = new Pet(response.data.pet);
@@ -92,8 +92,28 @@ const MainPage = () => {
 
   return (
     <div className="flex flex-col lg:flex-row w-full h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans relative overflow-hidden custom-scrollbar">
+
+      {/* 실시간 접속자 수 표시 */}
+      <div className="fixed top-4 left-4 lg:top-8 lg:left-[calc(16rem+2rem)] p-3 px-5 rounded-2xl bg-white/80 dark:bg-[#0b0f1a]/80 backdrop-blur-md border border-slate-100 dark:border-slate-800 z-[60] shadow-sm flex items-center gap-3 transition-all hover:scale-105 group cursor-default">
+      {/* 상태 표시등 */}
+      <div className="relative flex h-4 w-4 items-center justify-center">
+        <span className="animate-ping absolute h-full w-full rounded-full bg-sky-400 opacity-20"></span>
+        <span className="relative h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(125,211,252,0.7)]"></span>
+      </div>
+  
+      {/* 유저 수 텍스트 */}
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] italic group-hover:text-sky-400 transition-colors">
+          Live
+        </span>
+        <span className="text-[14px] font-black text-slate-900 dark:text-white font-mono">
+          {activeUserCount}
+          <span className="ml-1 text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Users</span>
+        </span>
+      </div>
+    </div>
       
-      {/* 테마 버튼 (SH 디자인 유지) */}
+      {/* 테마 버튼 */}
       <button 
         onClick={toggleTheme} 
         className="fixed top-4 right-4 lg:top-8 lg:right-8 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-sky-200 z-[60] shadow-sm transition-all hover:scale-110"
@@ -101,7 +121,7 @@ const MainPage = () => {
         {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
       
-      {/* 공통 사이드바 (SH 디자인 유지) */}
+      {/* 공통 사이드바 */}
       <CommonSide activeMenu="내 펫 상태" />
 
       {/* 메인 콘텐츠 영역 */}
@@ -111,7 +131,7 @@ const MainPage = () => {
         </div>
       </main>
 
-      {/* 타인 접속 토스트 알림 (develop 기능 + 페일 블루 테마 색상 적용) */}
+      {/* 타인 접속 토스트 알림 */}
       <div className="fixed bottom-24 lg:bottom-10 right-6 lg:right-10 z-[100] flex flex-col gap-3 pointer-events-none">
         {loginNotifications.map((noti) => (
           <div 
