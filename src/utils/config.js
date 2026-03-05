@@ -13,4 +13,18 @@ export const api = axios.create({
   baseURL: SERVER_URL,
 });
 
+// [Interceptor 추가] 모든 API 요청 전 자동으로 localStorage의 토큰을 헤더에 집어넣습니다.
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  },
+);
+
 export default api;
