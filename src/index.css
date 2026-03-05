@@ -36,6 +36,38 @@
   }
 }
 
+@keyframes toast-in-right {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.95); }
+}
+
+.animate-toast-out {
+  animation: toast-out 0.3s ease-in forwards;
+}
+
+@keyframes bob {
+          0%, 100% { transform: translateY(0) translateX(-50%); }
+          50% { transform: translateY(-5px) translateX(-50%); }
+        }
+        .animate-bob {
+          animation: bob 2s ease-in-out infinite;
+        }
+
 /* 깔끔한 미니멀 스크롤바 */
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
