@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/config";
-import { FiMail, FiLock, FiLogIn, FiMoon, FiSun } from "react-icons/fi"; // FiMoon, FiSun 추가
+import { FiMail, FiLock, FiLogIn, FiMoon, FiSun, FiAlertCircle, FiZap } from "react-icons/fi";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isDarkMode, setIsDarkMode] = useState(false); // 다크모드 상태 관리
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const navigate = useNavigate();
 
-  // 초기 테마 설정 확인 및 적용 (회원가입 페이지와 동일한 로직)
+  // ✅ 토스트 상태 관리
+  const [notifications, setNotifications] = useState([]);
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark =
       savedTheme === "dark" ||
-      (!savedTheme &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches);
+      (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
     if (isDark) {
       document.documentElement.classList.add("dark");
@@ -27,15 +28,24 @@ const LoginPage = () => {
   }, []);
 
   const toggleTheme = () => {
-    if (document.documentElement.classList.contains("dark")) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-      setIsDarkMode(false);
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-      setIsDarkMode(true);
-    }
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+    setIsDarkMode(isDark);
+  };
+
+  // 토스트 알림 함수
+  const showToast = (message, type = "success") => {
+    const id = Date.now();
+    setNotifications((prev) => [...prev, { id, message, type, isExiting: false }]);
+    
+    setTimeout(() => {
+      setNotifications((prev) => 
+        prev.map(n => n.id === id ? { ...n, isExiting: true } : n)
+      );
+      setTimeout(() => {
+        setNotifications((prev) => prev.filter((n) => n.id !== id));
+      }, 300);
+    }, 3000);
   };
 
   const handleLogin = async (e) => {
@@ -48,33 +58,35 @@ const LoginPage = () => {
         password,
       });
       const data = response.data;
+      
       if (data.token) {
         localStorage.setItem("token", data.token);
+        showToast("성공적으로 로그인되었습니다! ✨");
 
-        if (data.petId === 0 || !data.petId) {
-          navigate("/create-pet");
-        } else {
-          navigate("/main");
-        }
+        // 토스트 노출 후 이동
+        setTimeout(() => {
+          if (data.petId === 0 || !data.petId) {
+            navigate("/create-pet");
+          } else {
+            navigate("/main");
+          }
+        }, 1200);
       }
     } catch (error) {
-      alert(error.response?.data?.message || "로그인 중 오류가 발생했습니다.");
+      // alert 대신 토스트 사용
+      showToast(error.response?.data?.message || "로그인 정보를 확인해주세요.", "error");
     }
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-300">
+    <div className="flex justify-center items-center h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-300 relative overflow-hidden">
       {/* 테마 전환 아이콘 버튼 */}
       <button
         type="button"
         onClick={toggleTheme}
         className="absolute top-6 right-6 p-2.5 rounded-xl bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-500 dark:text-gray-400 hover:scale-110 transition-all z-50"
       >
-        {isDarkMode ? (
-          <FiSun className="text-sm" />
-        ) : (
-          <FiMoon className="text-sm" />
-        )}
+        {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
 
       <div className="w-full max-w-[340px] px-6">
@@ -89,6 +101,7 @@ const LoginPage = () => {
             서비스 이용을 위해 로그인해 주세요
           </p>
         </div>
+
         <form onSubmit={handleLogin} className="flex flex-col gap-5">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -136,6 +149,24 @@ const LoginPage = () => {
             <span className="underline underline-offset-4 ml-1">회원가입</span>
           </button>
         </div>
+      </div>
+
+      {/* 하단 커스텀 토스트 알림 영역 */}
+      <div className="fixed bottom-10 right-6 lg:right-10 z-[100] flex flex-col gap-3 pointer-events-none">
+        {notifications.map((noti) => (
+          <div 
+            key={noti.id} 
+            className={`
+              bg-white/90 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-gray-100 dark:border-gray-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 pointer-events-auto min-w-[280px]
+              ${noti.isExiting ? 'animate-toast-out' : 'animate-toast-in'}
+            `}
+          >
+            <div className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.type === 'error' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
+              {noti.type === 'error' ? <FiAlertCircle className="text-red-500 text-[18px]" /> : <FiZap className="text-amber-500 text-[18px]" />}
+            </div>
+            <div className="text-[13px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">{noti.message}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
