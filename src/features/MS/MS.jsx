@@ -2,9 +2,20 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Pet from '../pets/pet';
 
-// //* [Modified Code] 하단 6개 메뉴에 대응하는 모달 UI 컴포넌트 Import
 import ActionModal from './ActionModal';
 import { SUBWAY_STATION_COORDS } from './subwayCoords';
+import { SUBWAY_PATHS } from './subwayPaths';
+import SubwayIcon from './components/SubwayIcon';
+import { SUBWAY_LINE_MAP } from './subwayLineMap';
+
+// //* [Mentor's Tip] 두 좌표(위경도) 사이의 각도(Bearing)를 계산하는 수학 함수입니다.
+// 0도는 북쪽, 90도는 동쪽, 180도는 남쪽, 270도는 서쪽을 가리킵니다.
+const calculateBearing = (startLat, startLng, endLat, endLng) => {
+  const dy = endLat - startLat;
+  const dx = endLng - startLng;
+  const angle = Math.atan2(dx, dy) * (180 / Math.PI);
+  return angle;
+};
 
 // //* [Mentor's Tip] 지하철 호선별 고유 브랜드 색상 정의 (UI 직관성 향상)
 export const SUBWAY_LINE_COLORS = {
@@ -19,6 +30,11 @@ export const SUBWAY_LINE_COLORS = {
   '9호선': '#BDB092',
   신분당선: '#D4003B',
   수인분당선: '#F5A200',
+  경의중앙선: '#77C4A3',
+  경춘선: '#0C8E72',
+  서해선: '#81A914',
+  우이신설선: '#B7C452',
+  공항철도: '#0090D2',
 };
 
 // //* [Modified Code] 카카오맵 연동 컴포넌트 및 로더 훅(Hook) 추가
@@ -41,15 +57,14 @@ const ACTION_MENUS = [
 ];
 
 const MS = () => {
-  // //! [Original Code] 임시 헤더와 하단 박스 구조
-  // <div className="relative w-full h-screen bg-gray-500">
-  // ...
-
   // //* [Modified Code] Pet 이름, 레벨/경험치 UI 및 모달 팝업 상태 추가
   const [petName, setPetName] = useState('Pet');
   const [level, setLevel] = useState(1);
   const [expPercent, setExpPercent] = useState(0); // 0 ~ 100 사이의 백분율
   const [activeModal, setActiveModal] = useState(null);
+
+  // //* [Added Code] 지하철 API 에러 상태 및 디버깅용 상태
+  const [subwayError, setSubwayError] = useState(null);
 
   // 펫 데이터 Fetch 및 초기화
   useEffect(() => {
@@ -93,6 +108,33 @@ const MS = () => {
 
   // 맵의 줌 레벨 관리를 위한 상태
   const [mapLevel, setMapLevel] = useState(3);
+
+  // //* [Modified Code] 지도의 영역(Bounds) 좌표 상태 관리 및 Ref 연동 (클로저 이슈 해결)
+  const [mapBounds, setMapBounds] = useState(null);
+  const mapBoundsRef = React.useRef(null);
+
+  // //* [Modified Code] 지도의 영역이 변경될 때마다 현재 좌측 하단(SW)과 우측 상단(NE) 좌표를 업데이트
+  const handleBoundsChange = (map) => {
+    const bounds = map.getBounds();
+    const newBounds = {
+      sw: {
+        lat: bounds.getSouthWest().getLat(),
+        lng: bounds.getSouthWest().getLng(),
+      },
+      ne: {
+        lat: bounds.getNorthEast().getLat(),
+        lng: bounds.getNorthEast().getLng(),
+      },
+    };
+    setMapBounds(newBounds);
+    setMapLevel(map.getLevel());
+
+    // //* [Modified Code] Ref에 좌표 Bounds와 현재 Level을 함께 저장하여 비동기 상황(Interval)에서도 최신 상태 참조
+    mapBoundsRef.current = {
+      bounds: newBounds,
+      level: map.getLevel(),
+    };
+  };
 
   // 내 위치 받아와서 펫을 내 위치로 이동시키기
   useEffect(() => {
@@ -204,96 +246,315 @@ const MS = () => {
     '9호선',
     '신분당선',
     '수인분당선',
+    '경의중앙선',
+    '경춘선',
+    '서해선',
+    '우이신설선',
+    '공항철도',
+    '김포골드라인',
   ];
 
-  useEffect(() => {
-    let intervalId;
-    const fetchSubwayPositions = async () => {
-      try {
-        const subwayApiKey = import.meta.env.VITE_SUBWAY_API_KEY;
-        if (!subwayApiKey) return;
+  // //* [Modified Code] API 호출 로직을 함수로 분리하여 useEffect 내외에서 공유
+  const fetchSubwayPositions = async (
+    currentBounds = null,
+    currentLevel = null,
+  ) => {
+    try {
+      const subwayApiKey = import.meta.env.VITE_SUBWAY_API_KEY;
+      if (!subwayApiKey) return;
 
-        // 병렬 통신(다중 비동기 실행)을 통해 여러 지하철 노선을 동시에 가져옴
-        const promises = SEOUL_SUBWAY_LINES.map(async (lineName) => {
-          try {
-            // //* [Modified Code] 프록시 우회 주소(/api/subway)를 적용하여 CORS 에러 원천 차단
-            const url = `/api/subway/api/subway/${subwayApiKey}/json/realtimePosition/0/20/${encodeURIComponent(lineName)}`;
-            const res = await axios.get(url);
-
-            if (res.data?.realtimePositionList) {
-              const items = Array.isArray(res.data.realtimePositionList)
-                ? res.data.realtimePositionList
-                : [];
-
-              return items.map((item, index) => {
-                // 1. 역 이름(statnNm)에서 괄호(부역명) 제거 및 '지선' 접미사 파싱
-                // 예: "아차산(어린이대공원후문)" -> "아차산", "신도림지선" -> "신도림"
-                const rawStationName = item.statnNm.trim();
-                let stationName = rawStationName.split('(')[0].trim();
-                if (stationName.endsWith('지선')) {
-                  stationName = stationName.replace('지선', '');
-                }
-
-                // 2. 매핑 테이블에 역 이름이 있으면 그 좌표를 쓰고, 없으면 기존처럼 중심점에서 분산 배치
-                let baseLat = 37.566229;
-                let baseLng = 126.981498;
-                let isMapped = false;
-
-                if (SUBWAY_STATION_COORDS[stationName]) {
-                  baseLat = SUBWAY_STATION_COORDS[stationName].lat;
-                  baseLng = SUBWAY_STATION_COORDS[stationName].lng;
-                  isMapped = true;
-                }
-
-                // 매핑된 정확한 역 좌표 주변에 살짝씩 겹치지 않게 분산 (0.001 단위 = 수십미터 내외)
-                const tempLat =
-                  baseLat + (Math.random() - 0.5) * (isMapped ? 0.001 : 0.02);
-                const tempLng =
-                  baseLng + (Math.random() - 0.5) * (isMapped ? 0.001 : 0.02);
-
-                // 3. 열차의 현재 방향 (0: 상행/내선, 1: 하행/외선)을 화살표로 매핑
-                const dirArrow =
-                  item.updnLine === '0'
-                    ? '↑'
-                    : item.updnLine === '1'
-                      ? '↓'
-                      : '';
-
-                return {
-                  id: `${item.trainNo}_${index}`,
-                  lat: tempLat,
-                  lng: tempLng,
-                  line: lineName, // 호선 정보를 고유 색상 매핑을 위해 저장
-                  updnLine: item.updnLine,
-                  trainName: `${dirArrow} [${lineName}] ${rawStationName} ${item.trainSttus === '0' ? '진입' : item.trainSttus === '1' ? '도착' : '출발'}`,
-                };
-              });
-            }
-            return [];
-          } catch (lineErr) {
-            console.warn(
-              `[DEBUG] Subway Line ${lineName} Timeout or Error:`,
-              lineErr.message,
-            );
-            return []; // 에러 시 빈 배열을 넘겨 다른 노선의 렌더링은 유지시킵니다.
-          }
-        });
-
-        const results = await Promise.all(promises);
-        const allSubways = results.flat();
-
-        console.log('[DEBUG] Subway API Fetch Result (Multi):', allSubways);
-        setSubways(allSubways);
-      } catch (err) {
-        console.error('Failed to fetch subway positions in MS:', err);
+      // //* [Added Code] API 호출 횟수 최적화 1: 줌 레벨 제한
+      // 카카오맵 줌 레벨 1(20m) ~ 4(100m) 일 때만 렌더링하도록 강제 필터링 완화 (기존 3(50m) -> 4(100m))
+      if (currentLevel !== null && currentLevel > 4) {
+        setSubways([]);
+        return;
       }
-    };
 
-    fetchSubwayPositions();
-    intervalId = setInterval(fetchSubwayPositions, 30000);
+      // //* [Added Code] API 호출 횟수 최적화 2: 화면 바운드 필터링
+      // 화면 주변 5km 이내에 지하철역이 단 하나도 없다면 API를 호출하지 않음 (예: 바다, 산간지방 등)
+      if (currentBounds) {
+        const allStationCoords = Object.values(SUBWAY_STATION_COORDS).flatMap(
+          (stations) => Object.values(stations),
+        );
+        const PRE_PAD = 0.05; // 폭 약 5km. 역 사이 간격이 멀어도 필터링되지 않도록 패딩을 대폭 확대
+        const visibleStations = allStationCoords.filter(
+          (coord) =>
+            coord.lat >= currentBounds.sw.lat - PRE_PAD &&
+            coord.lat <= currentBounds.ne.lat + PRE_PAD &&
+            coord.lng >= currentBounds.sw.lng - PRE_PAD &&
+            coord.lng <= currentBounds.ne.lng + PRE_PAD,
+        );
 
+        if (visibleStations.length === 0) {
+          setSubways([]);
+          return;
+        }
+      }
+
+      // 병렬 통신(다중 비동기 실행)
+      const promises = SEOUL_SUBWAY_LINES.map(async (lineName) => {
+        try {
+          // //* [Modified Code] 한 번에 가져오는 열차의 수를 20에서 200으로 대폭 상승
+          // 2호선처럼 운행 열차가 많은 노선의 경우, 20대만 가져오면 화면 밖 열차만 가져와서 화면 안 열차가 누락되는 버그 해결
+          const url = `/api/subway/api/subway/${subwayApiKey}/json/realtimePosition/0/200/${encodeURIComponent(lineName)}`;
+          const res = await axios.get(url);
+
+          // //* [Added Code] 서울시 API 특이사항: HTTP 200이면서 본문에 에러(한도초과 등)를 담아 보내는 경우 체크
+          const errorData = res.data?.RESULT || res.data?.errorMessage;
+          const errorCode = errorData?.CODE || errorData?.code;
+
+          if (errorCode && errorCode !== 'INFO-000') {
+            const errorMsg =
+              errorData.MESSAGE || errorData.message || '알 수 없는 API 에러';
+            console.error(`[Subway API Error] ${lineName}: ${errorMsg}`);
+            setSubwayError(`지하철 API (${lineName}): ${errorMsg}`);
+            return [];
+          }
+
+          if (res.data?.realtimePositionList) {
+            const items = Array.isArray(res.data.realtimePositionList)
+              ? res.data.realtimePositionList
+              : [];
+
+            return items.map((item, index) => {
+              const rawStationName = item.statnNm.trim();
+              let stationName = rawStationName.split('(')[0].trim();
+              stationName = stationName
+                .replace('종착', '')
+                .replace('출발', '')
+                .replace('지선', '')
+                .trim();
+
+              let baseLat = 37.566229;
+              let baseLng = 126.981498;
+              let isMapped = false;
+
+              // //* [Modified Code] 호선명을 포함한 계층형 구조 참조 (플랫폼별 미세 오차 반영)
+              let stationCoords =
+                SUBWAY_STATION_COORDS[lineName]?.[stationName] ||
+                SUBWAY_STATION_COORDS[lineName]?.[stationName + '역'];
+
+              // //* [Added Code] API에서 띄어쓰기가 들어오거나 축약될 경우를 대비한 방어 로직
+              if (!stationCoords) {
+                const noSpaceName = stationName.replace(/\s+/g, '');
+                stationCoords =
+                  SUBWAY_STATION_COORDS[lineName]?.[noSpaceName] ||
+                  SUBWAY_STATION_COORDS[lineName]?.[noSpaceName + '역'];
+              }
+
+              // 특수 케이스: 4.19 민주묘지 (API 응답 문자열 변동성 대응)
+              if (!stationCoords && stationName.includes('4.19')) {
+                stationCoords =
+                  SUBWAY_STATION_COORDS['우이신설선']?.['4.19민주묘지'];
+                stationName = '4.19민주묘지'; // 다음 역 계산을 위해 라인맵과 동일하게 이름 정규화
+              }
+
+              if (stationCoords) {
+                baseLat = stationCoords.lat;
+                baseLng = stationCoords.lng;
+                isMapped = true;
+              }
+
+              // //* [Modified Code] Catmull-Rom 곡선 점 데이터를 활용하기 위해 let으로 변경
+              let tempLat = baseLat;
+              let tempLng = baseLng;
+              let angle = 0;
+
+              const dirArrow =
+                item.updnLine === '0' ? '↑' : item.updnLine === '1' ? '↓' : '';
+
+              // //* [Modified Code] 다음 목적지 역 및 곡선 점 데이터를 찾아 진행 방향 각도(angle)와 미세 위치를 계산합니다.
+              const lineStations = SUBWAY_LINE_MAP[lineName];
+              if (lineStations && isMapped) {
+                const currentIndex = lineStations.indexOf(stationName);
+                if (currentIndex !== -1) {
+                  // 0: 상행/내선 (번호 감소 방향), 1: 하행/외선 (번호 증가 방향)
+                  // 1호선 등 일부 노선은 정의에 따라 다를 수 있으나, 기본적으로 리스트 순서를 따릅니다.
+                  let nextIndex;
+                  if (lineName === '2호선') {
+                    // 2호선은 순환선이므로 인덱스 래핑(Wrapping) 처리
+                    // 0: 내선순환(시계방향 - 인덱스 증가), 1: 외선순환(반시계방향 - 인덱스 감소)
+                    nextIndex =
+                      item.updnLine === '0'
+                        ? (currentIndex + 1) % lineStations.length
+                        : (currentIndex - 1 + lineStations.length) %
+                          lineStations.length;
+                  } else {
+                    nextIndex =
+                      item.updnLine === '0'
+                        ? currentIndex - 1
+                        : currentIndex + 1;
+                  }
+
+                  const nextStationName = lineStations[nextIndex];
+                  if (
+                    nextStationName &&
+                    (SUBWAY_STATION_COORDS[lineName]?.[nextStationName] ||
+                      SUBWAY_STATION_COORDS[lineName]?.[nextStationName + '역'])
+                  ) {
+                    const nextCoords =
+                      SUBWAY_STATION_COORDS[lineName]?.[nextStationName] ||
+                      SUBWAY_STATION_COORDS[lineName]?.[nextStationName + '역'];
+                    // === [신규 맵 매칭 & 곡선 애니메이션 로직 시작] ===
+                    // 역과 역 사이의 가상 중간점 5개 데이터 가져오기
+                    let pathPoints = null;
+                    let isReversed = false;
+
+                    let pathForward =
+                      SUBWAY_PATHS[lineName]?.[
+                        `${stationName}-${nextStationName}`
+                      ];
+                    let pathBackward =
+                      SUBWAY_PATHS[lineName]?.[
+                        `${nextStationName}-${stationName}`
+                      ];
+
+                    if (pathForward) {
+                      pathPoints = pathForward;
+                      isReversed = false;
+                    } else if (pathBackward) {
+                      pathPoints = pathBackward;
+                      isReversed = true;
+                    }
+
+                    if (pathPoints && pathPoints.length > 0) {
+                      // 상태코드에 따라 열차 위치를 중간 곡선 점 위로 밀어줍니다.
+                      const sttus = item.trainSttus;
+                      let pointIndex = -1;
+
+                      // 출발('2')이면 다음역을 향해 1~2칸 전진, 진입('0')이면 다음역 근처(4~5칸)로 전진
+                      if (sttus === '2') {
+                        pointIndex = isReversed ? pathPoints.length - 3 : 2;
+                      } else if (sttus === '0') {
+                        pointIndex = isReversed ? 1 : pathPoints.length - 2;
+                      }
+
+                      // 좌표를 실제 선로 위 곡선점으로 변경!
+                      if (pointIndex !== -1 && pathPoints[pointIndex]) {
+                        tempLat = pathPoints[pointIndex].lat;
+                        tempLng = pathPoints[pointIndex].lng;
+                      }
+
+                      // 화살표 방향(Bearing)도 건물 너머의 종착역이 아닌, '눈앞의 철로 점'을 바라보게 보정
+                      let targetLat = nextCoords.lat;
+                      let targetLng = nextCoords.lng;
+
+                      if (sttus === '2') {
+                        const targetIndex = isReversed
+                          ? pathPoints.length - 4
+                          : 3;
+                        if (pathPoints[targetIndex]) {
+                          targetLat = pathPoints[targetIndex].lat;
+                          targetLng = pathPoints[targetIndex].lng;
+                        }
+                      } else if (sttus === '1' || sttus === '0') {
+                        const targetIndex = isReversed
+                          ? 0
+                          : pathPoints.length - 1;
+                        if (pathPoints[targetIndex]) {
+                          targetLat = pathPoints[targetIndex].lat;
+                          targetLng = pathPoints[targetIndex].lng;
+                        }
+                      }
+
+                      angle = calculateBearing(
+                        tempLat,
+                        tempLng,
+                        targetLat,
+                        targetLng,
+                      );
+                    } else {
+                      // 경로 데이터가 없을 경우 기존 직선 계산 방식 폴백
+                      angle = calculateBearing(
+                        tempLat,
+                        tempLng,
+                        nextCoords.lat,
+                        nextCoords.lng,
+                      );
+                    }
+                    // === [신규 맵 매칭 & 곡선 애니메이션 로직 끝] ===
+                  }
+                }
+              }
+
+              return {
+                id: `${item.trainNo}_${index}`,
+                lat: tempLat,
+                lng: tempLng,
+                line: lineName,
+                updnLine: item.updnLine,
+                angle: angle, // 계산된 회전 각도 추가
+                trainName: `${dirArrow} [${lineName}] ${rawStationName} ${item.trainSttus === '0' ? '진입' : item.trainSttus === '1' ? '도착' : '출발'}`,
+              };
+            });
+          }
+          return [];
+        } catch (lineErr) {
+          console.warn(
+            `[DEBUG] Subway Line ${lineName} Error:`,
+            lineErr.message,
+          );
+          return [];
+        }
+      });
+
+      const results = await Promise.all(promises);
+      let allSubways = results.flat();
+
+      // 결과 필터링 (렌더링 최적화)
+      if (currentBounds) {
+        const RENDER_PAD = 0.01; // 약 1km 반경 여유 마진 (열차가 화면에 부드럽게 진입하도록)
+        allSubways = allSubways.filter(
+          (subway) =>
+            subway.lat >= currentBounds.sw.lat - RENDER_PAD &&
+            subway.lat <= currentBounds.ne.lat + RENDER_PAD &&
+            subway.lng >= currentBounds.sw.lng - RENDER_PAD &&
+            subway.lng <= currentBounds.ne.lng + RENDER_PAD,
+        );
+      }
+
+      setSubways(allSubways);
+      setSubwayError(null); // //* 성공 시 에러 상태 초기화
+    } catch (err) {
+      console.error('Failed to fetch subway positions:', err);
+      // //* [Added Code] 인증 에러(토큰 소진 등) 발생 시 사용자에게 알림
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setSubwayError(
+          '지하철 API 토큰이 만료되었거나 일일 한도를 초과했습니다. (1000회/일)',
+        );
+      } else {
+        setSubwayError('지하철 정보를 불러오는 중 서버 에러가 발생했습니다.');
+      }
+    }
+  };
+
+  useEffect(() => {
+    // 최초 실행 (영역 없이 전체 데이터, mapLevel 초기값 3 전달)
+    fetchSubwayPositions(null, 3);
+    // //* [Modified Code] 인터벌 내부에서 Ref를 사용하여 항상 최신 영역과 확대 상태를 호출
+    const intervalId = setInterval(() => {
+      // mapLevel은 React State이므로 클로저에 갇힐 수 있음.
+      // 현재 레벨값을 가져오기 위해 mapBoundsRef에 level 정보를 함께 저장하는 방식 고려
+      // 임시로 mapLevel을 인자로 전달하되, useEffect 의존성 분리 필요
+      fetchSubwayPositions(
+        mapBoundsRef.current?.bounds,
+        mapBoundsRef.current?.level,
+      );
+    }, 30000);
     return () => clearInterval(intervalId);
-  }, []);
+  }, []); // 의존성 배열을 비워 인터벌 중복 방지
+
+  // //* [Modified Code] 지도를 움직일 때마다 즉시 호출하는 대신 1.2초 Debounce 적용 (API 횟수 절약 핵심)
+  // mapBounds 여부뿐만 아니라 mapLevel도 최신 상태를 전달해야 하므로 의존성 배열에 추가 및 조건 확인
+  useEffect(() => {
+    if (!mapBounds) return;
+
+    const timer = setTimeout(() => {
+      fetchSubwayPositions(mapBounds, mapLevel);
+    }, 1200);
+
+    return () => clearTimeout(timer);
+  }, [mapBounds, mapLevel]);
 
   // 키보드 방향키 이벤트를 감지하여 펫을 이동시키는 플로우 (다중 키 지원)
   useEffect(() => {
@@ -468,6 +729,25 @@ const MS = () => {
       {/* 중앙 메타버스(Metaverse) 렌더링 영역 - 리얼 2D 카카오맵 API 연동 */}
       {/* //* [Modified Code] 지도의 중앙이 항상 펫의 위치(petPosition)를 따라다니도록 구현 */}
       <div className="absolute inset-0 w-full h-full z-0 bg-[#E8F0F4]">
+        {/* //* [Added Code] 지하철 API 에러 메시지 알림바 (토큰 소진 등 비상 알림) */}
+        {subwayError && (
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-red-500/50 shadow-lg flex items-center gap-2 animate-bounce-slow">
+            <span className="text-red-400">⚠️</span>
+            <span className="text-white text-xs font-bold tracking-tight">
+              {subwayError}
+            </span>
+            <button
+              onClick={() => {
+                fetchSubwayPositions(mapBounds);
+                setSubwayError(null);
+              }}
+              className="ml-2 bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded text-[10px] text-white"
+            >
+              재시도
+            </button>
+          </div>
+        )}
+
         {/* 에러 발생 시 안내 UI */}
         {error && (
           <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-6 text-center">
@@ -525,8 +805,8 @@ const MS = () => {
             center={petPosition} // 지도의 중심좌표를 펫 좌표로 바인딩 (화면 가운데 고정됨)
             style={{ width: '100%', height: '100%' }}
             level={mapLevel} // 지도의 확대 레벨 상태 바인딩
-            onZoomChanged={(map) => setMapLevel(map.getLevel())} // 줌인 줌아웃 시 상태 동기화
-            draggable={true} // 마우스로 지도를 강제로 움직이는 것을 금지 (오직 펫 컨트롤만 허용)
+            onBoundsChanged={handleBoundsChange} // //* [Modified Code] 영역 변경 시 좌표 및 레벨 동기화
+            draggable={true} // 마우스로 지도를 강제로 움직이는 것을 허용
             zoomable={true} // 마우스 휠을 통한 줌인/줌아웃 명시적 허용
             keyboardShortcuts={true}
           >
@@ -572,13 +852,11 @@ const MS = () => {
                       SUBWAY_LINE_COLORS[subway.line] || '#FF5252',
                   }}
                 >
-                  <span className="text-xl">
-                    {subway.updnLine === '0'
-                      ? '🔼'
-                      : subway.updnLine === '1'
-                        ? '🔽'
-                        : '🚇'}
-                  </span>
+                  <SubwayIcon
+                    direction="up" // 회전을 사용하므로 항상 전진(up) 화살표를 사용하고 각도로 조절
+                    angle={subway.angle}
+                    width={28}
+                  />
                   {/* 작은 이름표 */}
                   <div
                     className="absolute -top-6 whitespace-nowrap text-white text-[11px] font-bold px-2 py-0.5 rounded-sm opacity-95 shadow-sm"
