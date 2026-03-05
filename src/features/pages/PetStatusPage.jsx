@@ -5,6 +5,7 @@ import { FiAward, FiHeart, FiCoffee, FiMessageCircle, FiActivity } from "react-i
 const PetStatusPage = ({ petData }) => {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
+  const [activeUserCount, setActiveUserCount] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => {
