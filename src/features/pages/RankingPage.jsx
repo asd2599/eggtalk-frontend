@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../../utils/config";
 import { FiSun, FiMoon, FiZap, FiArrowRight } from "react-icons/fi";
 import CommonSide from "./CommonSide"; 
+import Pet from "../pets/pet";
 
 const RankingPage = () => {
   const navigate = useNavigate();
@@ -91,7 +92,7 @@ const RankingPage = () => {
               <div className="flex flex-col items-center animate-fade-in-up">
                 <div className="relative mb-6">
                   <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-full border border-slate-100 dark:border-slate-800 flex items-center justify-center p-2 bg-white dark:bg-slate-900/50 shadow-sm transition-transform hover:scale-105">
-                    <img src={`/images/shapes/${top3[1].color}_body_circle.png`} className="w-full h-full object-contain" alt="" />
+                    {new Pet({ color: top3[1].color }).draw("w-full h-full object-contain")}
                   </div>
                   <div className="absolute -bottom-2 -right-1 bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 text-[10px] font-black px-2.5 py-1 rounded-full border-2 border-white dark:border-[#0b0f1a]">2</div>
                 </div>
@@ -107,7 +108,7 @@ const RankingPage = () => {
                   {/* 파스텔 블루 광채 효과 */}
                   <div className="absolute inset-0 bg-sky-100 dark:bg-sky-900 rounded-full blur-3xl opacity-30 animate-pulse"></div>
                   <div className="relative w-32 h-32 lg:w-40 lg:h-40 rounded-full dark:border-slate-100 flex items-center justify-center p-4 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden">
-                    <img src={`/images/shapes/${top3[0].color}_body_circle.png`} className="w-full h-full object-contain relative z-10" alt="" />
+                    {new Pet({ color: top3[0].color }).draw("w-full h-full object-contain relative z-10")}
                   </div>
                   <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-slate-900 dark:bg-slate-100 text-sky-100 dark:text-slate-900 text-[11px] font-black px-5 py-1.5 rounded-full shadow-lg border-2 border-white dark:border-[#0b0f1a] tracking-tighter uppercase">Champion</div>
                 </div>
@@ -121,7 +122,7 @@ const RankingPage = () => {
               <div className="flex flex-col items-center animate-fade-in-up delay-150 opacity-60">
                 <div className="relative mb-6">
                   <div className="w-20 h-20 lg:w-28 lg:h-28 rounded-full border border-slate-50 dark:border-slate-900 flex items-center justify-center p-2 bg-white dark:bg-slate-900/30">
-                    <img src={`/images/shapes/${top3[2].color}_body_circle.png`} className="w-full h-full object-contain" alt="" />
+                    {new Pet({ color: top3[2].color }).draw("w-full h-full object-contain")}
                   </div>
                   <div className="absolute -bottom-2 -right-1 bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 text-[10px] font-black px-2.5 py-1 rounded-full border-2 border-white dark:border-[#0b0f1a]">3</div>
                 </div>
@@ -146,7 +147,7 @@ const RankingPage = () => {
                 <div className="flex items-center gap-6">
                   <span className="text-xs font-black text-slate-200 dark:text-slate-800 w-4 font-mono">{(index + 4).toString().padStart(2, '0')}</span>
                   <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center p-1.5 transition-all group-hover:scale-110 shadow-sm border border-slate-50 dark:border-slate-700">
-                    <img src={`/images/shapes/${pet.color}_body_circle.png`} className="w-full h-full object-contain grayscale group-hover:grayscale-0 transition-all opacity-50 group-hover:opacity-100" alt="" />
+                    {new Pet({ color: pet.color }).draw("w-full h-full object-contain grayscale group-hover:grayscale-0 transition-all opacity-50 group-hover:opacity-100")}
                   </div>
                   <span className="text-sm font-bold text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors uppercase tracking-tight">{pet.name}</span>
                 </div>
