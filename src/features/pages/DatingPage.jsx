@@ -11,9 +11,11 @@ import {
   FiUser,
   FiSmile,
   FiMessageCircle,
+  FiGift,
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import socket from "../../utils/socket";
+import GiftModal from "./components/GiftModal";
 
 // React StrictMode 더블 렌더링에 의한 강제 퇴장(언마운트) 버그 회피용 전역 타이머
 let strictModeLeaveTimer = null;
@@ -29,6 +31,9 @@ const DatingPage = () => {
   const [roomUsers, setRoomUsers] = useState([]);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
+
+  // 선물 모달(GiftModal) 상태
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
 
   const chatEndRef = useRef(null);
 
@@ -197,6 +202,69 @@ const DatingPage = () => {
     roomUsers.length > 0 ? "1:1 라이브 채팅" : "연결 대기 중...";
   const isWaiting = roomUsers.length < 2;
 
+  // 상대방 이름 추출
+  const otherPetObj = roomUsers.find((user) => user.petName !== petData?.name);
+  const otherPetName = otherPetObj ? otherPetObj.petName : null;
+
+  // 선물하기 성공 시 콜백 (알림 브로드캐스트)
+  const handleGiftSuccess = (giftName, targetName, userMessage, aiReply) => {
+    // 1. 소켓 서버로 시스템 알림 메시지 발송 & 로컬 반영
+    const systemNotice = `🎁 [선물 전달] ${petData.name}님이 ${targetName}에게 '${giftName}' 선물을(를) 주었습니다!`;
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "시스템",
+        message: systemNotice,
+        timestamp: new Date(),
+        isSystem: true,
+      },
+    ]);
+    socket.emit("send_dating_message", {
+      roomId,
+      message: systemNotice,
+      sender: "시스템",
+      isSystem: true,
+    });
+
+    // 2. 메시지가 존재할 경우 사용자 이름으로 발송 & 로컬 반영
+    if (userMessage) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          sender: petData.name,
+          message: `💌 메시지: ${userMessage}`,
+          timestamp: new Date(),
+          isMine: true,
+        },
+      ]);
+      socket.emit("send_dating_message", {
+        roomId,
+        message: `💌 메시지: ${userMessage}`,
+        sender: petData.name,
+      });
+    }
+
+    // 3. AI 대답이 존재할 경우 타겟(상대방 펫) 이름으로 1초 뒤 발송 & 로컬 반영
+    if (aiReply) {
+      setTimeout(() => {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: targetName,
+            message: aiReply,
+            timestamp: new Date(),
+            isMine: false,
+          },
+        ]);
+        socket.emit("send_dating_message", {
+          roomId,
+          message: aiReply,
+          sender: targetName,
+        });
+      }, 1000);
+    }
+  };
+
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen bg-white dark:bg-[#0b0f1a]">
@@ -231,6 +299,15 @@ const DatingPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-3 lg:gap-4">
+          <button
+            onClick={() => setIsGiftModalOpen(true)}
+            disabled={isWaiting || !otherPetName}
+            className="flex items-center gap-1.5 px-3 lg:px-4 py-2 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white rounded-2xl text-[11px] lg:text-xs font-black shadow-lg shadow-pink-500/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <FiGift className="text-sm" />
+            <span className="mb-0.5">선물하기</span>
+          </button>
+
           <button
             onClick={toggleTheme}
             className="p-2.5 rounded-2xl bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 text-gray-500 hover:bg-gray-200 transition-all"
@@ -343,6 +420,14 @@ const DatingPage = () => {
           </div>
         </div>
       </main>
+
+      {/* 모달 렌더링 영역 */}
+      <GiftModal
+        isOpen={isGiftModalOpen}
+        onClose={() => setIsGiftModalOpen(false)}
+        targetPetName={otherPetName}
+        onGiftSuccess={handleGiftSuccess}
+      />
     </div>
   );
 };
