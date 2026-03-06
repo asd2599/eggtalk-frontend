@@ -16,6 +16,8 @@ import {
 import Pet from "../pets/pet";
 import socket from "../../utils/socket";
 import GiftModal from "./components/GiftModal";
+import FriendRequestModal from "./components/FriendRequestModal";
+import { FiUserPlus } from "react-icons/fi";
 
 // React StrictMode 더블 렌더링에 의한 강제 퇴장(언마운트) 버그 회피용 전역 타이머
 let strictModeLeaveTimer = null;
@@ -34,6 +36,12 @@ const DatingPage = () => {
 
   // 선물 모달(GiftModal) 상태
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+
+  // 친구 요청 모달 상태 (수신자용)
+  const [friendRequestData, setFriendRequestData] = useState(null); // { requesterPetName, requestId }
+  const [isFriendRequestModalOpen, setIsFriendRequestModalOpen] =
+    useState(false);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
 
   const chatEndRef = useRef(null);
 
@@ -129,6 +137,17 @@ const DatingPage = () => {
       setMessages((prev) => [...prev, data]);
     });
 
+    // 상대방이 나에게 보낸 친구 요청 수신
+    socket.on("receive_friend_request", (data) => {
+      if (data.receiverPetName === petData?.name) {
+        setFriendRequestData({
+          requesterPetName: data.requesterPetName,
+          requestId: data.requestId,
+        });
+        setIsFriendRequestModalOpen(true);
+      }
+    });
+
     // 컴포넌트 마운트 시, 이전에 돌아가고 있던 퇴장 타이머(StrictMode)가 있다면 즉시 파기 (방 폭파 취소)
     if (strictModeLeaveTimer) {
       clearTimeout(strictModeLeaveTimer);
@@ -138,6 +157,7 @@ const DatingPage = () => {
     // 컴포넌트 언마운트 시 방 나가기 API 호출 및 리스너 해제
     return () => {
       socket.off("receive_dating_message");
+      socket.off("receive_friend_request");
 
       // 즉시 퇴장 API를 쏘지 않고 0.8초의 렌더링 유예를 가짐
       strictModeLeaveTimer = setTimeout(async () => {
@@ -265,6 +285,75 @@ const DatingPage = () => {
     }
   };
 
+  // ---------------------------------------------------------------- //
+  // 내 쪽에서 [친구 추가] 버튼 클릭 시 동작
+  const handleSendFriendRequest = async () => {
+    if (!otherPetName || isSendingRequest) return;
+    setIsSendingRequest(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.post(
+        "/api/friends/request",
+        { receiver_pet_name: otherPetName },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+
+      if (res.status === 201) {
+        // 성공적으로 DB에 PENDING 삽입 시, 대상자에게 실시간 알림 소켓 쏘기
+        socket.emit("send_friend_request", {
+          roomId,
+          requesterPetName: petData.name,
+          receiverPetName: otherPetName,
+          requestId: res.data.request.id,
+        });
+
+        // 내 채팅창에 시스템 알림 표시
+        const systemMsg = `💌 ${otherPetName}님에게 친구 요청을 보냈습니다.`;
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: systemMsg,
+            timestamp: new Date(),
+            isSystem: true,
+          },
+        ]);
+        alert("친구 요청을 성공적으로 보냈습니다!");
+      }
+    } catch (err) {
+      console.error("친구 요청 발송 에러:", err);
+      const errMsg = err.response?.data?.message || err.message;
+      alert(`친구 요청 실패: ${errMsg}`);
+    } finally {
+      setIsSendingRequest(false);
+    }
+  };
+
+  // 상대방이 보낸 친구 요청을 내가 수락/거절 했을 때 동작
+  const handleFriendSuccess = (targetName, isAccepted) => {
+    const actionText = isAccepted ? "수락" : "거절";
+    const systemNotice = `🎉 ${petData.name}님이 ${targetName}님의 친구 요청을 ${actionText}했습니다!`;
+
+    // 로컬과 상대방 채팅창에 브로드캐스트
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "시스템",
+        message: systemNotice,
+        timestamp: new Date(),
+        isSystem: true,
+      },
+    ]);
+    socket.emit("send_dating_message", {
+      roomId,
+      message: systemNotice,
+      sender: "시스템",
+      isSystem: true,
+    });
+  };
+  // ---------------------------------------------------------------- //
+
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen bg-white dark:bg-[#0b0f1a]">
@@ -299,6 +388,15 @@ const DatingPage = () => {
           </div>
         </div>
         <div className="flex items-center gap-3 lg:gap-4">
+          <button
+            onClick={handleSendFriendRequest}
+            disabled={isWaiting || !otherPetName || isSendingRequest}
+            className="flex items-center gap-1.5 px-3 lg:px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-2xl text-[11px] lg:text-xs font-black shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <FiUserPlus className="text-sm" />
+            <span className="mb-0.5">친구 추가</span>
+          </button>
+
           <button
             onClick={() => setIsGiftModalOpen(true)}
             disabled={isWaiting || !otherPetName}
@@ -427,6 +525,13 @@ const DatingPage = () => {
         onClose={() => setIsGiftModalOpen(false)}
         targetPetName={otherPetName}
         onGiftSuccess={handleGiftSuccess}
+      />
+      <FriendRequestModal
+        isOpen={isFriendRequestModalOpen}
+        onClose={() => setIsFriendRequestModalOpen(false)}
+        requesterPetName={friendRequestData?.requesterPetName}
+        requestId={friendRequestData?.requestId}
+        onFriendSuccess={handleFriendSuccess}
       />
     </div>
   );

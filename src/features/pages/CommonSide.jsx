@@ -1,8 +1,15 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { 
-  FiLogOut, FiBox, FiCloud, FiMonitor, FiSmile, 
-  FiAward, FiMessageCircle, FiUsers 
+import {
+  FiLogOut,
+  FiBox,
+  FiCloud,
+  FiMonitor,
+  FiSmile,
+  FiAward,
+  FiMessageCircle,
+  FiUsers,
+  FiUserCheck,
 } from "react-icons/fi";
 
 const CommonSide = ({ activeMenu }) => {
@@ -18,6 +25,7 @@ const CommonSide = ({ activeMenu }) => {
     { icon: FiAward, label: "명예의 전당", path: "/ranking" },
     { icon: FiMessageCircle, label: "대화하기", path: "/chat" },
     { icon: FiUsers, label: "라운지", path: "/lounge" },
+    { icon: FiUserCheck, label: "친구 목록", path: "/friends" },
     { icon: FiBox, label: "DD 모듈", path: "/dd" },
     { icon: FiCloud, label: "MS 모듈", path: "/ms" },
     { icon: FiMonitor, label: "SH 모듈", path: "/sh" },
@@ -41,14 +49,16 @@ const CommonSide = ({ activeMenu }) => {
               }`}
             >
               <item.icon className="text-xl lg:text-lg" />
-              <span className="text-[9px] lg:text-[13px] font-bold">{item.label}</span>
+              <span className="text-[9px] lg:text-[13px] font-bold">
+                {item.label}
+              </span>
             </button>
           ))}
         </nav>
       </div>
       <div className="hidden lg:block p-10 border-t border-slate-50 dark:border-slate-900">
-        <button 
-          onClick={handleLogout} 
+        <button
+          onClick={handleLogout}
           className="flex items-center justify-center gap-3 w-full text-[12px] font-bold text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors uppercase tracking-widest group"
         >
           <FiLogOut /> <span>Sign Out</span>
