@@ -261,8 +261,8 @@ const LoungePage = () => {
               ${noti.isExiting ? 'animate-toast-out' : 'animate-toast-in'}
             `}
           >
-            <div className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20' : 'bg-sky-50 dark:bg-sky-900/20'}`}>
-              {noti.type === 'error' ? <FiAlertCircle className="text-rose-400 text-[18px]" /> : <FiZap className="text-sky-400 text-[18px]" />}
+            <div className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.type === 'error' ? 'bg-slate-50 dark:bg-slate-900/20' : 'bg-sky-50 dark:bg-sky-900/20'}`}>
+              {noti.type === 'error' ? <FiAlertCircle className="text-slate-400 text-[18px]" /> : <FiZap className="text-sky-400 text-[18px]" />}
             </div>
             <div className="text-[13px] font-bold text-slate-700 dark:text-slate-100 tracking-tight">{noti.message}</div>
           </div>
