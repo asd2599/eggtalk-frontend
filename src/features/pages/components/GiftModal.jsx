@@ -39,6 +39,7 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
               targetPetName,
               message.trim(),
               response.data.reply,
+              selectedGift.stats, // 증감 스탯 정보를 함께 전달
             );
           }
           setMessage(""); // 텍스트 초기화
