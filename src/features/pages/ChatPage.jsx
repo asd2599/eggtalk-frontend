@@ -19,7 +19,10 @@ const ChatPage = () => {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const chatEndRef = useRef(null);
+  
+  // 스크롤을 조절할 대상 컨테이너를 가리키는 Ref
+  const scrollRef = useRef(null); 
+  
   const [analysisLoading, setAnalysisLoading] = useState(false);
 
   useEffect(() => {
@@ -52,9 +55,13 @@ const ChatPage = () => {
     fetchPetData();
   }, [navigate]);
 
+  // 메시지 목록이나 타이핑 상태가 바뀔 때마다 스크롤을 최하단으로 이동
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollTop = chatEndRef.current.scrollHeight;
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: "smooth", // 부드럽게 스크롤
+      });
     }
   }, [messages, isTyping]);
 
@@ -143,7 +150,6 @@ const ChatPage = () => {
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans overflow-hidden relative">
       
-      {/* 테마 버튼 */}
       <button
         onClick={toggleTheme}
         className="fixed top-4 right-4 lg:top-8 lg:right-8 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-200 z-[60] transition-all border border-slate-100 dark:border-slate-800 shadow-sm"
@@ -151,13 +157,10 @@ const ChatPage = () => {
         {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
 
-      {/* 공통 사이드바 사용 */}
       <CommonSide activeMenu="대화하기" />
 
-      {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 flex flex-col lg:flex-row items-stretch p-3 lg:p-8 gap-4 lg:gap-8 bg-slate-50 dark:bg-[#0b0f1a] h-full overflow-y-auto lg:overflow-hidden custom-scrollbar pb-24 lg:pb-8 transition-all relative z-10">
         
-        {/* 좌측: 스탯 영역 */}
         <div className="w-full lg:w-[380px] flex flex-col flex-shrink-0">
           <div className="flex flex-col items-center">
             <div className="w-24 h-24 lg:w-full lg:aspect-square lg:max-w-[160px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl lg:rounded-[2.5rem] shadow-sm flex items-center justify-center mb-4 relative overflow-hidden group">
@@ -214,14 +217,18 @@ const ChatPage = () => {
         {/* 우측: 채팅창 영역 */}
         <div className="flex-1 flex flex-col bg-white dark:bg-[#0b0f1a] border border-slate-100 dark:border-slate-900 rounded-[2.5rem] lg:rounded-[3rem] shadow-sm overflow-hidden relative min-h-[550px] lg:h-full transition-colors">
           <div className="px-6 lg:px-8 py-5 border-b border-slate-50 dark:border-slate-900 bg-white dark:bg-[#0b0f1a] flex justify-between items-center">
-            <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em]">Encrypted Data Stream</span>
+            <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em]">Enjoy the conversation!</span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-sky-400 uppercase tracking-tighter">Secure Link</span>
               <div className="w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse shadow-[0_0_8px_rgba(125,211,252,0.5)]"></div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-8 custom-scrollbar scroll-smooth">
+          {/* Ref를 여기에 연결하고 overflow-y-auto 속성이 있는 스크롤 컨테이너로 사용 */}
+          <div 
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-8 custom-scrollbar scroll-smooth"
+          >
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fade-in-up`}>
                 <div className={`max-w-[90%] lg:max-w-[80%] flex items-start gap-3.5 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
@@ -256,10 +263,9 @@ const ChatPage = () => {
             ))}
             {isTyping && (
               <div className="flex items-center gap-2 text-[10px] text-sky-400/50 ml-12 italic animate-pulse font-black tracking-widest uppercase">
-                <FiZap className="text-xs" /> 생각 중...
+                <FiZap className="text-xs" /> 펫이 생각 중...
               </div>
             )}
-            <div ref={chatEndRef} />
           </div>
 
           <div className="p-4 lg:p-8 bg-white dark:bg-[#0b0f1a] border-t border-slate-50 dark:border-slate-900">

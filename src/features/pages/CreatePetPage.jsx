@@ -82,17 +82,19 @@ const CreatePetPage = () => {
     <div className="flex flex-col justify-center items-center min-h-screen bg-slate-50 dark:bg-[#0b0f1a] transition-colors duration-500 font-sans p-6 relative overflow-hidden">
       
       {/* 테마 버튼 */}
-      <button onClick={toggleTheme} className="fixed top-8 right-8 p-3 rounded-2xl bg-white dark:bg-[#0b0f1a] border border-gray-100 dark:border-gray-800 text-gray-500 z-[60] shadow-sm active:scale-90 transition-all hover:scale-110">
-        {isDarkMode ? <FiSun className="text-sm text-amber-500" /> : <FiMoon className="text-sm text-indigo-500" />}
+      <button onClick={toggleTheme} 
+              className="fixed top-4 right-4 lg:top-8 lg:right-8 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-sky-200 z-[60] shadow-sm transition-all hover:scale-110"
+      >
+        {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
 
       {/* 배경 블러 효과 */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-amber-500/5 dark:bg-amber-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-500/5 dark:bg-sky-500/10 rounded-full blur-[120px] pointer-events-none"></div>
 
       <div className="w-full max-w-md bg-white dark:bg-[#0b0f1a] rounded-[3rem] p-10 lg:p-12 shadow-2xl border border-gray-100 dark:border-gray-800 z-10 transition-all">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-50 dark:bg-gray-900 rounded-2xl mb-6 border border-gray-100 dark:border-gray-800 shadow-inner">
-            <FiEdit3 className="text-gray-900 dark:text-amber-500 text-2xl" />
+            <FiEdit3 className="text-gray-900 dark:text-sky-500 text-2xl" />
           </div>
           <h1 className="text-2xl lg:text-3xl font-black text-gray-900 dark:text-white tracking-tighter italic">Create My Pet</h1>
           <p className="text-[11px] font-bold text-gray-400 mt-2 uppercase tracking-[0.2em]">나만의 펫 커스텀</p>
@@ -106,13 +108,13 @@ const CreatePetPage = () => {
             placeholder="이름을 입력하세요"
             value={petName}
             onChange={(e) => setPetName(e.target.value)}
-            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100 text-[14px] px-6 py-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-amber-500/50 transition-all font-bold"
+            className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 text-gray-900 dark:text-gray-100 text-[14px] px-6 py-4 rounded-2xl focus:outline-none focus:ring-1 focus:ring-sky-500/50 transition-all font-bold"
           />
         </div>
 
         {/* 색상 선택 */}
         <div className="space-y-4 mb-12">
-          <label className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest italic ml-1 px-1">Select Appearance</label>
+          <label className="text-[10px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-widest italic ml-1 px-1">Select Color</label>
           <div className="grid grid-cols-3 gap-4">
             {colors.map((color) => (
               <button
@@ -120,13 +122,13 @@ const CreatePetPage = () => {
                 onClick={() => setSelectedColor(color)}
                 className={`relative aspect-square flex items-center justify-center rounded-[1.8rem] transition-all duration-300 border-2 ${
                   selectedColor === color
-                    ? "border-amber-500 bg-amber-50/30 dark:bg-amber-900/10 shadow-lg scale-105"
+                    ? "border-sky-500 bg-sky-50/30 dark:bg-sky-900/10 shadow-lg scale-105"
                     : "border-gray-50 dark:border-gray-900 bg-gray-50/50 dark:bg-gray-900/30 hover:border-gray-200 dark:hover:border-gray-700"
                 }`}
               >
                 <img src={`/images/shapes/${color}_body_circle.png`} alt={color} className={`w-12 h-12 lg:w-16 lg:h-16 object-contain transition-transform duration-500 ${selectedColor === color ? "scale-110 drop-shadow-xl" : "opacity-60 grayscale-[30%]"}`} />
                 {selectedColor === color && (
-                  <div className="absolute top-2 right-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white dark:border-[#0b0f1a] shadow-sm animate-pop">
+                  <div className="absolute top-2 right-2 w-5 h-5 bg-sky-500 rounded-full flex items-center justify-center border-2 border-white dark:border-[#0b0f1a] shadow-sm animate-pop">
                     <FiCheck className="text-white text-[10px] font-bold" />
                   </div>
                 )}
@@ -136,7 +138,7 @@ const CreatePetPage = () => {
         </div>
 
         <button onClick={handleCreatePet} className="w-full py-5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-[2rem] font-black text-[13px] uppercase tracking-[0.25em] hover:scale-[1.02] active:scale-95 transition-all shadow-2xl shadow-gray-300 dark:shadow-none">
-          Complete Creation
+          생성하기
         </button>
       </div>
 
@@ -150,8 +152,9 @@ const CreatePetPage = () => {
               ${noti.isExiting ? 'animate-toast-out' : 'animate-toast-in'}
             `}
           >
-            <div className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
-              {noti.type === 'error' ? <FiAlertCircle className="text-rose-500 text-[18px]" /> : <FiZap className="text-amber-500 text-[18px]" />}
+            <div className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.type === 'error' ? 'bg-rose-50 dark:bg-rose-900/20' : 'bg-sky-50 dark:bg-sky-900/20'}`}>
+              {noti.type === 'error' ? <FiAlertCircle className="text-slate-600 dark:text-slate-400 text-[18px]" /> : 
+                              <FiZap className="text-sky-400 text-[18px]" />}
             </div>
             <div className="text-[13px] font-bold text-gray-800 dark:text-gray-100 tracking-tight">{noti.message}</div>
           </div>
