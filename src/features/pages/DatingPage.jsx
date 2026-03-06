@@ -133,6 +133,7 @@ const DatingPage = () => {
   const [isFriendRequestModalOpen, setIsFriendRequestModalOpen] =
     useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
+  const [isAutoCommentEnabled, setIsAutoCommentEnabled] = useState(true); // 자동 대화 활성화 상태
 
   const chatEndRef = useRef(null);
 
@@ -238,14 +239,19 @@ const DatingPage = () => {
       silenceTimerRef.current = null;
     }
 
-    // 대기 중이거나(상대 없음) 이미 AI가 답변을 생성 중이면 새로 예약하지 않음
-    if (roomUsers.length < 2 || isAutoCommenting.current) return;
+    // 대기 중이거나(상대 없음), 이미 AI가 답변을 생성 중이거나, 기능이 비활성화된 경우 새로 예약하지 않음
+    if (
+      roomUsers.length < 2 ||
+      isAutoCommenting.current ||
+      !isAutoCommentEnabled
+    )
+      return;
 
     // 2. 10초 뒤 실행 예약
     silenceTimerRef.current = setTimeout(() => {
       handleAutoComment();
     }, 10000);
-  }, [roomUsers.length, messages]); // messages가 바뀔 때마다 함수 갱신 (핸들러 참조용)
+  }, [roomUsers.length, messages, isAutoCommentEnabled]); // isAutoCommentEnabled 의존성 추가
 
   const handleAutoComment = async () => {
     // 1. 기본 상태 체크 및 대기 중인 상대 확인
@@ -747,6 +753,53 @@ const DatingPage = () => {
             <FiGift className="text-sm" />
             <span className="mb-0.5">선물하기</span>
           </button>
+
+          {/* 펫 자동 대화 토글 버튼 (데스크톱/모바일 공용 UI) */}
+          {!isWaiting && (
+            <div className="flex items-center gap-2 bg-gray-50/80 dark:bg-gray-800/80 px-3 py-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 transition-all hover:shadow-sm">
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${
+                  isAutoCommentEnabled
+                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-400"
+                    : "bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                }`}
+              >
+                <FiMessageCircle className="text-[10px]" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[8px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-tighter leading-none mb-0.5">
+                  AI Auto Chat
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={`text-[9px] font-bold ${
+                      isAutoCommentEnabled
+                        ? "text-emerald-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    {isAutoCommentEnabled ? "ON" : "OFF"}
+                  </span>
+                  <button
+                    onClick={() =>
+                      setIsAutoCommentEnabled(!isAutoCommentEnabled)
+                    }
+                    className={`relative w-7 h-4 rounded-full transition-colors focus:outline-none ${
+                      isAutoCommentEnabled
+                        ? "bg-emerald-500"
+                        : "bg-gray-300 dark:bg-gray-600"
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full transition-transform transform ${
+                        isAutoCommentEnabled ? "translate-x-3" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           <button
             onClick={toggleTheme}
