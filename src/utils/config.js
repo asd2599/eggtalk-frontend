@@ -3,10 +3,13 @@ import axios from "axios";
 // 사용할 서버의 주소 주석을 해제하여 사용하세요.
 
 // [로컬 테스트용 서버]
-//export const SERVER_URL = "http://localhost:8000";
+export const SERVER_URL = "http://localhost:8000";
 
 // [운영 배포용 서버] (Github 빌드 시 아래 주석 해제)
-export const SERVER_URL = "https://keepinsight.site";
+//export const SERVER_URL = "https://keepinsight.site";
+
+export const PRESENT_TABLE_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5Nrv_9pLwQVUGH7XRGT2gJ9r7vGoEaG7jBa9ws6T_CilLTsaLLGXXdf2a-HGl6WqT5WwGlwFiZnom/pub?gid=384159399&single=true&output=csv";
 
 // 공통 BaseURL이 세팅된 axios 인스턴스 싱글톤
 export const api = axios.create({
@@ -23,6 +26,31 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    return Promise.reject(error);
+  },
+);
+
+// [Response Interceptor 추가] 401(인증안됨) 또는 403(만료/권한없음) 발생 시 자동 로그아웃
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (
+      error.response &&
+      (error.response.status === 401 || error.response.status === 403)
+    ) {
+      console.warn("인증이 만료되었습니다. 다시 로그인 해주세요.");
+      localStorage.removeItem("token");
+      localStorage.removeItem("petId");
+
+      // 얼럿 창을 띄우고 확인을 누르면 로그인 페이지로 이동 (중복 방지용 체크)
+      if (!window.hasAuthAlerted) {
+        window.hasAuthAlerted = true;
+        alert("세션이 만료되었습니다. 다시 로그인 해주세요.");
+        window.location.href = "/login";
+      }
+    }
     return Promise.reject(error);
   },
 );
