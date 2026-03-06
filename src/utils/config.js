@@ -3,10 +3,14 @@ import axios from 'axios';
 // 사용할 서버의 주소 주석을 해제하여 사용하세요.
 
 // [로컬 테스트용 서버]
-// export const SERVER_URL = 'http://localhost:8000';
+
+export const SERVER_URL = 'http://localhost:8000';
 
 // [운영 배포용 서버] (Github 빌드 시 아래 주석 해제)
-export const SERVER_URL = 'https://keepinsight.site';
+//export const SERVER_URL = "https://keepinsight.site";
+
+export const PRESENT_TABLE_URL =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5Nrv_9pLwQVUGH7XRGT2gJ9r7vGoEaG7jBa9ws6T_CilLTsaLLGXXdf2a-HGl6WqT5WwGlwFiZnom/pub?gid=384159399&single=true&output=csv';
 
 // 공통 BaseURL이 세팅된 axios 인스턴스 싱글톤
 export const api = axios.create({
