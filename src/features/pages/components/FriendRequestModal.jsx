@@ -15,9 +15,12 @@ const FriendRequestModal = ({
   const handleAccept = async () => {
     setProcessing(true);
     try {
-      const response = await api.put("/api/friends/accept", {
-        request_id: requestId,
-      });
+      const token = localStorage.getItem("token");
+      const response = await api.put(
+        "/api/friends/accept",
+        { request_id: requestId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
       if (response.status === 200) {
         if (onFriendSuccess) {
@@ -40,9 +43,12 @@ const FriendRequestModal = ({
 
     setProcessing(true);
     try {
-      const response = await api.put("/api/friends/reject", {
-        request_id: requestId,
-      });
+      const token = localStorage.getItem("token");
+      const response = await api.put(
+        "/api/friends/reject",
+        { request_id: requestId },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
 
       if (response.status === 200) {
         if (onFriendSuccess) {
