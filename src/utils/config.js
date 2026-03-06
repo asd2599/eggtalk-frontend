@@ -2,11 +2,12 @@ import axios from "axios";
 
 // 사용할 서버의 주소 주석을 해제하여 사용하세요.
 
-// [로컬 테스트용 서버]
-export const SERVER_URL = "http://localhost:8000";
-
-// [운영 배포용 서버] (Github 빌드 시 아래 주석 해제)
-//export const SERVER_URL = "https://keepinsight.site";
+// [환경별 서버 URL 자동 설정]
+const isProd =
+  import.meta.env.PROD || window.location.hostname.includes("gamestack.store");
+export const SERVER_URL = isProd
+  ? "https://keepinsight.site"
+  : "http://localhost:8000";
 
 export const PRESENT_TABLE_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5Nrv_9pLwQVUGH7XRGT2gJ9r7vGoEaG7jBa9ws6T_CilLTsaLLGXXdf2a-HGl6WqT5WwGlwFiZnom/pub?gid=384159399&single=true&output=csv";
