@@ -577,6 +577,8 @@ const DatingPage = () => {
       sender: "시스템",
       isSystem: true,
     });
+    // 데이터 초기화
+    setFriendRequestData(null);
   };
   // ---------------------------------------------------------------- //
 
