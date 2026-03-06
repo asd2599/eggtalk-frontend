@@ -9,7 +9,7 @@ const LoginPage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const navigate = useNavigate();
 
-  // ✅ 토스트 상태 관리
+  // 토스트 상태 관리
   const [notifications, setNotifications] = useState([]);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ const LoginPage = () => {
   return (
     <div className="flex justify-center items-center h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-300 relative overflow-hidden font-sans">
       
-      {/* 배경 페일 블루 광채 (SignupPage와 동일한 효과) */}
+      {/* 배경 페일 블루 광채 */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-100 dark:bg-sky-900/20 rounded-full blur-[100px] pointer-events-none opacity-50"></div>
 
       {/* 테마 전환 아이콘 버튼 */}
@@ -95,7 +95,7 @@ const LoginPage = () => {
       <div className="w-full max-w-[340px] px-6 relative z-10">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-900 dark:bg-slate-100 mb-4 shadow-xl transition-colors">
-            {/* 아이콘 색상: 딥 네이비 배경에 페일 블루 포인트 */}
+            {/* 아이콘 색상 */}
             <FiLogIn className="text-sky-200 dark:text-slate-900 text-xl" />
           </div>
           <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight italic uppercase">
@@ -157,7 +157,7 @@ const LoginPage = () => {
         </div>
       </div>
 
-      {/* 하단 커스텀 토스트 알림 영역 (디자인 통합) */}
+      {/* 하단 커스텀 토스트 알림 영역 */}
       <div className="fixed bottom-10 right-6 lg:right-10 z-[100] flex flex-col gap-3 pointer-events-none">
         {notifications.map((noti) => (
           <div 

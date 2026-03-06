@@ -142,7 +142,7 @@ const CreatePetPage = () => {
         </button>
       </div>
 
-      {/* 개선된 부드러운 토스트 영역 */}
+      {/* 부드러운 토스트 영역 */}
       <div className="fixed bottom-10 right-6 lg:right-10 z-[100] flex flex-col gap-3 pointer-events-none">
         {notifications.map((noti) => (
           <div 
