@@ -1,3 +1,9 @@
+/**
+ * [generate_splines.js]
+ * 역할: subwayLineMap.js (역과 역 사이 연결 정보)와 subwayCoords.js (각 역의 절대 좌표)를 바탕으로,
+ * 두 역을 부드럽게 잇는 곡선(Spline) 경로의 중간 보간 위경도들을 수학적(Catmull-Rom)으로 계산해
+ * subwayPaths.js 캐시 파일로 자동 생성해주는 곡선 렌더링 코어 스크립트입니다.
+ */
 import fs from 'fs';
 import { SUBWAY_LINE_MAP } from './src/features/MS/subwayLineMap.js';
 import { SUBWAY_STATION_COORDS } from './src/features/MS/subwayCoords.js';
@@ -21,6 +27,20 @@ function getT(t, p0, p1) {
   const dy = p1.lat - p0.lat;
   const a = Math.pow(dx * dx + dy * dy, 0.25); // alpha = 0.5 for centripetal catmull-rom
   return t + a;
+}
+
+// //* [Modified Code] 두 벡터 사이의 각도를 계산하여 급격한 곡선(변곡점) 여부를 판별하는 기능 추가
+function getAngle(p1, p2, p3) {
+  const v1 = { lng: p2.lng - p1.lng, lat: p2.lat - p1.lat };
+  const v2 = { lng: p3.lng - p2.lng, lat: p3.lat - p2.lat };
+
+  const dot = v1.lng * v2.lng + v1.lat * v2.lat;
+  const mag1 = Math.sqrt(v1.lng * v1.lng + v1.lat * v1.lat);
+  const mag2 = Math.sqrt(v2.lng * v2.lng + v2.lat * v2.lat);
+
+  if (mag1 === 0 || mag2 === 0) return 0;
+  const cos = Math.min(1, Math.max(-1, dot / (mag1 * mag2)));
+  return Math.acos(cos) * (180 / Math.PI);
 }
 
 function centripetalCatmullRom(p0, p1, p2, p3, t) {
@@ -99,7 +119,12 @@ for (const line of Object.keys(SUBWAY_LINE_MAP)) {
     }
 
     const segmentPoints = [];
-    const numSegments = 6; // 5 intermediate points
+    // //! [Original Code] const numSegments = 6; // 5 intermediate points
+    // //* [Modified Code] 기본 8개(9분할), 변곡점(각도 15도 이상 변화) 발생 시 10개(11분할)로 확장 적용
+    const angle1 = getAngle(p0, p1, p2);
+    const angle2 = getAngle(p1, p2, p3);
+    const isCurved = angle1 > 15 || angle2 > 15;
+    const numSegments = isCurved ? 11 : 9;
 
     for (let t = 1; t < numSegments; t++) {
       const tVal = t / numSegments;
@@ -111,11 +136,12 @@ for (const line of Object.keys(SUBWAY_LINE_MAP)) {
 }
 
 const fileContent = `// 자동 생성된 지하철 노선 곡선 보간(Spline) 경로 중간점 데이터 (Centripetal Catmull-Rom 활용)
-// 각 구간마다 5개의 곡선 가짜 점(Waypoints) 들이 들어있습니다.
+// //! [Original Code] // 각 구간마다 5개의 곡선 가짜 점(Waypoints) 들이 들어있습니다.
+// //* [Modified Code] 기본 8개, 변곡점 구간은 10개의 곡선 가짜 점(Waypoints)이 포함되어 정확도가 향상되었습니다.
 export const SUBWAY_PATHS = ${JSON.stringify(paths, null, 2)};
 `;
 
 fs.writeFileSync('./src/features/MS/subwayPaths.js', fileContent);
 console.log(
-  'Successfully generated subwayPaths.js with 5 intermediate points per segment.',
+  'Successfully generated subwayPaths.js with 8 or 10 intermediate points per segment based on inflection points.',
 );
