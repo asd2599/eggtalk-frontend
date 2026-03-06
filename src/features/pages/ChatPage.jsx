@@ -20,7 +20,6 @@ const ChatPage = () => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   
-  // 스크롤을 조절할 대상 컨테이너를 가리키는 Ref
   const scrollRef = useRef(null); 
   
   const [analysisLoading, setAnalysisLoading] = useState(false);
@@ -55,12 +54,11 @@ const ChatPage = () => {
     fetchPetData();
   }, [navigate]);
 
-  // 메시지 목록이나 타이핑 상태가 바뀔 때마다 스크롤을 최하단으로 이동
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
         top: scrollRef.current.scrollHeight,
-        behavior: "smooth", // 부드럽게 스크롤
+        behavior: "smooth",
       });
     }
   }, [messages, isTyping]);
@@ -163,10 +161,9 @@ const ChatPage = () => {
         
         <div className="w-full lg:w-[380px] flex flex-col flex-shrink-0">
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 lg:w-full lg:aspect-square lg:max-w-[160px] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl lg:rounded-[2.5rem] shadow-sm flex items-center justify-center mb-4 relative overflow-hidden group">
-              {petData && (
-                <img src={petData.getImagePath()} className="w-16 h-16 lg:w-28 lg:h-28 object-contain relative z-10 transition-transform duration-500 group-hover:scale-110 drop-shadow-xl" alt="" />
-              )}
+            
+            <div className="w-32 h-32 lg:w-40 lg:h-40 flex-shrink-0 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] lg:rounded-[2.5rem] shadow-sm flex items-center justify-center mb-6 relative overflow-hidden group">
+              {petData && petData.draw("w-20 h-20 lg:w-28 lg:h-28 object-contain relative z-10 transition-transform duration-500 group-hover:scale-110 drop-shadow-xl")}
             </div>
 
             <div className="text-center mb-4">
@@ -214,7 +211,6 @@ const ChatPage = () => {
           </button>
         </div>
 
-        {/* 우측: 채팅창 영역 */}
         <div className="flex-1 flex flex-col bg-white dark:bg-[#0b0f1a] border border-slate-100 dark:border-slate-900 rounded-[2.5rem] lg:rounded-[3rem] shadow-sm overflow-hidden relative min-h-[550px] lg:h-full transition-colors">
           <div className="px-6 lg:px-8 py-5 border-b border-slate-50 dark:border-slate-900 bg-white dark:bg-[#0b0f1a] flex justify-between items-center">
             <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em]">Enjoy the conversation!</span>
@@ -224,19 +220,24 @@ const ChatPage = () => {
             </div>
           </div>
 
-          {/* Ref를 여기에 연결하고 overflow-y-auto 속성이 있는 스크롤 컨테이너로 사용 */}
           <div 
             ref={scrollRef}
             className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-8 custom-scrollbar scroll-smooth"
           >
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fade-in-up`}>
-                <div className={`max-w-[90%] lg:max-w-[80%] flex items-start gap-3.5 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                  <div className={`w-9 h-9 rounded-2xl flex items-center justify-center flex-shrink-0 border ${msg.sender === "user" ? "bg-slate-900 border-slate-800 shadow-md" : "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800"}`}>
-                    {msg.sender === "user" ? <FiUser className="text-white text-sm" /> : <FiSmile className="text-sky-400 text-sm" />}
+                <div className={`max-w-[90%] lg:max-w-[80%] flex items-start gap-3 lg:gap-4 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                  {/* 프로필 프레임 사이즈 최적화 */}
+                  <div className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0 border overflow-hidden transition-all duration-300 shadow-md ${msg.sender === "user" ? "rounded-xl bg-slate-900 border-slate-800" : "rounded-full bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800"}`}>
+                    {msg.sender === "user" ? (
+                      <FiUser className="text-white text-sm" />
+                    ) : (
+                      petData?.draw("w-full h-full object-contain scale-[1.1] translate-y-0") || <FiSmile className="text-sky-400 text-sm" />
+                    )}
                   </div>
-                  <div className="flex flex-col gap-2.5 min-w-0">
-                    <div className={`p-4 lg:p-5 rounded-[1.6rem] text-[12px] lg:text-[13px] font-medium leading-relaxed shadow-sm transition-all duration-300
+                  <div className="flex flex-col gap-1.5 min-w-0">
+                    {/* ✅ [수정] DatingPage와 동일한 패딩(px-4 py-2.5) 및 곡률(rounded-1.2rem) 적용 */}
+                    <div className={`px-4 py-2.5 lg:px-5 lg:py-3 rounded-[1.2rem] lg:rounded-[1.4rem] text-[13px] lg:text-[14px] font-medium leading-snug shadow-sm transition-all duration-300
                       ${msg.sender === "user" 
                         ? "bg-slate-900 text-white rounded-tr-none" 
                         : msg.isSystem 
