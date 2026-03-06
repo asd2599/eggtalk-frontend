@@ -243,8 +243,8 @@ const LoungePage = () => {
                 />
               </div>
               <div className="flex gap-4">
-                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-4 bg-slate-50 dark:bg-slate-900 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:text-slate-900 dark:hover:text-white">CANCEL</button>
-                <button type="submit" disabled={!newRoomName.trim()} className="flex-1 py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl">CREATE</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-4 bg-slate-50 dark:bg-slate-900 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:text-slate-900 dark:hover:text-white">취소</button>
+                <button type="submit" disabled={!newRoomName.trim()} className="flex-1 py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all shadow-xl">방 만들기</button>
               </div>
             </form>
           </div>
