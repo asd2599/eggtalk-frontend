@@ -39,14 +39,14 @@ const CommonSide = ({ activeMenu }) => {
       </h2>
 
       <nav className="flex-1 flex lg:flex-col items-center lg:items-center lg:p-10 overflow-hidden">
-        {/* ✅ [수정] lg:justify-center를 추가하여 데스크톱에서도 메뉴 뭉치를 중앙으로 배치 */}
-        <div className="flex-1 flex lg:flex-col items-center lg:items-center justify-center lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
+        {/* ✅ [긴급수정] justify-start를 기본으로 하되, min-w-full을 주어 '내 펫'이 밀리지 않게 고정 */}
+        <div className="flex-1 flex lg:flex-col items-center justify-start lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
           
           {menuItems.map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col lg:flex-row items-center justify-center lg:justify-center gap-1 lg:gap-4 px-4 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[60px] lg:h-auto min-w-[75px] lg:min-w-0 lg:w-full flex-shrink-0 lg:flex-shrink ${
+              className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-4 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[60px] lg:h-auto min-w-[75px] lg:min-w-0 lg:w-full flex-shrink-0 ${
                 activeMenu === item.label
                   ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg font-bold"
                   : "text-slate-400 hover:text-slate-900 dark:hover:text-sky-400"
@@ -57,6 +57,7 @@ const CommonSide = ({ activeMenu }) => {
             </button>
           ))}
 
+          {/* [모바일 전용] 로그아웃 버튼 */}
           <button
             onClick={handleLogout}
             className="flex lg:hidden flex-col items-center justify-center gap-1 px-4 py-2 rounded-2xl transition-all h-[60px] min-w-[75px] flex-shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
@@ -67,7 +68,6 @@ const CommonSide = ({ activeMenu }) => {
         </div>
       </nav>
 
-      {/* ✅ [수정] justify-center를 추가하여 Sign Out 버튼도 가로 중앙 정렬 */}
       <div className="hidden lg:flex p-10 border-t border-slate-50 dark:border-slate-800 justify-center">
         <button
           onClick={handleLogout}
