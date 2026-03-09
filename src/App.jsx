@@ -12,6 +12,8 @@ import FriendPage from "./features/pages/FriendPage"; // 신규 친구 전용 �
 import DD from "./features/DD/DD";
 import MS from "./features/MS/MS";
 import SH from "./features/SH/SH";
+import BreedingPage from "./features/pages/BreedingPage";
+import ChildRoomPage from "./features/pages/ChildRoomPage";
 import { GiftProvider } from "./contexts/GiftContext";
 
 function App() {
@@ -33,6 +35,8 @@ function App() {
           <Route path="/dd" element={<DD />} />
           <Route path="/ms" element={<MS />} />
           <Route path="/sh" element={<SH />} />
+          <Route path="/breeding" element={<BreedingPage />} />
+          <Route path="/child-room" element={<ChildRoomPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

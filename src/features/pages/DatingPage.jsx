@@ -12,11 +12,13 @@ import {
   FiMessageCircle,
   FiGift,
   FiUserPlus,
+  FiHeart,
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import socket from "../../utils/socket";
 import GiftModal from "./components/GiftModal";
 import FriendRequestModal from "./components/FriendRequestModal";
+import BreedingRequestModal from "./components/BreedingRequestModal";
 
 let strictModeLeaveTimer = null;
 
@@ -125,45 +127,88 @@ const DatingPage = () => {
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [isAutoCommentEnabled, setIsAutoCommentEnabled] = useState(true);
 
+  // 교배 관련 상태
+  const [isBreedingRequestModalOpen, setIsBreedingRequestModalOpen] =
+    useState(false);
+  const [isSendingBreedingRequest, setIsSendingBreedingRequest] =
+    useState(false);
+  const [breedingData, setBreedingData] = useState({
+    requesterPetName: "",
+    receiverPetName: "",
+    isSender: false,
+  });
+
   const chatEndRef = useRef(null);
+  const roomUsersRef = useRef([]);
 
   useEffect(() => {
-    let intervalId;
-    let hasAlerted = false;
+    roomUsersRef.current = roomUsers;
+  }, [roomUsers]);
 
-    const fetchRoomInfo = async () => {
-      if (hasAlerted) return;
+  useEffect(() => {
+    if (!petData?.name || !roomId) return;
+
+    // 1️⃣ 초기 방 정보 동기화 (One-time fetch)
+    const fetchInitialRoomInfo = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) return;
         const res = await api.get(`/api/rooms/${roomId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data.success) {
-          const usersWithPetInstances = res.data.room.users.map((u) => ({
+          console.log(
+            "[DatingPage] Initial room info fetched:",
+            res.data.room.users,
+          );
+          const usersWithInstances = res.data.room.users.map((u) => ({
             ...u,
             petInstance: u.petData ? new Pet(u.petData) : null,
           }));
-          setRoomUsers(usersWithPetInstances);
+          setRoomUsers(usersWithInstances);
+          roomUsersRef.current = usersWithInstances;
         }
       } catch (err) {
-        if (!hasAlerted) {
-          hasAlerted = true;
-          if (intervalId) clearInterval(intervalId);
-          navigate("/lounge");
-        }
+        console.error("[DatingPage] Failed to fetch initial room info:", err);
       }
     };
 
-    if (petData && roomId) {
-      fetchRoomInfo();
-      intervalId = setInterval(fetchRoomInfo, 1000);
-      socket.emit("join_dating_room", { roomId, petName: petData.name });
-    }
-    return () => {
-      if (intervalId) clearInterval(intervalId);
+    fetchInitialRoomInfo();
+
+    // 2️⃣ 소켓 연결 및 상태 업데이트 리스너
+    const joinRoom = () => {
+      console.log("[DatingPage] Emitting join_dating_room:", {
+        roomId,
+        petName: petData.name,
+      });
+      socket.emit(
+        "join_dating_room",
+        { roomId, petName: petData.name },
+        (res) => {
+          console.log("[DatingPage] join_dating_room response:", res);
+        },
+      );
     };
-  }, [petData, roomId, navigate]);
+
+    if (socket.connected) {
+      joinRoom();
+    }
+
+    socket.on("connect", joinRoom);
+    socket.on("room_status", (users) => {
+      console.log("[DatingPage] Socket: room_status received:", users);
+      const updatedUsers = users.map((u) => ({
+        ...u,
+        petInstance: u.petData ? new Pet(u.petData) : null,
+      }));
+      setRoomUsers(updatedUsers);
+      roomUsersRef.current = updatedUsers;
+    });
+
+    return () => {
+      socket.off("connect", joinRoom);
+      socket.off("room_status");
+    };
+  }, [petData, roomId]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
@@ -270,16 +315,94 @@ const DatingPage = () => {
   }, [messages, inputValue, roomUsers.length, resetSilenceTimer]);
 
   useEffect(() => {
+    if (!petData?.name) {
+      console.warn(
+        "[DatingPage] petData.name is missing, socket listeners may not work correctly.",
+      );
+      return;
+    }
+    console.log("[DatingPage] Setting up socket listeners for:", petData.name);
+
     socket.on("receive_dating_message", (data) => {
       setMessages((prev) => [...prev, data]);
     });
     socket.on("receive_friend_request", (data) => {
-      if (data.receiverPetName === petData?.name) {
+      const myNameLower = petData.name.toLowerCase().trim();
+      const receiverLower = data.receiverPetName?.toLowerCase().trim();
+      console.log("[DatingPage] Friend request received:", {
+        myNameLower,
+        receiverLower,
+      });
+
+      if (receiverLower === myNameLower) {
         setFriendRequestData({
           requesterPetName: data.requesterPetName,
           requestId: data.requestId,
         });
         setIsFriendRequestModalOpen(true);
+      }
+    });
+
+    socket.on("receive_breeding_request", (data) => {
+      const myNameLower = petData.name.toLowerCase().trim();
+      const receiverLower = data.receiverPetName?.toLowerCase().trim();
+      console.log("[DatingPage] Breeding request received:", {
+        myNameLower,
+        receiverLower,
+      });
+
+      if (receiverLower === myNameLower) {
+        setBreedingData({
+          requesterPetName: data.requesterPetName,
+          receiverPetName: data.receiverPetName,
+          isSender: false,
+        });
+        setIsBreedingRequestModalOpen(true);
+      }
+    });
+
+    socket.on("breeding_accepted", (data) => {
+      const myNameLower = petData.name.toLowerCase().trim();
+      const reqNorm = data.requesterPetName?.toLowerCase().trim();
+      const resNorm = data.receiverPetName?.toLowerCase().trim();
+      console.log("[DatingPage] Breeding accepted received:", {
+        myNameLower,
+        reqNorm,
+        resNorm,
+      });
+
+      if (reqNorm === myNameLower || resNorm === myNameLower) {
+        setIsBreedingRequestModalOpen(false);
+        const currentUsers = roomUsersRef.current;
+
+        const requesterPetInfo = currentUsers.find(
+          (u) => u.petName?.toLowerCase().trim() === reqNorm,
+        )?.petData;
+        const receiverPetInfo = currentUsers.find(
+          (u) => u.petName?.toLowerCase().trim() === resNorm,
+        )?.petData;
+
+        navigate("/breeding", {
+          state: {
+            breedingData: { ...data, requesterPetInfo, receiverPetInfo },
+          },
+        });
+      }
+    });
+
+    socket.on("breeding_rejected", (data) => {
+      if (data.requesterPetName === petData?.name) {
+        setIsBreedingRequestModalOpen(false);
+        setIsSendingBreedingRequest(false);
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: `💔 ${data.receiverPetName}님이 교배 요청을 거절하셨습니다.`,
+            timestamp: new Date(),
+            isSystem: true,
+          },
+        ]);
       }
     });
     if (strictModeLeaveTimer) {
@@ -289,6 +412,9 @@ const DatingPage = () => {
     return () => {
       socket.off("receive_dating_message");
       socket.off("receive_friend_request");
+      socket.off("receive_breeding_request");
+      socket.off("breeding_accepted");
+      socket.off("breeding_rejected");
       strictModeLeaveTimer = setTimeout(async () => {
         if (!petData) return;
         socket.emit("leave_dating_room", { roomId, petName: petData.name });
@@ -342,7 +468,12 @@ const DatingPage = () => {
   const currentRoomName =
     roomUsers.length > 0 ? "1:1 라이브 채팅" : "연결 대기 중...";
   const isWaiting = roomUsers.length < 2;
-  const otherPetObj = roomUsers.find((user) => user.petName !== petData?.name);
+
+  // 상대방 펫 객체 찾기 (대소문자/공백 무관하게 본인 제외)
+  const myName = petData?.name?.toLowerCase().trim();
+  const otherPetObj = roomUsers.find(
+    (user) => user.petName?.toLowerCase().trim() !== myName,
+  );
   const otherPetName = otherPetObj ? otherPetObj.petName : null;
   const otherPetInstance = otherPetObj ? otherPetObj.petInstance : null;
 
@@ -353,6 +484,12 @@ const DatingPage = () => {
     aiReply,
     stats,
   ) => {
+    console.log("[DatingPage] Gift success event:", {
+      giftName,
+      targetName,
+      userMessage,
+      aiReply,
+    });
     if (userMessage) {
       const userMsgObj = {
         sender: petData.name,
@@ -371,7 +508,7 @@ const DatingPage = () => {
       });
     }
     const statNameMap = {
-      healthHp: "체력",
+      health_hp: "체력",
       hunger: "포만감",
       cleanliness: "청결도",
       stress: "스트레스",
@@ -433,6 +570,7 @@ const DatingPage = () => {
   const handleSendFriendRequest = async () => {
     if (!otherPetName || isSendingRequest) return;
     setIsSendingRequest(true);
+    console.log("[DatingPage] Sending friend request to:", otherPetName);
     try {
       const token = localStorage.getItem("token");
       const res = await api.post(
@@ -440,6 +578,7 @@ const DatingPage = () => {
         { receiver_pet_name: otherPetName },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+      console.log("[DatingPage] Friend request API response:", res.data);
       if (res.status === 201) {
         socket.emit("send_friend_request", {
           roomId,
@@ -457,12 +596,33 @@ const DatingPage = () => {
             isSystem: true,
           },
         ]);
+        alert(`${otherPetName}님에게 친구 요청을 보냈습니다! 💌`);
       }
     } catch (err) {
-      console.error(err);
+      console.error("[DatingPage] Friend request error:", err);
+      const errMsg = err.response?.data?.message || "친구 요청에 실패했습니다.";
+      alert(errMsg);
     } finally {
       setIsSendingRequest(false);
     }
+  };
+
+  const handleSendBreedingRequest = () => {
+    if (!otherPetName || isSendingBreedingRequest) return;
+    setIsSendingBreedingRequest(true);
+
+    socket.emit("send_breeding_request", {
+      roomId,
+      requesterPetName: petData.name,
+      receiverPetName: otherPetName,
+    });
+
+    setBreedingData({
+      requesterPetName: petData.name,
+      receiverPetName: otherPetName,
+      isSender: true,
+    });
+    setIsBreedingRequestModalOpen(true);
   };
 
   const handleFriendSuccess = (targetName, isAccepted) => {
@@ -640,6 +800,23 @@ const DatingPage = () => {
             <span>교감</span>
           </button>
 
+          <button
+            onClick={handleSendBreedingRequest}
+            disabled={
+              isWaiting ||
+              !otherPetName ||
+              isSendingBreedingRequest ||
+              petData?.childId ||
+              otherPetInstance?.childId ||
+              petData?.spouseId ||
+              otherPetInstance?.spouseId
+            }
+            className="flex items-center gap-2 px-4 py-2.5 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-xl text-[11px] font-black border border-rose-100 dark:border-rose-800 transition-all hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white shadow-xl disabled:opacity-30 disabled:pointer-events-none uppercase tracking-[0.2em] italic"
+          >
+            <FiHeart className="text-sm" />
+            <span>교배</span>
+          </button>
+
           {!isWaiting && (
             <div className="hidden lg:flex items-center gap-3 bg-slate-50/50 dark:bg-slate-900/50 px-4 py-2 rounded-xl border border-slate-100 dark:border-slate-800 shadow-inner">
               <div
@@ -699,7 +876,9 @@ const DatingPage = () => {
             )}
 
             {messages.map((msg, idx) => {
-              const isFromMe = msg.sender === petData?.name || msg.isMine;
+              const myNameLower = petData?.name?.toLowerCase().trim();
+              const senderLower = msg.sender?.toLowerCase().trim();
+              const isFromMe = senderLower === myNameLower || msg.isMine;
               const isPetReply = msg.isPetReply;
 
               if (msg.isSystem) {
@@ -730,8 +909,12 @@ const DatingPage = () => {
                         isFromMe ? (
                           petData?.draw("w-full h-full scale-125 translate-y-1")
                         ) : (
-                          otherPetInstance?.draw(
+                          otherPetInstance?.draw?.(
                             "w-full h-full scale-125 translate-y-1",
+                          ) || (
+                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                              <FiSmile className="text-xl" />
+                            </div>
                           )
                         )
                       ) : (
@@ -816,6 +999,17 @@ const DatingPage = () => {
         requesterPetName={friendRequestData?.requesterPetName}
         requestId={friendRequestData?.requestId}
         onFriendSuccess={handleFriendSuccess}
+      />
+      <BreedingRequestModal
+        isOpen={isBreedingRequestModalOpen}
+        onClose={() => {
+          setIsBreedingRequestModalOpen(false);
+          setIsSendingBreedingRequest(false);
+        }}
+        roomId={roomId}
+        requesterPetName={breedingData.requesterPetName}
+        receiverPetName={breedingData.receiverPetName}
+        isSender={breedingData.isSender}
       />
     </div>
   );
