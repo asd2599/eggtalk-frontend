@@ -158,10 +158,15 @@ const FriendPage = () => {
             <p className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-[0.3em] mt-3 italic">Manage your social network</p>
           </header>
 
-          <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800 rounded-2xl mb-8 overflow-x-auto flex-shrink-0 shadow-inner">
-            {[{ id: "friends", label: "내 친구", icon: FiUsers, count: friendsList.length }, { id: "received", label: "받은 요청", icon: FiUserPlus, count: receivedRequests.length }, { id: "sent", label: "보낸 요청", icon: FiClock, count: sentRequests.length }].map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex-1 min-w-[110px] flex justify-center items-center gap-2.5 py-3.5 px-4 rounded-xl text-[11px] lg:text-[12px] font-black tracking-widest uppercase transition-all ${activeTab === tab.id ? "bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 shadow-xl" : "text-slate-400 hover:text-slate-900 dark:hover:text-sky-300"}`}>
-                <tab.icon className="text-lg opacity-80" /> {tab.label}
+          <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800 rounded-2xl mb-8 overflow-x-auto no-scrollbar flex-shrink-0 shadow-inner">
+            {[{ id: "friends", label: "친구", icon: FiUsers, count: friendsList.length }, { id: "received", label: "받음", icon: FiUserPlus, count: receivedRequests.length }, { id: "sent", label: "보냄", icon: FiClock, count: sentRequests.length }].map((tab) => (
+              <button 
+                key={tab.id} 
+                onClick={() => setActiveTab(tab.id)} 
+                className={`flex-1 min-w-max flex justify-center items-center gap-2 py-3 px-5 rounded-xl text-[11px] lg:text-[12px] font-black tracking-widest uppercase transition-all whitespace-nowrap ${activeTab === tab.id ? "bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 shadow-xl" : "text-slate-400 hover:text-slate-900 dark:hover:text-sky-300"}`}
+              >
+                <tab.icon className="text-base opacity-80" /> 
+                <span>{tab.label}</span>
                 {tab.count > 0 && <span className={`ml-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${activeTab === tab.id ? "bg-white/20 dark:bg-slate-950/20 text-white dark:text-slate-950" : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"}`}>{tab.count}</span>}
               </button>
             ))}
@@ -232,7 +237,6 @@ const FriendPage = () => {
         </div>
       </main>
 
-      {/* 커스텀 Alert 모달 */}
       {alertConfig.isOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
           <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-[320px] rounded-[2.5rem] p-8 shadow-2xl border border-slate-100 dark:border-slate-800 text-center animate-scale-in">
@@ -249,7 +253,6 @@ const FriendPage = () => {
         </div>
       )}
 
-      {/* 토스트 알림 다크모드 동기화 */}
       <div className="fixed bottom-24 lg:bottom-10 right-6 lg:right-10 z-[110] flex flex-col gap-3 pointer-events-none">
         {notifications.map((noti) => (
           <div key={noti.id} className={`bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 pointer-events-auto transition-all ${noti.isExiting ? "animate-toast-out" : "animate-toast-in"}`}>
@@ -258,6 +261,11 @@ const FriendPage = () => {
           </div>
         ))}
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      `}} />
     </div>
   );
 };

@@ -21,7 +21,6 @@ const CommonSide = ({ activeMenu }) => {
     navigate("/");
   };
 
-  // 모든 메뉴 아이템을 하나의 배열로 관리
   const menuItems = [
     { icon: FiSmile, label: "내 펫", path: "/main" },
     { icon: FiHeart, label: "공동육아", path: "/child-room" },
@@ -42,15 +41,15 @@ const CommonSide = ({ activeMenu }) => {
       </h2>
 
       {/* 2. 메인 네비게이션 트랙 */}
-      <nav className="flex-1 flex lg:flex-col items-center lg:items-stretch lg:p-10 overflow-hidden">
-        {/* 모바일 가로 슬라이드 컨테이너 */}
-        <div className="flex-1 flex lg:flex-col items-center lg:items-stretch overflow-x-auto lg:overflow-visible no-scrollbar px-4 lg:px-0 gap-1 lg:gap-3">
+      <nav className="flex-1 flex lg:flex-col items-center lg:items-center lg:p-10 overflow-hidden">
+        {/* ✅ [긴급수정 반영] justify-start를 기본으로 하되, min-w-full을 주어 '내 펫'이 밀리지 않게 고정 */}
+        <div className="flex-1 flex lg:flex-col items-center justify-start lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
           {/* 전체 메뉴 반복 출력 */}
           {menuItems.map((item) => (
             <button
               key={item.label}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col lg:flex-row items-center justify-center lg:justify-start gap-1 lg:gap-4 px-4 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[60px] lg:h-auto min-w-[75px] lg:min-w-0 lg:w-full flex-shrink-0 lg:flex-shrink ${
+              className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-4 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[60px] lg:h-auto min-w-[75px] lg:min-w-0 lg:w-full flex-shrink-0 ${
                 activeMenu === item.label
                   ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg font-bold"
                   : "text-slate-400 hover:text-slate-900 dark:hover:text-sky-400"
@@ -76,11 +75,10 @@ const CommonSide = ({ activeMenu }) => {
         </div>
       </nav>
 
-      {/* 3. 하단 로그아웃 섹션 - PC에선 나오고 모바일에선 숨김 처리 */}
-      <div className="hidden lg:flex p-10 border-t border-slate-50 dark:border-slate-800">
+      <div className="hidden lg:flex p-10 border-t border-slate-50 dark:border-slate-800 justify-center">
         <button
           onClick={handleLogout}
-          className="flex items-center justify-start gap-4 px-5 py-3.5 w-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors group"
+          className="flex items-center justify-center gap-4 px-5 py-3.5 w-full text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors group"
         >
           <FiLogOut className="text-lg shrink-0" />
           <span className="text-[12px] font-black uppercase tracking-widest whitespace-nowrap">
@@ -93,9 +91,9 @@ const CommonSide = ({ activeMenu }) => {
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `,
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+          `,
         }}
       />
     </aside>
