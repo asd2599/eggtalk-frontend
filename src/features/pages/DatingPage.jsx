@@ -26,6 +26,7 @@ const TypingText = ({ text, speed = 30 }) => {
   const [displayedText, setDisplayedText] = useState("");
   
   useEffect(() => {
+    if (!text) return; // 텍스트가 없으면 실행 안 함
     let index = 0;
     setDisplayedText(""); 
     
@@ -191,7 +192,7 @@ const DatingPage = () => {
           timestamp: new Date(),
           isSystem: false,
           isPetReply: true,
-          isNew: true, // 신규 타이핑 대상
+          isNew: true, 
         };
         setMessages((prev) => [...prev, petReplyMsg]);
         socket.emit("send_dating_message", {
@@ -277,7 +278,7 @@ const DatingPage = () => {
       message: inputValue,
       timestamp: new Date(),
       isMine: true,
-      isNew: false, // 내 메시지는 즉시 표시
+      isNew: false, 
     };
     setMessages((prev) => [...prev, newMsg]);
     socket.emit("send_dating_message", {
@@ -295,6 +296,9 @@ const DatingPage = () => {
   const otherPetInstance = otherPetObj ? otherPetObj.petInstance : null;
 
   const handleGiftSuccess = (giftName, targetName, userMessage, aiReply, stats) => {
+    // AI 답변이 없을 경우를 대비한 기본값 설정
+    const safeAiReply = aiReply || "선물 정말 고마워! 기분이 너무 좋아 ✨";
+
     if (userMessage) {
       const userMsgObj = {
         sender: petData.name,
@@ -328,13 +332,14 @@ const DatingPage = () => {
     }
     const statNoticeMsg = statLog ? ` [효과: ${statLog}]` : "";
     const systemNotice = `🎁 [선물 전달] ${petData.name}님이 ${targetName}에게 '${giftName}' 선물을(를) 주었습니다!${statNoticeMsg}`;
+    
     const aiMessageObj = {
       sender: targetName,
-      message: aiReply,
+      message: safeAiReply, 
       timestamp: new Date(),
       isSystem: false,
       isPetReply: true,
-      isNew: true, // 선물에 대한 답변도 타이핑 효과 적용
+      isNew: true, 
     };
     setMessages((prev) => [
       ...prev,
@@ -379,7 +384,7 @@ const DatingPage = () => {
     <div className="flex flex-col h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans">
       <header className="h-16 lg:h-20 border-b border-slate-50 dark:border-slate-900 bg-white/90 dark:bg-[#0b0f1a]/90 backdrop-blur-md flex items-center justify-between px-4 lg:px-8 z-50 flex-shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate("/lounge")} className="p-2 lg:p-3 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 rounded-xl hover:text-slate-900 dark:hover:text-white transition-all border border-slate-100 dark:border-slate-800">
+          <button onClick={() => navigate("/lounge")} className="p-2 lg:p-3 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 rounded-xl hover:text-slate-900 dark:hover:text-white transition-all border border-slate-100 dark:border-slate-800 shadow-sm">
             <FiArrowLeft className="text-sm lg:text-base" />
           </button>
           <div>
@@ -390,23 +395,6 @@ const DatingPage = () => {
             <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{isWaiting ? "연결 대기 중..." : "대화 상대와 연결되었습니다."} ({roomUsers.length}/2)</p>
           </div>
         </div>
-
-        {!isWaiting && otherPetInstance && petData && (
-          <div className="hidden lg:flex absolute top-5 left-1/2 -translate-x-1/2 items-start gap-4 z-[60]">
-            {/* 스탯 모달 UI 생략 */}
-            <div className="flex flex-col items-center">
-              <div className="flex items-center gap-4">
-                <button onClick={() => setShowMyStats(!showMyStats)} className={`relative w-14 h-14 rounded-2xl border transition-all hover:scale-110 active:scale-95 shadow-lg flex items-center justify-center p-1 ${showMyStats ? "bg-slate-900 border-slate-800 dark:bg-slate-100 dark:border-white" : "bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800"}`}>
-                  <div className="w-full h-full overflow-hidden rounded-xl relative pointer-events-none">{petData.draw("w-full h-full scale-[1.3] translateY-[10%]")}</div>
-                </button>
-                <div className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex items-center justify-center shadow-inner z-10 animate-bounce-slight mt-2 pointer-events-none"><span className="text-[10px] font-black text-sky-400 italic">VS</span></div>
-                <button onClick={() => setShowOtherStats(!showOtherStats)} className={`relative w-14 h-14 rounded-2xl border transition-all hover:scale-110 active:scale-95 shadow-lg flex items-center justify-center p-1 ${showOtherStats ? "bg-slate-900 border-slate-800 dark:bg-slate-100 dark:border-white" : "bg-white border-slate-100 dark:bg-slate-900 dark:border-slate-800"}`}>
-                  <div className="w-full h-full overflow-hidden rounded-xl relative pointer-events-none">{otherPetInstance.draw("w-full h-full scale-[1.3] translateY-[10%]")}</div>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="flex items-center gap-3 lg:gap-4">
           <button onClick={handleSendFriendRequest} disabled={isWaiting || !otherPetName || isSendingRequest} className="flex items-center gap-2 px-4 py-2.5 bg-slate-50 dark:bg-slate-900 text-slate-500 dark:text-slate-400 rounded-xl text-[11px] font-black border border-slate-100 dark:border-slate-800 transition-all hover:bg-slate-900 hover:text-white dark:hover:text-slate-100 dark:hover:text-slate-900 disabled:opacity-30 disabled:pointer-events-none uppercase tracking-widest">
@@ -424,13 +412,6 @@ const DatingPage = () => {
       <main className="flex-1 overflow-hidden relative flex flex-col items-center bg-slate-50 dark:bg-[#0b0f1a] py-4 lg:py-8 px-2 lg:px-4">
         <div className="w-full max-w-5xl h-full flex flex-col bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] lg:rounded-[3.5rem] shadow-sm overflow-hidden relative">
           <div ref={chatEndRef} className="flex-1 overflow-y-auto p-5 lg:p-10 space-y-6 lg:space-y-8 scroll-smooth custom-scrollbar">
-            {messages.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-slate-300 dark:text-slate-700 opacity-50">
-                <FiMessageCircle className="text-6xl mb-4" />
-                <p className="font-black uppercase tracking-[0.3em] italic text-xs">대화를 시작해 보세요!</p>
-              </div>
-            )}
-
             {messages.map((msg, idx) => {
               const isFromMe = msg.sender === petData?.name || msg.isMine;
               const isPetReply = msg.isPetReply;
@@ -446,7 +427,8 @@ const DatingPage = () => {
               return (
                 <div key={idx} className={`flex ${isFromMe ? "justify-end" : "justify-start"} animate-fade-in-up`}>
                   <div className={`max-w-[85%] lg:max-w-[75%] flex items-start gap-3 lg:gap-4 ${isFromMe ? "flex-row-reverse" : "flex-row"}`}>
-                    <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-md border transition-transform hover:scale-110 ${isFromMe ? "bg-slate-900 border-slate-800 dark:bg-slate-100 dark:border-white" : "bg-white border-slate-100 dark:bg-slate-800 dark:border-slate-700"}`}>
+                    {/* 아바타 프레임 테두리 */}
+                    <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden shadow-md border transition-transform hover:scale-110 ${isFromMe ? "bg-slate-900 border-slate-800 dark:bg-slate-100 dark:border-white" : "bg-white border-slate-50 dark:bg-slate-800 dark:border-slate-700"}`}>
                       {isPetReply ? (
                         isFromMe ? petData?.draw("w-full h-full scale-125 translate-y-1") : otherPetInstance?.draw("w-full h-full scale-125 translate-y-1")
                       ) : (
@@ -461,9 +443,8 @@ const DatingPage = () => {
                       <div className={`px-4 py-2.5 lg:px-5 lg:py-3 rounded-[1.2rem] lg:rounded-[1.4rem] text-[13px] lg:text-[14px] leading-snug shadow-sm break-words whitespace-pre-wrap transition-all ${
                           isFromMe
                             ? isPetReply ? "bg-sky-50 dark:bg-sky-900/30 text-slate-900 dark:text-sky-100 border border-sky-100 dark:border-sky-900/50 rounded-tr-none italic font-bold" : "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 rounded-tr-none font-medium"
-                            : isPetReply ? "bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none font-bold italic" : "bg-white dark:bg-slate-900/60 text-slate-800 dark:text-slate-300 border border-slate-100 dark:border-slate-800 rounded-tl-none"
+                            : isPetReply ? "bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-200 border border-slate-100 dark:border-slate-700 rounded-tl-none font-bold italic" : "bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-tl-none shadow-md"
                         }`}>
-                        {/* AI 답변이면서 새로 도착한 메시지일 때만 타이핑 효과 적용 */}
                         {isPetReply && msg.isNew ? (
                           <TypingText text={msg.message} />
                         ) : (
@@ -482,7 +463,7 @@ const DatingPage = () => {
               <div className="w-full text-center py-5 bg-slate-50 dark:bg-slate-950/50 rounded-[2rem] border border-dashed border-slate-100 dark:border-slate-800 text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] italic">대화 상대를 기다리는 중이어서 메시지를 보낼 수 없습니다.</div>
             ) : (
               <form onSubmit={handleSendMessage} className="relative flex items-center w-full max-w-4xl mx-auto group">
-                <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="보낼 내용을 입력하세요..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white text-[13px] px-7 py-4 lg:py-5 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 transition-all font-bold placeholder-slate-300 dark:placeholder-slate-700 shadow-inner" />
+                <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="보낼 내용을 입력하세요..." className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white text-[13px] px-7 py-4 lg:py-5 rounded-[2rem] focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 transition-all font-bold placeholder:text-slate-300 dark:placeholder:text-slate-700 shadow-inner" />
                 <button type="submit" disabled={!inputValue.trim()} className="absolute right-2.5 p-3.5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-xl disabled:opacity-30"><FiSend className="text-sm lg:text-base" /></button>
               </form>
             )}
