@@ -62,20 +62,21 @@ const FriendRequestModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in font-sans">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-[2rem] shadow-2xl overflow-hidden relative flex flex-col items-center p-8">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-fade-in font-sans">
+      <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-sm rounded-[2.5rem] shadow-2xl overflow-hidden relative flex flex-col items-center p-10 border border-slate-100 dark:border-slate-800">
+        
         {/* 상단 아이콘 */}
-        <div className="w-16 h-16 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30 mb-6 animate-bounce-slight">
-          <FiUserPlus className="text-white text-3xl ml-1" />
+        <div className="w-20 h-20 bg-slate-900 dark:bg-sky-400 rounded-3xl flex items-center justify-center shadow-xl mb-8 transition-colors">
+          <FiUserPlus className="text-sky-300 dark:text-slate-950 text-4xl" />
         </div>
 
         {/* 텍스트 영역 */}
-        <div className="text-center mb-8">
-          <h2 className="text-[1.2rem] font-black text-gray-900 dark:text-white leading-tight mb-2">
-            새로운 친구 요청
+        <div className="text-center mb-10">
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white leading-tight mb-3 italic uppercase tracking-tighter">
+            새로운 친구 요청 <span className="text-sky-400 font-sans not-italic">.</span>
           </h2>
-          <p className="text-sm font-bold text-gray-500 dark:text-gray-400">
-            <span className="text-indigo-500 dark:text-indigo-400 text-base">
+          <p className="text-[13px] font-bold text-slate-400 dark:text-slate-300 leading-relaxed">
+            <span className="text-sky-500 dark:text-sky-400 font-black text-base">
               {requesterPetName}
             </span>
             님이
@@ -85,29 +86,28 @@ const FriendRequestModal = ({
         </div>
 
         {/* 버튼 영역 */}
-        <div className="flex w-full gap-3">
+        <div className="flex w-full gap-4">
           <button
             onClick={handleReject}
             disabled={processing}
-            className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold rounded-2xl transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="flex-1 py-4 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400 dark:text-slate-400 font-black text-[11px] rounded-2xl transition-all uppercase tracking-widest disabled:opacity-50"
           >
-            <FiX className="text-lg" />
             거절
           </button>
           <button
             onClick={handleAccept}
             disabled={processing}
-            className="flex-1 py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold rounded-2xl shadow-lg shadow-indigo-500/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1.5"
+            className="flex-1 py-4 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 font-black text-[11px] rounded-2xl shadow-xl shadow-sky-500/10 dark:shadow-none hover:scale-[1.02] active:scale-95 transition-all uppercase tracking-widest italic disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            <FiCheck className="text-lg" />
+            <FiCheck className="text-base" />
             수락
           </button>
         </div>
 
         {/* 오버레이 로딩 */}
         {processing && (
-          <div className="absolute inset-0 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm flex items-center justify-center z-50">
-            <div className="w-8 h-8 border-4 border-indigo-100 border-t-indigo-500 rounded-full animate-spin shadow-lg"></div>
+          <div className="absolute inset-0 bg-white/60 dark:bg-[#0b0f1a]/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="w-10 h-10 border-[3px] border-slate-100 dark:border-slate-800 border-t-sky-400 rounded-full animate-spin"></div>
           </div>
         )}
       </div>
