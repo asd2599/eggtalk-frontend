@@ -121,6 +121,7 @@ const ChatPage = () => {
     }
   };
 
+  // ✅ 스탯 설정에서 rose/red 계열을 제거하고 슬레이트와 스카이블루로만 구성
   const statConfig = {
     healthHp: { label: "체력", icon: FiHeart, color: "text-slate-400" },
     hunger: { label: "배고픔", icon: FiCoffee, color: "text-slate-400" },
@@ -150,12 +151,12 @@ const ChatPage = () => {
       
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 lg:top-8 lg:right-8 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-200 z-[60] transition-all border border-slate-100 dark:border-slate-800 shadow-sm"
+        className="fixed top-4 right-4 lg:top-8 lg:right-8 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-400 z-[60] transition-all border border-slate-100 dark:border-slate-800 shadow-sm"
       >
         {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
 
-      <CommonSide activeMenu="대화하기" />
+      <CommonSide activeMenu="대화" />
 
       <main className="flex-1 flex flex-col lg:flex-row items-stretch p-3 lg:p-8 gap-4 lg:gap-8 bg-slate-50 dark:bg-[#0b0f1a] h-full overflow-y-auto lg:overflow-hidden custom-scrollbar pb-24 lg:pb-8 transition-all relative z-10">
         
@@ -178,20 +179,20 @@ const ChatPage = () => {
               ].map((section, sIdx) => (
                 <div key={sIdx} className="space-y-3">
                   <div className="border-b border-slate-100 dark:border-slate-800 pb-1 px-1 flex items-center gap-2">
-                    <div className="w-1 h-1 bg-sky-300 rounded-full"></div>
-                    <h4 className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.3em] italic">{section.title}</h4>
+                    <div className="w-1 h-1 bg-sky-300 rounded-full shadow-[0_0_5px_rgba(125,211,252,0.8)]"></div>
+                    <h4 className="text-[9px] font-black text-slate-300 dark:text-slate-400 uppercase tracking-[0.3em] italic">{section.title}</h4>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {section.stats.map((key) => {
                       const config = statConfig[key];
                       return (
-                        <div key={key} className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 transition-all hover:border-sky-100 dark:hover:border-sky-900 group shadow-sm">
-                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-50 dark:bg-slate-800 transition-colors group-hover:bg-sky-50 dark:group-hover:bg-sky-900/30">
-                            <config.icon className={`text-[12px] lg:text-[14px] ${config.color} group-hover:text-sky-500`} />
+                        <div key={key} className="flex items-center gap-2.5 p-3 rounded-2xl bg-white dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800 transition-all hover:border-sky-100 dark:hover:border-sky-700 group shadow-sm">
+                          <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-50 dark:bg-slate-800 transition-colors group-hover:bg-sky-50 dark:group-hover:bg-sky-900/50">
+                            <config.icon className={`text-[12px] lg:text-[14px] ${config.color} group-hover:text-sky-400`} />
                           </div>
                           <div className="flex-1 flex flex-col min-w-0 text-left">
-                            <span className="text-[10px] font-bold text-slate-400 truncate">{config.label}</span>
-                            <span className="text-[11px] font-black text-slate-900 dark:text-white font-mono tracking-tighter">{petData?.[key]}</span>
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 truncate">{config.label}</span>
+                            <span className="text-[11px] font-black text-slate-900 dark:text-slate-100 font-mono tracking-tighter">{petData?.[key]}</span>
                           </div>
                         </div>
                       );
@@ -205,44 +206,42 @@ const ChatPage = () => {
           <button
             onClick={handleAnalyzeTendency}
             disabled={analysisLoading}
-            className="w-full py-4 mt-8 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
+            className="w-full py-4 mt-8 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-lg flex items-center justify-center gap-2"
           >
             {analysisLoading ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <FiActivity />} AI 분석 및 성향 판별
           </button>
         </div>
 
-        <div className="flex-1 flex flex-col bg-white dark:bg-[#0b0f1a] border border-slate-100 dark:border-slate-900 rounded-[2.5rem] lg:rounded-[3rem] shadow-sm overflow-hidden relative min-h-[550px] lg:h-full transition-colors">
+        <div className="flex-1 flex flex-col bg-white dark:bg-[#0b0f1a] border border-slate-100 dark:border-slate-800 rounded-[2.5rem] lg:rounded-[3rem] shadow-sm overflow-hidden relative min-h-[550px] lg:h-full transition-colors">
           <div className="px-6 lg:px-8 py-5 border-b border-slate-50 dark:border-slate-900 bg-white dark:bg-[#0b0f1a] flex justify-between items-center">
-            <span className="text-[9px] font-black text-slate-300 dark:text-slate-700 uppercase tracking-[0.4em]">Enjoy the conversation!</span>
+            <span className="text-[9px] font-black text-slate-300 dark:text-slate-600 uppercase tracking-[0.4em]">Enjoy the conversation!</span>
             <div className="flex items-center gap-2">
               <span className="text-[10px] font-bold text-sky-400 uppercase tracking-tighter">Secure Link</span>
-              <div className="w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse shadow-[0_0_8px_rgba(125,211,252,0.5)]"></div>
+              <div className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse shadow-[0_0_8px_rgba(125,211,252,0.8)]"></div>
             </div>
           </div>
 
           <div 
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-8 custom-scrollbar scroll-smooth"
+            className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-6 lg:space-y-8 custom-scrollbar scroll-smooth bg-slate-50/30 dark:bg-[#0b0f1a]"
           >
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fade-in-up`}>
                 <div className={`max-w-[90%] lg:max-w-[80%] flex items-start gap-3 lg:gap-4 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                  {/* 프로필 프레임 사이즈 최적화 */}
-                  <div className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0 border overflow-hidden transition-all duration-300 shadow-md ${msg.sender === "user" ? "rounded-xl bg-slate-900 border-slate-800" : "rounded-full bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800"}`}>
+                  <div className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0 border overflow-hidden transition-all duration-300 shadow-md ${msg.sender === "user" ? "rounded-xl bg-slate-900 border-slate-800 dark:bg-sky-400 dark:border-sky-300" : "rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700"}`}>
                     {msg.sender === "user" ? (
-                      <FiUser className="text-white text-sm" />
+                      <FiUser className="text-white dark:text-slate-900 text-sm" />
                     ) : (
                       petData?.draw("w-full h-full object-contain scale-[1.1] translate-y-0") || <FiSmile className="text-sky-400 text-sm" />
                     )}
                   </div>
                   <div className="flex flex-col gap-1.5 min-w-0">
-                    {/* ✅ [수정] DatingPage와 동일한 패딩(px-4 py-2.5) 및 곡률(rounded-1.2rem) 적용 */}
                     <div className={`px-4 py-2.5 lg:px-5 lg:py-3 rounded-[1.2rem] lg:rounded-[1.4rem] text-[13px] lg:text-[14px] font-medium leading-snug shadow-sm transition-all duration-300
                       ${msg.sender === "user" 
-                        ? "bg-slate-900 text-white rounded-tr-none" 
+                        ? "bg-slate-900 text-white dark:bg-sky-400 dark:text-slate-950 rounded-tr-none font-bold" 
                         : msg.isSystem 
-                          ? "bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-sky-100 border border-slate-100 dark:border-slate-700 font-bold italic" 
-                          : "bg-white dark:bg-slate-900/40 text-slate-800 dark:text-slate-200 border border-slate-100 dark:border-slate-800 rounded-tl-none"}`}>
+                          ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-sky-100 border border-slate-100 dark:border-slate-700 font-bold italic" 
+                          : "bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-tl-none shadow-md"}`}>
                       {msg.text}
                     </div>
 
@@ -251,7 +250,7 @@ const ChatPage = () => {
                         {Object.entries(msg.analysis).map(([key, val]) => {
                           if (!val || val === 0) return null;
                           return (
-                            <span key={key} className={`text-[9px] font-black px-2.5 py-0.5 rounded-full border bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 ${val > 0 ? "text-sky-500" : "text-rose-400"}`}>
+                            <span key={key} className={`text-[9px] font-black px-2.5 py-0.5 rounded-full border bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 ${val > 0 ? "text-sky-400" : "text-slate-400 dark:text-slate-300"}`}>
                               {statConfig[key]?.label || key} {val > 0 ? `+${val}` : val}
                             </span>
                           );
@@ -263,7 +262,7 @@ const ChatPage = () => {
               </div>
             ))}
             {isTyping && (
-              <div className="flex items-center gap-2 text-[10px] text-sky-400/50 ml-12 italic animate-pulse font-black tracking-widest uppercase">
+              <div className="flex items-center gap-2 text-[10px] text-sky-400 ml-12 italic animate-pulse font-black tracking-widest uppercase">
                 <FiZap className="text-xs" /> 펫이 생각 중...
               </div>
             )}
@@ -277,9 +276,9 @@ const ChatPage = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isTyping}
                 placeholder="대화를 입력하세요..."
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-[12px] px-6 py-4 lg:py-5 rounded-[1.8rem] focus:outline-none focus:ring-1 focus:ring-sky-200 dark:focus:ring-sky-900 transition-all shadow-inner"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white text-[12px] px-6 py-4 lg:py-5 rounded-[1.8rem] focus:outline-none focus:ring-1 focus:ring-sky-200 dark:focus:ring-sky-400 transition-all shadow-inner placeholder:dark:text-slate-600"
               />
-              <button type="submit" disabled={isTyping || !inputValue.trim()} className="absolute right-3 p-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg">
+              <button type="submit" disabled={isTyping || !inputValue.trim()} className="absolute right-3 p-3 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg">
                 <FiSend className="text-sm" />
               </button>
             </form>
