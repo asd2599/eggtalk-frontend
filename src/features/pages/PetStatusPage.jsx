@@ -54,7 +54,6 @@ const PetStatusPage = ({ petData }) => {
               </div>
             </div>
 
-            {/* 교감 버튼 */}
             <div className="flex justify-center">
               <button 
                 onClick={() => setIsGiftModalOpen(true)} 
@@ -81,16 +80,24 @@ const PetStatusPage = ({ petData }) => {
                 <span className="h-[1px] w-4 bg-slate-200 dark:bg-slate-800"></span>
                 {section.title}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-6">
                 {section.stats.map((stat, sIdx) => (
-                  <div key={sIdx} className="flex justify-between items-center group cursor-default">
-                    <span className="text-[12px] text-slate-500 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-sky-100 transition-colors">{stat.label}</span>
-                    <div className="flex items-center gap-4">
-                      <div className="w-24 h-0.5 bg-slate-100 dark:bg-slate-900 rounded-full hidden sm:block overflow-hidden">
-                        <div className="h-full bg-sky-100 dark:bg-sky-900 transition-all duration-1000 shadow-[0_0_8px_rgba(224,242,254,0.3)]" style={{ width: `${stat.value}%` }} />
-                      </div>
-                      <span className="text-[12px] font-black text-slate-400 dark:text-slate-500 font-mono w-8 text-right group-hover:text-sky-400 transition-colors">{stat.value}</span>
+                  <div key={sIdx} className="flex items-center gap-3 group cursor-default">
+                    {/* 라벨 고정 너비 확보로 정렬 유지 */}
+                    <span className="text-[12px] text-slate-500 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-sky-100 transition-colors w-14 shrink-0">{stat.label}</span>
+                    
+                    {/* 게이지 바가 남은 공간을 다 차지하도록 설정 */}
+                    <div className="flex-1 h-0.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden relative">
+                      <div 
+                        className="h-full bg-sky-200 dark:bg-sky-900 transition-all duration-1000 shadow-[0_0_8px_rgba(224,242,254,0.3)]" 
+                        style={{ width: `${stat.value}%` }} 
+                      />
                     </div>
+
+                    {/* 수치 텍스트 우측 정렬 유지 */}
+                    <span className="text-[12px] font-black text-slate-400 dark:text-slate-500 font-mono w-8 text-right group-hover:text-sky-400 transition-colors shrink-0">
+                      {stat.value}
+                    </span>
                   </div>
                 ))}
               </div>
