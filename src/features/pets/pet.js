@@ -35,6 +35,9 @@ export default class Pet {
     this.curiosity = data.curiosity ?? 0;
 
     this.tendency = data.tendency || "neutral";
+    this.face = data.face || "neutral";
+    this.shape = data.shape || "circle";
+    this.hand = data.hand || "open";
 
     // 메타 데이터
     this.lastChatTime = data.last_chat_time;
@@ -53,22 +56,42 @@ export default class Pet {
    * - 우선 얼굴표정만(face_neutral) 오버레이하여 반영합니다. (손은 이번에 제외)
    */
   draw(className = "") {
-    const body = `/images/shapes/${this.color}_body_circle.png`;
-    const faceType = "neutral";
-    const face = `/images/faces/face_${faceType}.png`;
+    const body = `/images/shapes/${this.color}_body_${this.shape}.png`;
+    const face = `/images/faces/face_${this.face}.png`;
+
+    // 손 이미지 (DB의 hand 상태 활용)
+    const hand = `/images/hands/${this.color}_hand_${this.hand}.png`;
 
     return React.createElement(
       "div",
       { className: `relative ${className}` },
+      // 1. 몸체 (가장 뒤)
       React.createElement("img", {
         src: body,
         alt: "pet-body",
         className: "absolute inset-0 w-full h-full object-contain z-0",
       }),
+      // 2. 얼굴 (몸체 바로 위)
       React.createElement("img", {
         src: face,
         alt: "pet-face",
         className: "absolute inset-0 w-full h-full object-contain z-10",
+      }),
+      // 3. 왼쪽 손 (좌우 반전 적용, 바깥쪽 이동)
+      React.createElement("img", {
+        src: hand,
+        alt: "pet-left-hand",
+        className:
+          "absolute left-[-10%] bottom-[5%] w-1/3 h-1/3 object-contain z-20",
+        style: { transform: "scaleX(-1)" },
+      }),
+      // 4. 오른쪽 손 (원래 방향 적용, 바깥쪽 이동)
+      React.createElement("img", {
+        src: hand,
+        alt: "pet-right-hand",
+        className:
+          "absolute right-[-10%] bottom-[5%] w-1/3 h-1/3 object-contain z-20",
+        style: { transform: "scaleX(1)" },
       }),
     );
   }
