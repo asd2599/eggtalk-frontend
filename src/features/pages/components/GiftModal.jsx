@@ -9,7 +9,6 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
   const [message, setMessage] = useState("");
   const [selectedGift, setSelectedGift] = useState(null);
 
-  // 커스텀 Alert 상태 관리
   const [alertConfig, setAlertConfig] = useState({
     isOpen: false,
     title: "",
@@ -25,7 +24,6 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
     }
   };
 
-  // 커스텀 Alert
   const handleSendGift = async () => {
     if (!selectedGift) return;
     if (!targetPetName) {
@@ -38,7 +36,7 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
       title: "교감 시도",
       message: `${targetPetName}에게 [${selectedGift.name}]을(를) 선물하시겠습니까?`,
       onConfirm: async () => {
-        setAlertConfig((prev) => ({ ...prev, isOpen: false })); // Alert 먼저 닫기
+        setAlertConfig((prev) => ({ ...prev, isOpen: false }));
         setSending(true);
         try {
           const response = await api.post("/api/pets/gift", {
@@ -49,17 +47,15 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
           });
 
           if (response.status === 200) {
-            // ✅ 성공 처리: 스탯 정보와 AI 답장(reply)을 모두 상위 컴포넌트로 전달
             if (onGiftSuccess) {
               onGiftSuccess(
                 selectedGift.name,
                 targetPetName,
                 message.trim(),
                 response.data.reply,
-                selectedGift.stats, // 증감 스탯 정보를 함께 전달해서 UI에 반영
+                selectedGift.stats,
               );
             }
-            // 입력창 초기화 및 모달 닫기
             setMessage("");
             setSelectedGift(null);
             onClose();
@@ -79,7 +75,9 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 animate-fade-in font-sans">
-      <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden relative flex flex-col max-h-[85vh] border border-slate-100 dark:border-slate-800">
+      {/* max-h-[90vh]로 높이 여유를 주고 overflow-hidden 유지 */}
+      <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden relative flex flex-col max-h-[90vh] border border-slate-100 dark:border-slate-800">
+        
         <div className="px-7 py-5 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center bg-gradient-to-r from-sky-50/50 to-white dark:from-slate-900/50 dark:to-[#0b0f1a]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-slate-900 dark:bg-slate-100 rounded-xl flex items-center justify-center shadow-lg">
@@ -87,23 +85,19 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
             </div>
             <div className="text-left">
               <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase italic leading-none">
-                교감하기{" "}
-                <span className="text-sky-400 font-sans not-italic">.</span>
+                교감하기 <span className="text-sky-400 font-sans not-italic">.</span>
               </h2>
               <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-1">
-                <span className="text-sky-500 font-black">{targetPetName}</span>
-                과 마음을 나누어 보세요!
+                <span className="text-sky-500 font-black">{targetPetName}</span>과 마음을 나누어 보세요!
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-100 dark:border-slate-700"
-          >
+          <button onClick={onClose} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all border border-slate-100 dark:border-slate-700">
             <FiX className="text-lg" />
           </button>
         </div>
 
+        {/* 리스트 영역: flex-1과 overflow-y-auto로 높이가 모자라면 이 부분이 먼저 줄어듭니다. */}
         <div className="p-5 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-[#0b0f1a]">
           {loading ? (
             <div className="flex justify-center items-center py-16">
@@ -112,9 +106,7 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12 text-slate-400">
               <FiAlertCircle className="text-4xl text-rose-400/50 mb-3" />
-              <p className="font-black text-[11px] uppercase tracking-widest text-rose-500">
-                {error}
-              </p>
+              <p className="font-black text-[11px] uppercase tracking-widest text-rose-500">{error}</p>
             </div>
           ) : giftList.length === 0 ? (
             <div className="text-center py-16 text-slate-300 dark:text-slate-700 font-black uppercase tracking-[0.3em] text-[9px]">
@@ -133,54 +125,38 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
                       : "bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800/60 hover:shadow-lg hover:border-sky-200 dark:hover:border-sky-900/50"
                   }`}
                 >
-                  <div
-                    className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner ${
-                      selectedGift?.id === gift.id
-                        ? "bg-slate-800 dark:bg-slate-200"
-                        : "bg-white dark:bg-slate-800"
-                    }`}
-                  >
+                  {/* ✅ 아이콘 배경색을 밝게 조정 (bg-slate-50/bg-slate-800) */}
+                  <div className={`w-12 h-12 rounded-2xl flex-shrink-0 flex items-center justify-center group-hover:scale-105 transition-transform shadow-inner ${
+                    selectedGift?.id === gift.id ? "bg-slate-800 dark:bg-slate-200" : "bg-slate-50 dark:bg-slate-700"
+                  }`}>
                     <img
                       src={gift.iconUrl}
                       alt={gift.name}
                       className="w-7 h-7 object-contain"
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src =
-                          "https://api.iconify.design/mdi:gift.svg?color=%237dd3fc";
+                        e.target.src = "https://api.iconify.design/mdi:gift.svg?color=%237dd3fc";
                       }}
                     />
                   </div>
 
                   <div className="flex-1 overflow-hidden">
-                    <h3
-                      className={`font-black truncate text-[14px] tracking-tight ${
-                        selectedGift?.id === gift.id
-                          ? "text-white dark:text-slate-900"
-                          : "text-slate-900 dark:text-white"
-                      }`}
-                    >
+                    <h3 className={`font-black truncate text-[14px] tracking-tight ${
+                      selectedGift?.id === gift.id ? "text-white dark:text-slate-900" : "text-slate-900 dark:text-white"
+                    }`}>
                       {gift.name}
                     </h3>
-                    <p
-                      className={`text-[10px] font-bold truncate mt-0.5 ${
-                        selectedGift?.id === gift.id
-                          ? "text-sky-200 dark:text-slate-500"
-                          : "text-slate-400"
-                      }`}
-                    >
+                    <p className={`text-[10px] font-bold truncate mt-0.5 ${
+                      selectedGift?.id === gift.id ? "text-sky-100 dark:text-slate-500" : "text-slate-400 dark:text-slate-500"
+                    }`}>
                       {gift.description}
                     </p>
 
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {gift.rawMainStat && (
-                        <span
-                          className={`px-2 py-0.5 text-[8px] font-black rounded-full tracking-tighter uppercase ${
-                            selectedGift?.id === gift.id
-                              ? "bg-sky-400 text-slate-900"
-                              : "bg-sky-50 dark:bg-sky-900/20 text-sky-500"
-                          }`}
-                        >
+                        <span className={`px-2 py-0.5 text-[8px] font-black rounded-full tracking-tighter uppercase ${
+                          selectedGift?.id === gift.id ? "bg-sky-400 text-slate-900" : "bg-sky-50 dark:bg-sky-900/40 text-sky-500 dark:text-sky-300"
+                        }`}>
                           {gift.rawMainStat}
                         </span>
                       )}
@@ -192,10 +168,11 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
           )}
         </div>
 
+        {/* ✅ 메시지 박스 영역: shrink-0을 제거하거나 유동적으로 관리하여 잘림 방지 */}
         {selectedGift && (
-          <div className="px-7 py-5 border-t border-slate-50 dark:border-slate-800 bg-white dark:bg-[#0b0f1a] shrink-0 flex flex-col gap-3">
+          <div className="px-7 py-5 border-t border-slate-50 dark:border-slate-800 bg-white dark:bg-[#0b0f1a] flex flex-col gap-3">
             <div className="animate-fade-in-up">
-              <label className="block text-[9px] font-black text-slate-400 dark:text-slate-500 mb-2 px-1 uppercase tracking-widest italic">
+              <label className="block text-[9px] font-black text-slate-400 dark:text-slate-300 mb-2 px-1 uppercase tracking-widest italic">
                 💌 펫에게 보낼 메시지 (선택사항)
               </label>
               <input
@@ -204,7 +181,7 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
                 onChange={(e) => setMessage(e.target.value)}
                 disabled={sending || loading}
                 placeholder="전하고 싶은 말을 입력하세요..."
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white text-[12px] px-5 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 transition-all font-bold placeholder-slate-300 dark:placeholder-slate-700 shadow-inner"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white text-[12px] px-5 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900/50 transition-all font-bold placeholder-slate-300 dark:placeholder-slate-400 shadow-inner"
                 maxLength={100}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !sending) handleSendGift();
@@ -247,9 +224,7 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
             </p>
             <div className="flex gap-3">
               <button
-                onClick={() =>
-                  setAlertConfig({ ...alertConfig, isOpen: false })
-                }
+                onClick={() => setAlertConfig({ ...alertConfig, isOpen: false })}
                 className="flex-1 py-3.5 bg-slate-50 dark:bg-slate-800 text-slate-400 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all"
               >
                 아니오
