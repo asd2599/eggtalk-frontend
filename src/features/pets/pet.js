@@ -8,7 +8,7 @@ import React from "react";
 export default class Pet {
   constructor(data) {
     this.id = data.id;
-    this.userId = data.user_id;
+    this.userId = data.user_id ?? data.userId;
     this.name = data.name;
     this.color = data.color || "blue"; // fallback color
     this.level = data.level || 1;
@@ -17,7 +17,7 @@ export default class Pet {
     // 상태 수치
     this.hunger = data.hunger ?? 100;
     this.cleanliness = data.cleanliness ?? 100;
-    this.healthHp = data.health_hp ?? 100;
+    this.healthHp = data.health_hp ?? data.healthHp ?? 100;
     this.stress = data.stress ?? 0;
 
     // 감정 및 성향 지수
@@ -40,8 +40,11 @@ export default class Pet {
     this.hand = data.hand || "open";
 
     // 메타 데이터
-    this.lastChatTime = data.last_chat_time;
-    this.todayChatCount = data.today_chat_count ?? 0;
+    this.isHatched = data.is_hatched ?? data.isHatched ?? false;
+    this.childId = data.child_id ?? data.childId;
+    this.spouseId = data.spouse_id ?? data.spouseId;
+    this.lastChatTime = data.last_chat_time ?? data.lastChatTime;
+    this.todayChatCount = data.today_chat_count ?? data.todayChatCount ?? 0;
   }
 
   /**

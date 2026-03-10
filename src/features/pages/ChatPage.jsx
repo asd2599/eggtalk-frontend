@@ -8,6 +8,29 @@ import {
 import Pet from "../pets/pet";
 import CommonSide from "./CommonSide"; 
 
+// 타이핑 효과 컴포넌트
+const TypingText = ({ text, speed = 30 }) => {
+  const [displayedText, setDisplayedText] = useState("");
+  
+  useEffect(() => {
+    let index = 0;
+    setDisplayedText(""); // 텍스트 초기화
+    
+    const timer = setInterval(() => {
+      if (index < text.length) {
+        setDisplayedText((prev) => prev + text.charAt(index));
+        index++;
+      } else {
+        clearInterval(timer);
+      }
+    }, speed);
+    
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
+  return <span>{displayedText}</span>;
+};
+
 const ChatPage = () => {
   const navigate = useNavigate();
   const [petData, setPetData] = useState(null);
@@ -15,7 +38,7 @@ const ChatPage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [messages, setMessages] = useState([
-    { sender: "pet", text: "안녕! 나랑 대화하자멍 (또는 냥)!" },
+    { sender: "pet", text: "안녕! 나랑 대화하자멍 (또는 냥)!", isNew: false },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -84,6 +107,7 @@ const ChatPage = () => {
             sender: "pet",
             isSystem: true,
             text: `(시스템) AI 성향 분석 완료!\n현재 성향: ${response.data.pet.tendency}\n이유: ${response.data.reason}`,
+            isNew: true, // 새로 생성된 메시지임을 표시
           },
         ]);
       }
@@ -98,7 +122,8 @@ const ChatPage = () => {
     e.preventDefault();
     if (!inputValue.trim()) return;
     const userMessage = inputValue;
-    setMessages((prev) => [...prev, { sender: "user", text: userMessage }]);
+    // 유저 메시지는 타이핑 효과 없이 즉시 표시
+    setMessages((prev) => [...prev, { sender: "user", text: userMessage, isNew: false }]);
     setInputValue("");
     setIsTyping(true);
     try {
@@ -108,20 +133,19 @@ const ChatPage = () => {
       });
       setMessages((prev) => [
         ...prev,
-        { sender: "pet", text: response.data.reply, analysis: response.data.analysis },
+        { sender: "pet", text: response.data.reply, analysis: response.data.analysis, isNew: true },
       ]);
       if (response.data.pet) setPetData(new Pet(response.data.pet));
     } catch (error) {
       setMessages((prev) => [
         ...prev,
-        { sender: "pet", text: "앗... 오류가 생겨서 대답을 못하겠어. 💧" },
+        { sender: "pet", text: "앗... 오류가 생겨서 대답을 못하겠어. 💧", isNew: true },
       ]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  // ✅ 스탯 설정에서 rose/red 계열을 제거하고 슬레이트와 스카이블루로만 구성
   const statConfig = {
     healthHp: { label: "체력", icon: FiHeart, color: "text-slate-400" },
     hunger: { label: "배고픔", icon: FiCoffee, color: "text-slate-400" },
@@ -228,7 +252,7 @@ const ChatPage = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fade-in-up`}>
                 <div className={`max-w-[90%] lg:max-w-[80%] flex items-start gap-3 lg:gap-4 ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"}`}>
-                  <div className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0 border overflow-hidden transition-all duration-300 shadow-md ${msg.sender === "user" ? "rounded-xl bg-slate-900 border-slate-800 dark:bg-sky-400 dark:border-sky-300" : "rounded-full bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700"}`}>
+                  <div className={`w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center flex-shrink-0 border overflow-hidden transition-all duration-300 shadow-md ${msg.sender === "user" ? "rounded-xl bg-slate-900 border-slate-800 dark:bg-sky-400 dark:border-sky-300" : "rounded-full bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700"}`}>
                     {msg.sender === "user" ? (
                       <FiUser className="text-white dark:text-slate-900 text-sm" />
                     ) : (
@@ -242,7 +266,12 @@ const ChatPage = () => {
                         : msg.isSystem 
                           ? "bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-sky-100 border border-slate-100 dark:border-slate-700 font-bold italic" 
                           : "bg-white dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700 rounded-tl-none shadow-md"}`}>
-                      {msg.text}
+                      {/* 펫의 메시지이면서 '신규 메시지'일 때만 타이핑 효과 적용 */}
+                      {msg.sender === "pet" && msg.isNew ? (
+                        <TypingText text={msg.text} />
+                      ) : (
+                        msg.text
+                      )}
                     </div>
 
                     {msg.sender === "pet" && msg.analysis && (
@@ -276,7 +305,7 @@ const ChatPage = () => {
                 onChange={(e) => setInputValue(e.target.value)}
                 disabled={isTyping}
                 placeholder="대화를 입력하세요..."
-                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-900 dark:text-white text-[12px] px-6 py-4 lg:py-5 rounded-[1.8rem] focus:outline-none focus:ring-1 focus:ring-sky-200 dark:focus:ring-sky-400 transition-all shadow-inner placeholder:dark:text-slate-600"
+                className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700 text-slate-900 dark:text-white text-[12px] px-6 py-4 lg:py-5 rounded-[1.8rem] focus:outline-none focus:ring-1 focus:ring-sky-200 dark:focus:ring-sky-400 transition-all shadow-inner placeholder:dark:text-slate-600"
               />
               <button type="submit" disabled={isTyping || !inputValue.trim()} className="absolute right-3 p-3 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl hover:scale-105 active:scale-95 transition-all shadow-lg">
                 <FiSend className="text-sm" />
