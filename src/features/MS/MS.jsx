@@ -4,7 +4,7 @@ import Pet from '../pets/pet';
 
 import ActionModal from './ActionModal';
 import { SUBWAY_STATION_COORDS_V2 } from './subwayCoords';
-import { SUBWAY_PATHS } from './subwayPaths';
+// //! [Original Code] import { SUBWAY_PATHS } from './subwayPaths';
 import SubwayIcon from './components/SubwayIcon';
 import { SUBWAY_LINE_MAP } from './subwayLineMap';
 import { api } from '../../utils/config';
@@ -664,71 +664,32 @@ const MS = () => {
                           dot < 0 ? (snapped.angle + 180) % 360 : snapped.angle;
                       }
                     } else {
-                      // === [기존 SUBWAY_PATHS 폴백 로직] ===
-                      let pathPoints = null;
-                      let isReversed = false;
+                      // //! [Original Code] SUBWAY_PATHS 정적 데이터를 활용한 정밀 궤적 폴백 로직 (가독성 및 번들 사이즈 최적화를 위해 주석 처리)
+                      // let pathPoints = null;
+                      // let isReversed = false;
+                      // let pathForward = SUBWAY_PATHS[lineName]?.[`${stationName}-${nextStationName}`];
+                      // let pathBackward = SUBWAY_PATHS[lineName]?.[`${nextStationName}-${stationName}`];
+                      // if (pathForward) { pathPoints = pathForward; isReversed = false; }
+                      // else if (pathBackward) { pathPoints = pathBackward; isReversed = true; }
+                      // if (pathPoints && pathPoints.length > 0) {
+                      //   const sttus = item.trainSttus;
+                      //   let pointIndex = -1; let targetIndex = -1;
+                      //   if (sttus === '2') { pointIndex = isReversed ? pathPoints.length - 3 : 2; targetIndex = isReversed ? pointIndex - 1 : pointIndex + 1; }
+                      //   else if (sttus === '0') { pointIndex = isReversed ? 1 : pathPoints.length - 2; targetIndex = isReversed ? 0 : pathPoints.length - 1; }
+                      //   else if (sttus === '1') { pointIndex = -1; targetIndex = isReversed ? pathPoints.length - 2 : 1; }
+                      //   if (pointIndex !== -1 && pathPoints[pointIndex]) { tempLat = pathPoints[pointIndex].lat; tempLng = pathPoints[pointIndex].lng; }
+                      //   let targetLat = nextCoords.lat; let targetLng = nextCoords.lng;
+                      //   if (targetIndex !== -1 && pathPoints[targetIndex]) { targetLat = pathPoints[targetIndex].lat; targetLng = pathPoints[targetIndex].lng; }
+                      //   angle = calculateBearing(tempLat, tempLng, targetLat, targetLng);
+                      // } else { angle = calculateBearing(tempLat, tempLng, nextCoords.lat, nextCoords.lng); }
 
-                      let pathForward =
-                        SUBWAY_PATHS[lineName]?.[
-                          `${stationName}-${nextStationName}`
-                        ];
-                      let pathBackward =
-                        SUBWAY_PATHS[lineName]?.[
-                          `${nextStationName}-${stationName}`
-                        ];
-
-                      if (pathForward) {
-                        pathPoints = pathForward;
-                        isReversed = false;
-                      } else if (pathBackward) {
-                        pathPoints = pathBackward;
-                        isReversed = true;
-                      }
-
-                      if (pathPoints && pathPoints.length > 0) {
-                        const sttus = item.trainSttus;
-                        let pointIndex = -1;
-                        let targetIndex = -1;
-
-                        if (sttus === '2') {
-                          pointIndex = isReversed ? pathPoints.length - 3 : 2;
-                          targetIndex = isReversed
-                            ? pointIndex - 1
-                            : pointIndex + 1;
-                        } else if (sttus === '0') {
-                          pointIndex = isReversed ? 1 : pathPoints.length - 2;
-                          targetIndex = isReversed ? 0 : pathPoints.length - 1;
-                        } else if (sttus === '1') {
-                          pointIndex = -1;
-                          targetIndex = isReversed ? pathPoints.length - 2 : 1;
-                        }
-
-                        if (pointIndex !== -1 && pathPoints[pointIndex]) {
-                          tempLat = pathPoints[pointIndex].lat;
-                          tempLng = pathPoints[pointIndex].lng;
-                        }
-
-                        let targetLat = nextCoords.lat;
-                        let targetLng = nextCoords.lng;
-                        if (targetIndex !== -1 && pathPoints[targetIndex]) {
-                          targetLat = pathPoints[targetIndex].lat;
-                          targetLng = pathPoints[targetIndex].lng;
-                        }
-
-                        angle = calculateBearing(
-                          tempLat,
-                          tempLng,
-                          targetLat,
-                          targetLng,
-                        );
-                      } else {
-                        angle = calculateBearing(
-                          tempLat,
-                          tempLng,
-                          nextCoords.lat,
-                          nextCoords.lng,
-                        );
-                      }
+                      // //* [Modified Code] 구버전 정적 데이터(SUBWAY_PATHS) 대신 실시간 좌표 기반 직선 베어링 계산 (경량화)
+                      angle = calculateBearing(
+                        tempLat,
+                        tempLng,
+                        nextCoords.lat,
+                        nextCoords.lng,
+                      );
                     }
                     // === [스냅 & 회전 로직 끝] ===
                   }
