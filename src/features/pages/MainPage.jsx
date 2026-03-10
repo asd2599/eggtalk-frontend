@@ -122,7 +122,7 @@ const MainPage = () => {
       </button>
       
       {/* 공통 사이드바 */}
-      <CommonSide activeMenu="내 펫 상태" />
+      <CommonSide activeMenu="내 펫" />
 
       {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 h-full overflow-y-auto pt-10 pb-24 lg:pb-10 px-4 lg:px-8 custom-scrollbar relative z-10 scroll-smooth">

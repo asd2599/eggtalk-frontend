@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiAward, FiHeart, FiCoffee, FiMessageCircle, FiActivity } from "react-icons/fi";
+import { FiHeart, FiActivity } from "react-icons/fi";
+import GiftModal from "./components/GiftModal";
+import GiftReplyModal from "./components/GiftReplyModal";
 
 const PetStatusPage = ({ petData }) => {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
-  const [activeUserCount, setActiveUserCount] = useState(1);
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+  const [replyModalData, setReplyModalData] = useState({
+    isOpen: false,
+    replyMsg: "",
+    targetName: "",
+  });
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -43,22 +50,20 @@ const PetStatusPage = ({ petData }) => {
                 <span className="text-[11px] font-black text-sky-400">{Math.floor(progress)}%</span>
               </div>
               <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden shadow-inner">
-                <div className="h-full bg-sky-200 dark:bg-sky-900 shadow-[0_0_10px_rgba(224,242,254,0.3)] transition-all duration-1000" style={{ width: `${progress}%` }} />
+                <div className="h-full bg-sky-200 dark:bg-sky-900 shadow-[0_0_10px_rgba(186,230,253,0.3)] transition-all duration-1000" style={{ width: `${progress}%` }} />
               </div>
             </div>
 
-            <div className="grid grid-cols-4 gap-3">
-              {[
-                { icon: FiCoffee, label: "먹기", color: "group-hover:text-sky-400" },
-                { icon: FiHeart, label: "교감", color: "group-hover:text-sky-400" },
-                { icon: FiMessageCircle, label: "대화", color: "group-hover:text-sky-400", path: "/chat" },
-                { icon: FiAward, label: "랭킹", color: "group-hover:text-sky-400", path: "/ranking" },
-              ].map((menu, i) => (
-                <button key={i} onClick={() => menu.path && navigate(menu.path)} className="flex flex-col items-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm">
-                  <menu.icon className={`text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 ${menu.color}`} />
-                  <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">{menu.label}</span>
-                </button>
-              ))}
+            <div className="flex justify-center">
+              <button 
+                onClick={() => setIsGiftModalOpen(true)} 
+                className="flex flex-col items-center justify-center w-16 h-16 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm"
+              >
+                <FiHeart className="text-[18px] text-slate-300 mb-1 transition-colors duration-300 group-hover:text-sky-400" />
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
+                  교감
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -75,16 +80,24 @@ const PetStatusPage = ({ petData }) => {
                 <span className="h-[1px] w-4 bg-slate-200 dark:bg-slate-800"></span>
                 {section.title}
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-6">
                 {section.stats.map((stat, sIdx) => (
-                  <div key={sIdx} className="flex justify-between items-center group cursor-default">
-                    <span className="text-[12px] text-slate-500 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-sky-100 transition-colors">{stat.label}</span>
-                    <div className="flex items-center gap-4">
-                      <div className="w-24 h-0.5 bg-slate-100 dark:bg-slate-900 rounded-full hidden sm:block overflow-hidden">
-                        <div className="h-full bg-sky-100 dark:bg-sky-900 transition-all duration-1000" style={{ width: `${stat.value}%` }} />
-                      </div>
-                      <span className="text-[12px] font-black text-slate-400 dark:text-slate-500 font-mono w-8 text-right group-hover:text-sky-400 transition-colors">{stat.value}</span>
+                  <div key={sIdx} className="flex items-center gap-3 group cursor-default">
+                    {/* 라벨 고정 너비 확보로 정렬 유지 */}
+                    <span className="text-[12px] text-slate-500 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-sky-100 transition-colors w-14 shrink-0">{stat.label}</span>
+                    
+                    {/* 게이지 바가 남은 공간을 다 차지하도록 설정 */}
+                    <div className="flex-1 h-0.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden relative">
+                      <div 
+                        className="h-full bg-sky-200 dark:bg-sky-900 transition-all duration-1000 shadow-[0_0_8px_rgba(224,242,254,0.3)]" 
+                        style={{ width: `${stat.value}%` }} 
+                      />
                     </div>
+
+                    {/* 수치 텍스트 우측 정렬 유지 */}
+                    <span className="text-[12px] font-black text-slate-400 dark:text-slate-500 font-mono w-8 text-right group-hover:text-sky-400 transition-colors shrink-0">
+                      {stat.value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -92,6 +105,26 @@ const PetStatusPage = ({ petData }) => {
           ))}
         </div>
       </div>
+
+      <GiftModal 
+        isOpen={isGiftModalOpen} 
+        onClose={() => setIsGiftModalOpen(false)} 
+        targetPetName={petData?.name} 
+        onGiftSuccess={(giftName, targetName, msg, reply) => {
+          setReplyModalData({
+            isOpen: true,
+            replyMsg: reply,
+            targetName: targetName,
+          });
+        }} 
+      />
+
+      <GiftReplyModal 
+        isOpen={replyModalData.isOpen} 
+        replyMsg={replyModalData.replyMsg} 
+        targetName={replyModalData.targetName} 
+        onClose={() => setReplyModalData({ ...replyModalData, isOpen: false })} 
+      />
     </div>
   );
 };
