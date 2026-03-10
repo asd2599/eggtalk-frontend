@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiGift, FiActivity, FiSmile } from "react-icons/fi"; // ✅ FiGift, FiSmile 추가
+import { FiGift, FiActivity, FiSmile, FiMapPin } from "react-icons/fi"; 
 import GiftModal from "./components/GiftModal";
 import GiftReplyModal from "./components/GiftReplyModal";
 
@@ -54,27 +54,38 @@ const PetStatusPage = ({ petData }) => {
               </div>
             </div>
 
-            {/* ✅ [수정] 교감 & 아기 버튼 나란히 배치 */}
-            <div className="flex justify-center gap-3">
-              {/* 교감 버튼 (아이콘 변경: FiGift) */}
+            {/* 교감, 아기, 지도 버튼 */}
+            <div className="flex justify-center gap-2.5">
+              {/* 교감 버튼 */}
               <button 
                 onClick={() => setIsGiftModalOpen(true)} 
-                className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm max-w-[100px]"
+                className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm"
               >
                 <FiGift className="text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 group-hover:text-sky-400" />
-                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
                   교감
                 </span>
               </button>
 
-              {/* 아기 메뉴 버튼 (새로 추가) */}
+              {/* 아기 메뉴 버튼 */}
               <button 
                 onClick={() => navigate("/child-room")} 
-                className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm max-w-[100px]"
+                className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm"
               >
                 <FiSmile className="text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 group-hover:text-sky-400" />
-                <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
                   아기
+                </span>
+              </button>
+
+              {/* 지도 메뉴 버튼 */}
+              <button 
+                onClick={() => navigate("/ms")} 
+                className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm"
+              >
+                <FiMapPin className="text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 group-hover:text-sky-400" />
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
+                  지도
                 </span>
               </button>
             </div>
