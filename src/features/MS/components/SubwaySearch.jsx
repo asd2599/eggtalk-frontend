@@ -29,7 +29,14 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
   const searchRef = useRef(null);
   const debounceTimer = useRef(null);
 
-  // 외부 클릭 시 제안 목록 닫기
+  // 외부 클릭 시 제안 목록 닫기 및 옵션 변경 감지 로직
+  useEffect(() => {
+    // //* [Added Code] v10.0: 이미 검색된 상태에서 옵션이 바뀌면 자동으로 재검색 트리거
+    if (hasSearched && !isLoading) {
+      handleSearch();
+    }
+  }, [searchType, pathType]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
@@ -132,6 +139,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
     { label: '전체', value: 0, icon: '🚌🚇' },
     { label: '지하철', value: 1, icon: '🚇' },
     { label: '버스', value: 2, icon: '🚌' },
+    { label: '도보', value: 3, icon: '🚶' }, // //* [New Option] v10.0
   ];
 
   // //* [Added Code] 상세 경로 옵션 정의
@@ -139,6 +147,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
     { label: '추천', value: 0, icon: '✨' },
     { label: '최단시간', value: 1, icon: '⚡' },
     { label: '최소환승', value: 3, icon: '🔄' },
+    { label: '최단거리', value: 2, icon: '📏' }, // //* [New Option] v10.0
   ];
 
   return (

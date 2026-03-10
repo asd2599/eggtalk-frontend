@@ -14,6 +14,9 @@ import { calibratePolyline } from './snapToTrack';
 const API_KEY = import.meta.env.VITE_ODSAY_API_KEY;
 const BASE_URL = 'https://api.odsay.com/v1/api'; // //* [Modified Code] 실배포 시에는 .env의 설정을 따르거나 실제 API 주소 사용
 
+// //* [Added Code] v11.0: API 호출 오남용 방지를 위한 요청 캐시 (과금 방지용)
+const requestCache = new Map();
+
 // //* [Added Code] 버스 노선 타입별 색상 및 명칭 정의 (시각적 일관성 확보)
 const BUS_TYPE_INFO = {
   1: { name: '일반', color: '#33CC99' },
@@ -233,6 +236,12 @@ const odsayService = {
    * @param {string} searchKeyword - 검색어
    */
   async searchPOI(searchKeyword) {
+    // //* [Added Code] v11.0: POI 검색 중복 방지 (500ms Throttle)
+    const now = Date.now();
+    const lastRequest = requestCache.get(`poi_${searchKeyword}`);
+    if (lastRequest && now - lastRequest < 500) return [];
+    requestCache.set(`poi_${searchKeyword}`, now);
+
     try {
       const res = await axios.get(`${BASE_URL}/searchPOI`, {
         params: { lang: 0, searchKeyword, CID: 1000, apiKey: API_KEY },
@@ -260,6 +269,17 @@ const odsayService = {
    * @param {number} pathType - 0: 전체, 1: 지하철, 2: 버스 //* [Added Code] 수송 수단 필터
    */
   async getPublicTransPath(start, end, searchType = 0, pathType = 0) {
+    // //* [Added Code] v11.0: 길찾기 API 호출 오남용 방지 (1200ms Throttle)
+    // 연타로 인한 중복 과금 발생을 원천 차단합니다.
+    const requestKey = `path_${JSON.stringify(start)}_${JSON.stringify(end)}_${searchType}_${pathType}`;
+    const now = Date.now();
+    const lastRequest = requestCache.get(requestKey);
+    if (lastRequest && now - lastRequest < 1200) {
+      console.warn('[ODsay] 중복 호출 방지 활성화 (Throttle)');
+      return null;
+    }
+    requestCache.set(requestKey, now);
+
     // 1단계: 좌표 확보 (이미 좌표가 있으면 사용, 없으면 검색)
     let SX, SY, EX, EY, startName, endName;
 
@@ -303,8 +323,10 @@ const odsayService = {
           EX: EX,
           EY: EY,
           OPT: 0,
-          SearchType: searchType, // //* 0:추천, 1:시간, 3:환승
-          SearchPathType: pathType, // //* 0:전체, 1:지하철, 2:버스
+          // //* [Modified Code] v10.0: 최단거리가 API에 수동 매핑될 수 있으므로 분기 처리
+          SearchType: searchType === 2 ? 0 : searchType, // 2는 클라이언트에서 수동 정렬 예정
+          // //* [Modified Code] v10.0: 도보(3)는 전체(0)로 호출 후 필터링
+          SearchPathType: pathType === 3 ? 0 : pathType,
           apiKey: API_KEY,
         },
       });
@@ -321,11 +343,51 @@ const odsayService = {
       throw new Error('검색된 대중교통 경로가 없습니다.');
     }
 
-    // 3단계: 최적 경로(첫 번째) 데이터 추출 및 정형화
-    const bestPath = resultPaths[0];
-    const subPaths = bestPath.subPath || [];
+    // //* [Modified Code] 검색된 모든 경로 목록을 반환하도록 개편
+    let formattedPaths = resultPaths.map((path) => {
+      // //* [Added Code] v10.0: 도보 비중 계산을 위해 subPath 분석
+      let walkDist = 0;
+      path.subPath.forEach((sub) => {
+        if (sub.trafficType === 3) walkDist += sub.distance;
+      });
 
-    // 타임라인용 정규화된 경로 배열 생성
+      return {
+        pathType: path.pathType, // 1:지하철, 2:버스, 3:통합
+        totalTime: path.info.totalTime,
+        totalDistance: path.info.totalDistance,
+        totalWalkDistance: walkDist, // //* [New Field] 필터링용
+        totalFare: path.info.payment || 0,
+        transferCount:
+          (path.info.subwayTransitCount || 0) +
+          (path.info.busTransitCount || 0),
+        firstStartStation: path.info.firstStartStation,
+        lastEndStation: path.info.lastEndStation,
+        mapObj: path.info.mapObj,
+        subPaths: path.subPath,
+        raw: path,
+      };
+    });
+
+    // //* [Added Code] v10.0: 최단거리(2) 선택 시 클라이언트 사이드 정렬
+    if (searchType === 2) {
+      formattedPaths.sort((a, b) => a.totalDistance - b.totalDistance);
+    }
+
+    // //* [Added Code] v10.0: 도보(3) 선택 시 필터링 (도보가 포함된 전체 경로 중 추천)
+    if (pathType === 3) {
+      // ODsay 결과 중 도보 비중이 높거나 우선순위가 높은 것 위주로 필터링 (또는 전체 노출하되 도보 최적화)
+      // 여기서는 전체를 보여주되, UI에서 '도보' 강조를 위해 그대로 둠 (또는 도보 전용 검색 메시지 유도)
+    }
+
+    return formattedPaths;
+  },
+
+  /**
+   * //* [New Function] 선택된 경로의 상세 정보(타임라인, 지도 궤적)를 구축합니다.
+   * @param {Object} selectedPath - 사용자가 선택한 경로 객체
+   */
+  getPathDetail: async (selectedPath) => {
+    const subPaths = selectedPath.raw.subPath || [];
     const formattedTimeline = [];
     let totalWalkTime = 0;
 
@@ -333,7 +395,6 @@ const odsayService = {
       const type = sub.trafficType; // 1:지하철, 2:버스, 3:도보
 
       if (type === 1) {
-        // 지하철 세그먼트
         const lane = sub.lane?.[0] || {};
         const stations = sub.passStopList?.stations || [];
         formattedTimeline.push({
@@ -348,7 +409,6 @@ const odsayService = {
           stops: stations.map((s) => s.stationName),
         });
       } else if (type === 2) {
-        // 버스 세그먼트
         const lane = sub.lane?.[0] || {};
         const stations = sub.passStopList?.stations || [];
         const busInfo = BUS_TYPE_INFO[lane.type] || {
@@ -368,7 +428,6 @@ const odsayService = {
           stops: stations.map((s) => s.stationName),
         });
       } else if (type === 3) {
-        // 도보 세그먼트
         totalWalkTime += sub.sectionTime;
         if (sub.distance > 0) {
           formattedTimeline.push({
@@ -380,43 +439,49 @@ const odsayService = {
       }
     }
 
-    // 지도 궤적 데이터 구축 (loadLane 연동)
     const segments = [];
-    const mapObj = bestPath.info?.mapObj;
+    const stationPath = []; // //* [Added Code] 지도 마커용 정거장 리스트
+    const mapObj = selectedPath.raw.info?.mapObj;
     if (mapObj) {
       const laneData = await fetchLaneData(mapObj);
       laneData.forEach((lane) => {
         const laneName = LANE_TYPE_NAME[lane.type] || `노선${lane.type}`;
         const color =
           LANE_TYPE_COLOR[lane.type] ||
-          (lane.type < 10 ? '#33CC99' : '#666666'); // 버스는 기본 초록 계열
+          (lane.type < 10 ? '#33CC99' : '#666666');
 
-        // 지하철인 경우에만 정밀 보정 시도 (버스 좌표는 보정 DB가 없으므로 원본 사용)
         let path = lane.points;
         if (lane.type <= 100) {
-          // 지하철 코드 범위
           const stationCoords = SUBWAY_STATION_COORDS_V2[laneName] || {};
           path = calibratePolyline(lane.points, stationCoords);
         }
 
-        // //* [Added Code] 환승/도보 구간(type 3)은 실선 대신 점선으로 표현하도록 속성 부여
         const strokeStyle = lane.type === 3 ? 'dash' : 'solid';
-
         segments.push({ laneName, color, path, strokeStyle });
       });
     }
 
+    // //* [Added Code] 모든 subPath의 정거장을 순회하며 stationPath 구축
+    subPaths.forEach((sub) => {
+      if (sub.trafficType === 1 || sub.trafficType === 2) {
+        const laneName = sub.lane?.[0]?.name || sub.lane?.[0]?.busNo;
+        sub.passStopList?.stations?.forEach((s) => {
+          stationPath.push({
+            name: s.stationName,
+            lat: parseFloat(s.y),
+            lng: parseFloat(s.x),
+            line: laneName,
+          });
+        });
+      }
+    });
+
     return {
-      totalTime: bestPath.info.totalTime,
-      totalDistance: bestPath.info.totalDistance,
-      totalFare: bestPath.info.payment || 0,
+      ...selectedPath,
       walkTime: totalWalkTime,
-      transferCount:
-        (bestPath.info.subwayTransitCount || 0) +
-        (bestPath.info.busTransitCount || 0),
       timeline: formattedTimeline,
       segments: segments,
-      raw: bestPath,
+      path: stationPath, // //* [Added Code] MS.jsx 마커용
     };
   },
 };
