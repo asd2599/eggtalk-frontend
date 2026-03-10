@@ -110,7 +110,7 @@ const ChildFeedPage = () => {
         </div>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .animate-bounce-slow {
           animation: bounce 3s infinite;
         }

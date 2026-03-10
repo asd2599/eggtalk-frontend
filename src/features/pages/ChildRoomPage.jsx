@@ -87,6 +87,7 @@ const ChildRoomPage = () => {
     // 소켓 방 입장
     socket.emit("join_child_room", {
       childId: childPet.id,
+      petId: myPet.id,
       petName: myPet.name,
     });
 
