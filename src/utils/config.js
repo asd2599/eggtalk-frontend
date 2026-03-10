@@ -1,16 +1,16 @@
-import axios from "axios";
+import axios from 'axios';
 
 // 사용할 서버의 주소 주석을 해제하여 사용하세요.
 
 // [환경별 서버 URL 자동 설정]
 const isProd =
-  import.meta.env.PROD || window.location.hostname.includes("gamestack.store");
+  import.meta.env.PROD || window.location.hostname.includes('gamestack.store');
 export const SERVER_URL = isProd
-  ? "https://keepinsight.site"
-  : "http://localhost:8000";
+  ? 'https://keepinsight.site'
+  : 'http://localhost:8000';
 
 export const PRESENT_TABLE_URL =
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vT5Nrv_9pLwQVUGH7XRGT2gJ9r7vGoEaG7jBa9ws6T_CilLTsaLLGXXdf2a-HGl6WqT5WwGlwFiZnom/pub?gid=384159399&single=true&output=csv";
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vT5Nrv_9pLwQVUGH7XRGT2gJ9r7vGoEaG7jBa9ws6T_CilLTsaLLGXXdf2a-HGl6WqT5WwGlwFiZnom/pub?gid=384159399&single=true&output=csv';
 
 // 공통 BaseURL이 세팅된 axios 인스턴스 싱글톤
 export const api = axios.create({
@@ -20,7 +20,7 @@ export const api = axios.create({
 // [Interceptor 추가] 모든 API 요청 전 자동으로 localStorage의 토큰을 헤더에 집어넣습니다.
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -41,15 +41,15 @@ api.interceptors.response.use(
       error.response &&
       (error.response.status === 401 || error.response.status === 403)
     ) {
-      console.warn("인증이 만료되었습니다. 다시 로그인 해주세요.");
-      localStorage.removeItem("token");
-      localStorage.removeItem("petId");
+      console.warn('인증이 만료되었습니다. 다시 로그인 해주세요.');
+      localStorage.removeItem('token');
+      localStorage.removeItem('petId');
 
       // 얼럿 창을 띄우고 확인을 누르면 로그인 페이지로 이동 (중복 방지용 체크)
       if (!window.hasAuthAlerted) {
         window.hasAuthAlerted = true;
-        alert("세션이 만료되었습니다. 다시 로그인 해주세요.");
-        window.location.href = "/login";
+        alert('세션이 만료되었습니다. 다시 로그인 해주세요.');
+        window.location.href = '/login';
       }
     }
     return Promise.reject(error);

@@ -1,3 +1,9 @@
+/**
+ * [reorganize_nested.js]
+ * 역할: subwayCoords.js의 1차원 평면적인 좌표 데이터를 노선별(Depth)로 완전히
+ * 구조화(Nested Object)하고, 특히 환승역(예: 서울역 1호선/4호선/공항철도 플랫폼)의
+ * 물리적 하차 위치(플랫폼) 미세 오차까지 개별 하드코딩하여 정밀도를 올리는 구조 재배치 스크립트입니다.
+ */
 import fs from 'fs';
 import { SUBWAY_LINE_MAP } from './src/features/MS/subwayLineMap.js';
 import { SUBWAY_STATION_COORDS } from './src/features/MS/subwayCoords.js';

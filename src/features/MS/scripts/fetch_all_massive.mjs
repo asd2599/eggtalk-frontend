@@ -1,3 +1,9 @@
+/**
+ * [fetch_all_massive.mjs]
+ * 역할: 전체 지하철 노선의 역명 리스트를 Kakao Local API를 통해 검색하고,
+ * 각 역의 고유 좌표(위경도) 데이터를 대량으로 수집/병합하여 subwayCoords.js의
+ * 기초 데이터를 생성/갱신하는 자동화 배치(Batch) 스크립트입니다.
+ */
 import fs from 'fs';
 
 const target_stations = [
