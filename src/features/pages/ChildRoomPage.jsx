@@ -8,6 +8,7 @@ import {
   FiSmile,
   FiEdit3,
   FiClock,
+  FiTrash2,
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
@@ -111,6 +112,91 @@ const ChildRoomPage = () => {
       if (petName === spousePet.name) setIsSpouseInRoom(false);
     };
 
+    const handleFarewellProposed = () => {
+      if (
+        window.confirm(
+          `배우자가 자식 펫과의 작별(파양)을 원합니다.\n동의하시면 자식 펫이 삭제되며 부모 펫의 관계가 초기화됩니다.\n동의하시겠습니까?`,
+        )
+      ) {
+        socket.emit("child_pet_farewell_response", {
+          childId: childPet.id,
+          approved: true,
+        });
+      } else {
+        socket.emit("child_pet_farewell_response", {
+          childId: childPet.id,
+          approved: false,
+        });
+      }
+    };
+
+    const handleFarewellApproved = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        // 실제 DB 삭제 및 관계 초기화 API 호출
+        // (양쪽 다 호출하더라도 abandonPet 내부에서 첫 번째 성공 후 나머지는 404가 날 것이므로 안전)
+        await api.delete(`/api/pets/abandon/${childPet.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        alert(
+          "작별이 완료되었습니다. 아이의 흔적을 정리하고 메인으로 돌아갑니다. ✨",
+        );
+      } catch (error) {
+        console.error("Farewell API failed:", error);
+      } finally {
+        navigate("/main");
+      }
+    };
+
+    const handleFarewellRejected = () => {
+      alert("배우자가 작별에 동의하지 않았습니다. 😿");
+    };
+
+    const handleActionProposed = ({ actionType, requesterName }) => {
+      const actionKr =
+        actionType === "FEED"
+          ? "분유 주기"
+          : actionType === "CLEAN"
+            ? "목욕 시키기"
+            : "놀아 주기";
+      if (
+        window.confirm(
+          `배우자(${requesterName})가 자식 펫에게 [${actionKr}] 활동을 제안했습니다. 함께 이동하시겠습니까?`,
+        )
+      ) {
+        socket.emit("child_action_response", {
+          childId: childPet.id,
+          approved: true,
+          actionType,
+        });
+      } else {
+        socket.emit("child_action_response", {
+          childId: childPet.id,
+          approved: false,
+          actionType,
+        });
+      }
+    };
+
+    const handleActionSync = ({ actionType }) => {
+      const pathMap = {
+        FEED: "/child-room/feed",
+        CLEAN: "/child-room/clean",
+        PLAY: "/child-room/play",
+      };
+      navigate(pathMap[actionType]);
+    };
+
+    const handleActionRejected = ({ actionType }) => {
+      const actionKr =
+        actionType === "FEED"
+          ? "분유 주기"
+          : actionType === "CLEAN"
+            ? "목욕 시키기"
+            : "놀아 주기";
+      alert(`배우자가 [${actionKr}] 활동에 동의하지 않았습니다. 😿`);
+    };
+
     const handleChildRoomStatus = ({
       isSpouseInRoom,
       onlineUsers,
@@ -206,6 +292,14 @@ const ChildRoomPage = () => {
     socket.on("child_pet_rename_approved", handleRenameApproved);
     socket.on("child_pet_rename_rejected", handleRenameRejected);
 
+    socket.on("child_pet_farewell_proposed", handleFarewellProposed);
+    socket.on("child_pet_farewell_approved", handleFarewellApproved);
+    socket.on("child_pet_farewell_rejected", handleFarewellRejected);
+
+    socket.on("child_action_proposed", handleActionProposed);
+    socket.on("child_action_sync", handleActionSync);
+    socket.on("child_action_rejected", handleActionRejected);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       socket.emit("leave_child_room", {
@@ -222,6 +316,12 @@ const ChildRoomPage = () => {
       socket.off("child_pet_rename_proposed", handleRenameProposed);
       socket.off("child_pet_rename_approved", handleRenameApproved);
       socket.off("child_pet_rename_rejected", handleRenameRejected);
+      socket.off("child_pet_farewell_proposed", handleFarewellProposed);
+      socket.off("child_pet_farewell_approved", handleFarewellApproved);
+      socket.off("child_pet_farewell_rejected", handleFarewellRejected);
+      socket.off("child_action_proposed", handleActionProposed);
+      socket.off("child_action_sync", handleActionSync);
+      socket.off("child_action_rejected", handleActionRejected);
     };
   }, [childPet?.id, myPet?.name, spousePet?.name]);
 
@@ -276,26 +376,41 @@ const ChildRoomPage = () => {
     socket.emit("hatch_start_request", { childId: childPet.id });
   };
 
-  const handleAction = async (actionType) => {
-    if (actionLoading) return;
-    setActionLoading(true);
+  const handleAction = (actionType) => {
+    if (!isSpouseInRoom) {
+      alert("배우자가 방에 있어야 함께 활동할 수 있습니다. 😿");
+      return;
+    }
 
-    try {
-      const token = localStorage.getItem("token");
-      const response = await api.post(
-        "/api/pets/child/action",
-        { actionType },
-        { headers: { Authorization: `Bearer ${token}` } },
-      );
+    const actionKr =
+      actionType === "FEED"
+        ? "분유 주기"
+        : actionType === "CLEAN"
+          ? "목욕 시키기"
+          : "놀아 주기";
 
-      if (response.status === 200 && response.data.childPet) {
-        setChildPet(new Pet(response.data.childPet));
-      }
-    } catch (error) {
-      console.error("액션 실행 실패:", error);
-      alert("액션을 처리하는 도중 문제가 생겼습니다.");
-    } finally {
-      setActionLoading(false);
+    if (window.confirm(`배우자에게 [${actionKr}] 활동을 제안하시겠습니까?`)) {
+      socket.emit("child_action_request", {
+        childId: childPet.id,
+        actionType,
+        requesterName: myPet.name,
+      });
+      alert("배우자의 응답을 기다리는 중입니다... ⏳");
+    }
+  };
+
+  const handleFarewellRequest = () => {
+    if (!isSpouseInRoom) return;
+    if (
+      window.confirm(
+        "정말로 자식 펫과 작별하시겠습니까?\n이 작업은 취소할 수 없으며, 상대방의 동의가 필요합니다.",
+      )
+    ) {
+      socket.emit("child_pet_farewell_request", {
+        childId: childPet.id,
+        requesterName: myPet.name,
+      });
+      alert("배우자에게 작별(파양) 동의안을 보냈습니다. 기다려 주세요! ⏳");
     }
   };
 
@@ -637,6 +752,24 @@ const ChildRoomPage = () => {
               <span className="text-xs font-black text-slate-600 dark:text-slate-300 relative z-10 transition-colors group-hover:text-rose-600 dark:group-hover:text-rose-400 uppercase tracking-widest">
                 놀아 주기
               </span>
+            </button>
+          </div>
+        )}
+
+        {/* 작별하기 버튼 (양측 접속 시에만 활성화) */}
+        {childPet && (
+          <div className="mt-12 w-full max-w-2xl flex justify-center animate-fade-in">
+            <button
+              onClick={handleFarewellRequest}
+              disabled={!isSpouseInRoom}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-sm ${
+                isSpouseInRoom
+                  ? "bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-500 border border-slate-100 dark:border-slate-700 hover:shadow-lg active:scale-95 cursor-pointer"
+                  : "bg-slate-50 dark:bg-slate-900 text-slate-300 border border-dashed border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-60"
+              }`}
+            >
+              <FiTrash2 className="text-sm" />
+              자식 펫과 작별하기 {!isSpouseInRoom && "(배우자 대기 중...)"}
             </button>
           </div>
         )}

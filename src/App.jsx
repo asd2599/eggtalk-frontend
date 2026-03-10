@@ -14,6 +14,9 @@ import MS from "./features/MS/MS";
 import SH from "./features/SH/SH";
 import BreedingPage from "./features/pages/BreedingPage";
 import ChildRoomPage from "./features/pages/ChildRoomPage";
+import ChildFeedPage from "./features/pages/ChildFeedPage";
+import ChildCleanPage from "./features/pages/ChildCleanPage";
+import ChildPlayPage from "./features/pages/ChildPlayPage";
 import { GiftProvider } from "./contexts/GiftContext";
 
 function App() {
@@ -37,6 +40,9 @@ function App() {
           <Route path="/sh" element={<SH />} />
           <Route path="/breeding" element={<BreedingPage />} />
           <Route path="/child-room" element={<ChildRoomPage />} />
+          <Route path="/child-room/feed" element={<ChildFeedPage />} />
+          <Route path="/child-room/clean" element={<ChildCleanPage />} />
+          <Route path="/child-room/play" element={<ChildPlayPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

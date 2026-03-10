@@ -48,6 +48,7 @@ const BreedingPage = () => {
         {
           parent1Name: breedingData.requesterPetName,
           parent2Name: breedingData.receiverPetName,
+          roomId: breedingData.roomId, // 데이트방 자동 폭파를 위해 추가
         },
         { headers: { Authorization: `Bearer ${token}` } },
       );
