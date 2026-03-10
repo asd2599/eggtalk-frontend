@@ -124,7 +124,7 @@ const ChildCleanPage = () => {
         </div>
       </main>
 
-      <style jsx>{`
+      <style>{`
         .bubble {
           background: rgba(255, 255, 255, 0.6);
           border: 1px solid rgba(255, 255, 255, 0.8);

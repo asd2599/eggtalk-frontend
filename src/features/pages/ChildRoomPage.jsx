@@ -109,6 +109,7 @@ const ChildRoomPage = () => {
 
     socket.emit("join_child_room", {
       childId: childPet.id,
+      petId: myPet.id,
       petName: myPet.name,
     });
 
