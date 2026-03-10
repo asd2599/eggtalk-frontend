@@ -7,7 +7,13 @@ import React from 'react';
  * @param {number} angle - 회정 각도 (Degree)
  * @returns {JSX.Element} SVG 기반의 지하철 아이콘
  */
-const SubwayIcon = ({ direction = 'none', width = 24, angle = 0 }) => {
+const SubwayIcon = ({
+  direction = 'none',
+  width = 24,
+  angle = 0,
+  isExpress = false,
+  arrowColor = '#10b981', // //* [Added Code] 노선별 화살표 색상 (기본값: 초록)
+}) => {
   return (
     <svg
       width={width}
@@ -15,7 +21,9 @@ const SubwayIcon = ({ direction = 'none', width = 24, angle = 0 }) => {
       xmlns="http://www.w3.org/2000/svg"
       style={{
         transform: `rotate(${angle}deg)`,
+        transformOrigin: 'center',
         transition: 'transform 0.5s ease-in-out',
+        display: 'block',
       }}
     >
       {/* 지하철 본체 */}
@@ -26,8 +34,17 @@ const SubwayIcon = ({ direction = 'none', width = 24, angle = 0 }) => {
         height="110"
         rx="8"
         fill="#e2e8f0"
-        stroke="#64748b"
-        strokeWidth="2"
+        // //! [Original Code] 일반 테두리
+        // stroke="#64748b"
+        // strokeWidth="2"
+        // //* [Modified Code] 급행일 경우 붉은색 굵은 테두리와 글로우 효과 적용하여 시각적 강조
+        stroke={isExpress ? '#FF3B30' : '#64748b'}
+        strokeWidth={isExpress ? '5' : '2'}
+        style={
+          isExpress
+            ? { filter: 'drop-shadow(0 0 4px rgba(255, 59, 48, 0.6))' }
+            : {}
+        }
       />
       <path d="M 10 15 Q 30 0 50 15 Z" fill="#334155" />
       <path d="M 10 105 Q 30 120 50 105 Z" fill="#334155" />
@@ -37,14 +54,14 @@ const SubwayIcon = ({ direction = 'none', width = 24, angle = 0 }) => {
       {direction === 'up' && (
         <path
           d="M 30 35 L 18 55 L 26 55 L 26 85 L 34 85 L 34 55 L 42 55 Z"
-          fill="#10b981"
-        /> // 초록색 상행
+          fill={arrowColor} // //* [Modified Code] 하드코딩된 색상 대신 노선색 적용
+        />
       )}
       {direction === 'down' && (
         <path
           d="M 30 85 L 42 65 L 34 65 L 34 35 L 26 35 L 26 65 L 18 65 Z"
-          fill="#8b5cf6"
-        /> // 보라색 하행
+          fill={arrowColor} // //* [Modified Code] 하드코딩된 색상 대신 노선색 적용
+        />
       )}
       {/* direction이 'none'일 때는 화살표를 그리지 않고 빈 지붕만 보여줍니다. */}
     </svg>

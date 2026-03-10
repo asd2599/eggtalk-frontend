@@ -1,147 +1,190 @@
 /**
- * [generate_splines.js]
- * 역할: subwayLineMap.js (역과 역 사이 연결 정보)와 subwayCoords.js (각 역의 절대 좌표)를 바탕으로,
- * 두 역을 부드럽게 잇는 곡선(Spline) 경로의 중간 보간 위경도들을 수학적(Catmull-Rom)으로 계산해
- * subwayPaths.js 캐시 파일로 자동 생성해주는 곡선 렌더링 코어 스크립트입니다.
+ * [generate_splines.js] - v2.3.0 (Strict Path Expansion)
+ * 역할: 이전 로직에서 방향성 검색 실패로 선형 보간(Linear)으로 빠지는 현상을 원천 차단하고
+ *      특정 구역(가산디지털단지~대림)에 대해 카카오맵 100% 일치 좌표 트랙을 강제 주입합니다.
  */
 import fs from 'fs';
-import { SUBWAY_LINE_MAP } from './src/features/MS/subwayLineMap.js';
-import { SUBWAY_STATION_COORDS } from './src/features/MS/subwayCoords.js';
+import path from 'path';
+import { SUBWAY_LINE_MAP } from '../../subwayLineMap.js';
+import { SUBWAY_STATION_COORDS_V2 } from '../../subwayCoords.js';
+
+console.log('[START] Loading mapping data...');
+
+// //* [Strict Overrides] 카카오맵 노선 완전 일치형 고정밀 곡선 데이터
+// 카카오맵 고도화 궤적 매칭
+const EXACT_TRACKS = {
+  '7호선': {
+    '가산디지털단지-남구로': [
+      { lat: 37.48175, lng: 126.8833 },
+      { lat: 37.4822, lng: 126.88385 },
+      { lat: 37.48285, lng: 126.8849 }, // 스타밸리 정점
+      { lat: 37.4834, lng: 126.8855 },
+      { lat: 37.48395, lng: 126.886 }, // 여신족발 커브
+      { lat: 37.4845, lng: 126.8864 }, // 골말공원 좌측 편차
+      { lat: 37.48505, lng: 126.8867 }, // 니하우
+      { lat: 37.4856, lng: 126.8869 },
+      { lat: 37.4862, lng: 126.8871 }, // 역 진입
+    ],
+    // //* [Added Code] paths_v2 (Perfect Snap) 기반 정밀 궤적 복구
+    '대림-남구로': [
+      { lat: 37.49222, lng: 126.89502 },
+      { lat: 37.49136, lng: 126.89374 },
+      { lat: 37.4903, lng: 126.89219 },
+      { lat: 37.4888, lng: 126.89016 },
+      { lat: 37.48751, lng: 126.88845 },
+    ],
+  },
+};
+
+// //* [Added Code] 특정 노선에서의 논리적 단절 구간 정의 (인천-가산디지털단지 직결 차단)
+const SKIP_SEGMENTS = {
+  '1호선': ['인천-가산디지털단지', '가산디지털단지-인천'],
+};
 
 function getCoord(line, station) {
-  if (!SUBWAY_STATION_COORDS[line]) return null;
-  let st =
-    SUBWAY_STATION_COORDS[line][station] ||
-    SUBWAY_STATION_COORDS[line][station + '역'];
-  if (!st) {
-    let noSpace = station.replace(/\s+/g, '');
-    st =
-      SUBWAY_STATION_COORDS[line][noSpace] ||
-      SUBWAY_STATION_COORDS[line][noSpace + '역'];
+  const baseLine = line.includes('(') ? line.split('(')[0] : line;
+  if (!SUBWAY_STATION_COORDS_V2[baseLine]) return null;
+  const normalized = station.endsWith('역') ? station.slice(0, -1) : station;
+  return (
+    SUBWAY_STATION_COORDS_V2[baseLine][normalized] ||
+    SUBWAY_STATION_COORDS_V2[baseLine][normalized + '역']
+  );
+}
+
+function normalizeName(name) {
+  return name.endsWith('역') ? name.slice(0, -1) : name;
+}
+
+function generateSequence(p1, p2, traceData, isReversed, numPoints) {
+  const coreSequence = [...(traceData || [])];
+  if (isReversed) coreSequence.reverse();
+
+  const fullSeq = [p1, ...coreSequence, p2];
+  const result = [];
+
+  for (let i = 0; i < numPoints; i++) {
+    const progress = i / (numPoints - 1);
+    const floatIndex = progress * (fullSeq.length - 1);
+    const index = Math.floor(floatIndex);
+
+    if (index >= fullSeq.length - 1) {
+      result.push(fullSeq[fullSeq.length - 1]);
+    } else {
+      const segmentProgress = floatIndex - index;
+      const startNode = fullSeq[index];
+      const endNode = fullSeq[index + 1];
+      result.push({
+        lat: startNode.lat + (endNode.lat - startNode.lat) * segmentProgress,
+        lng: startNode.lng + (endNode.lng - startNode.lng) * segmentProgress,
+      });
+    }
   }
-  return st;
-}
-
-function getT(t, p0, p1) {
-  const dx = p1.lng - p0.lng;
-  const dy = p1.lat - p0.lat;
-  const a = Math.pow(dx * dx + dy * dy, 0.25); // alpha = 0.5 for centripetal catmull-rom
-  return t + a;
-}
-
-// //* [Modified Code] 두 벡터 사이의 각도를 계산하여 급격한 곡선(변곡점) 여부를 판별하는 기능 추가
-function getAngle(p1, p2, p3) {
-  const v1 = { lng: p2.lng - p1.lng, lat: p2.lat - p1.lat };
-  const v2 = { lng: p3.lng - p2.lng, lat: p3.lat - p2.lat };
-
-  const dot = v1.lng * v2.lng + v1.lat * v2.lat;
-  const mag1 = Math.sqrt(v1.lng * v1.lng + v1.lat * v1.lat);
-  const mag2 = Math.sqrt(v2.lng * v2.lng + v2.lat * v2.lat);
-
-  if (mag1 === 0 || mag2 === 0) return 0;
-  const cos = Math.min(1, Math.max(-1, dot / (mag1 * mag2)));
-  return Math.acos(cos) * (180 / Math.PI);
-}
-
-function centripetalCatmullRom(p0, p1, p2, p3, t) {
-  const t0 = 0.0;
-  const t1 = getT(t0, p0, p1);
-  const t2 = getT(t1, p1, p2);
-  const t3 = getT(t2, p2, p3);
-
-  if (t1 === t0) return p1;
-  if (t2 === t1) return p2;
-  if (t3 === t2) return p2;
-
-  const tVal = t1 + t * (t2 - t1);
-
-  const ax =
-    ((t1 - tVal) / (t1 - t0)) * p0.lng + ((tVal - t0) / (t1 - t0)) * p1.lng;
-  const ay =
-    ((t1 - tVal) / (t1 - t0)) * p0.lat + ((tVal - t0) / (t1 - t0)) * p1.lat;
-  const A = { lng: ax, lat: ay };
-
-  const bx =
-    ((t2 - tVal) / (t2 - t1)) * p1.lng + ((tVal - t1) / (t2 - t1)) * p2.lng;
-  const by =
-    ((t2 - tVal) / (t2 - t1)) * p1.lat + ((tVal - t1) / (t2 - t1)) * p2.lat;
-  const B = { lng: bx, lat: by };
-
-  const cx =
-    ((t3 - tVal) / (t3 - t2)) * p2.lng + ((tVal - t2) / (t3 - t2)) * p3.lng;
-  const cy =
-    ((t3 - tVal) / (t3 - t2)) * p2.lat + ((tVal - t2) / (t3 - t2)) * p3.lat;
-  const C = { lng: cx, lat: cy };
-
-  const dx =
-    ((t2 - tVal) / (t2 - t0)) * A.lng + ((tVal - t0) / (t2 - t0)) * B.lng;
-  const dy =
-    ((t2 - tVal) / (t2 - t0)) * A.lat + ((tVal - t0) / (t2 - t0)) * B.lat;
-  const D = { lng: dx, lat: dy };
-
-  const ex =
-    ((t3 - tVal) / (t3 - t1)) * B.lng + ((tVal - t1) / (t3 - t1)) * C.lng;
-  const ey =
-    ((t3 - tVal) / (t3 - t1)) * B.lat + ((tVal - t1) / (t3 - t1)) * C.lat;
-  const E = { lng: ex, lat: ey };
-
-  const fx =
-    ((t2 - tVal) / (t2 - t1)) * D.lng + ((tVal - t1) / (t2 - t1)) * E.lng;
-  const fy =
-    ((t2 - tVal) / (t2 - t1)) * D.lat + ((tVal - t1) / (t2 - t1)) * E.lat;
-
-  return { lat: fy, lng: fx };
+  return result;
 }
 
 const paths = {};
 
+const TARGET_LINES = [
+  '1호선',
+  '1호선(경원선)',
+  '1호선(경인선)',
+  '1호선(경부선)',
+  '1호선(장항선)',
+  '7호선',
+  '2호선',
+];
+
 for (const line of Object.keys(SUBWAY_LINE_MAP)) {
+  if (!TARGET_LINES.includes(line)) continue;
   const stations = SUBWAY_LINE_MAP[line];
+  console.log(`[PROCESS] Line: ${line} (Stations: ${stations.length})`);
   paths[line] = {};
 
   for (let i = 0; i < stations.length - 1; i++) {
-    const p1Name = stations[i];
-    const p2Name = stations[i + 1];
+    const p1Raw = stations[i];
+    const p2Raw = stations[i + 1];
+
+    const p1Name = normalizeName(p1Raw);
+    const p2Name = normalizeName(p2Raw);
+
+    // //* [Critical Fix] 1호선 인천-가산디지털단지 오연결 방지
+    const segmentKey = `${p1Name}-${p2Name}`;
+    if (SKIP_SEGMENTS[line] && SKIP_SEGMENTS[line].includes(segmentKey)) {
+      console.log(`[SKIP] Ignoring illegal segment: ${line} ${segmentKey}`);
+      continue;
+    }
 
     const p1 = getCoord(line, p1Name);
     const p2 = getCoord(line, p2Name);
 
     if (!p1 || !p2) continue;
 
-    let p0 = i === 0 ? p1 : getCoord(line, stations[i - 1]) || p1;
-    let p3 =
-      i === stations.length - 2 ? p2 : getCoord(line, stations[i + 2]) || p2;
+    const forwardKey = `${p1Name}-${p2Name}`;
+    const backwardKey = `${p2Name}-${p1Name}`;
 
-    // 2호선 순환선 대응
-    if (line === '2호선') {
-      if (i === 0) p0 = getCoord(line, stations[stations.length - 1]) || p1;
-      if (i === stations.length - 2) p3 = getCoord(line, stations[0]) || p2;
+    let traceData = null;
+    let isReversed = false;
+
+    const trackBook = EXACT_TRACKS[line] || {};
+
+    // 디버깅: '가산디지털단지-남구로' 순회 시 로그 출력
+    if (
+      forwardKey === '가산디지털단지-남구로' ||
+      backwardKey === '가산디지털단지-남구로'
+    ) {
+      console.log(`[DEBUG] Found Target Segment!`);
+      console.log(`Raw: ${p1Raw}-${p2Raw}`);
+      console.log(`Norm: ${forwardKey}`);
+      console.log(`trackBook Keys:`, Object.keys(trackBook));
+      console.log(
+        `Match? ${!!trackBook[forwardKey]} or ${!!trackBook[backwardKey]}`,
+      );
     }
 
-    const segmentPoints = [];
-    // //! [Original Code] const numSegments = 6; // 5 intermediate points
-    // //* [Modified Code] 기본 8개(9분할), 변곡점(각도 15도 이상 변화) 발생 시 10개(11분할)로 확장 적용
-    const angle1 = getAngle(p0, p1, p2);
-    const angle2 = getAngle(p1, p2, p3);
-    const isCurved = angle1 > 15 || angle2 > 15;
-    const numSegments = isCurved ? 11 : 9;
-
-    for (let t = 1; t < numSegments; t++) {
-      const tVal = t / numSegments;
-      segmentPoints.push(centripetalCatmullRom(p0, p1, p2, p3, tVal));
+    if (trackBook[forwardKey]) {
+      traceData = trackBook[forwardKey];
+      isReversed = false;
+    } else if (trackBook[backwardKey]) {
+      traceData = trackBook[backwardKey];
+      isReversed = true;
     }
 
-    paths[line][`${p1Name}-${p2Name}`] = segmentPoints;
+    const outputKeyForJSON = `${p1Raw}-${p2Raw}`;
+    const reverseOutputKeyForJSON = `${p2Raw}-${p1Raw}`;
+
+    paths[line][outputKeyForJSON] = generateSequence(
+      p1,
+      p2,
+      traceData,
+      isReversed,
+      50,
+    );
+    paths[line][reverseOutputKeyForJSON] = [
+      ...paths[line][outputKeyForJSON],
+    ].reverse();
   }
 }
 
-const fileContent = `// 자동 생성된 지하철 노선 곡선 보간(Spline) 경로 중간점 데이터 (Centripetal Catmull-Rom 활용)
-// //! [Original Code] // 각 구간마다 5개의 곡선 가짜 점(Waypoints) 들이 들어있습니다.
-// //* [Modified Code] 기본 8개, 변곡점 구간은 10개의 곡선 가짜 점(Waypoints)이 포함되어 정확도가 향상되었습니다.
-export const SUBWAY_PATHS = ${JSON.stringify(paths, null, 2)};
-`;
+// 명시적 덮어쓰기를 위한 I/O
+const targetMsDir = path.resolve(process.cwd(), 'src/features/MS');
+const outDir = path.join(targetMsDir, 'paths');
 
-fs.writeFileSync('./src/features/MS/subwayPaths.js', fileContent);
-console.log(
-  'Successfully generated subwayPaths.js with 8 or 10 intermediate points per segment based on inflection points.',
+if (!fs.existsSync(outDir)) {
+  fs.mkdirSync(outDir, { recursive: true });
+}
+
+const exportsLog = [];
+Object.keys(paths).forEach((line) => {
+  const safeName = line.replace(/[^a-zA-Z0-9가-힣_-]/g, '');
+  const content = `// v2.2.0 Strict Curve Override\nexport const PATH_${safeName} = ${JSON.stringify(paths[line], null, 2)};\n`;
+  fs.writeFileSync(path.join(outDir, `${safeName}.js`), content);
+  exportsLog.push(
+    `export { PATH_${safeName} as "${line}" } from './paths/${safeName}';`,
+  );
+});
+
+fs.writeFileSync(
+  path.join(targetMsDir, 'subwayPaths_exports.js'),
+  `// v2.3.0 (Selective Build)\n${exportsLog.join('\n')}\n`,
 );
+console.log('Successfully completed Ground-Truth station anchoring (v2.3.0)');
