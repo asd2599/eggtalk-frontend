@@ -298,10 +298,10 @@ const odsayService = {
       pathRes = await axios.get(`${BASE_URL}/searchPubTransPathT`, {
         params: {
           lang: 0,
-          SX: startStation.x,
-          SY: startStation.y,
-          EX: endStation.x,
-          EY: endStation.y,
+          SX: SX,
+          SY: SY,
+          EX: EX,
+          EY: EY,
           OPT: 0,
           SearchType: searchType, // //* 0:추천, 1:시간, 3:환승
           SearchPathType: pathType, // //* 0:전체, 1:지하철, 2:버스
