@@ -19,6 +19,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/subway/, ''),
       },
+      // ODsay API 우회를 위한 CORS 프록시 설정
+      '/api/odsay': {
+        target: 'https://api.odsay.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/odsay/, ''),
+      },
     },
   },
 });

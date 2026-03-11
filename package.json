@@ -7,11 +7,14 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "generate-splines": "node src/features/MS/scripts/data_utils/generate_splines.js",
+    "generate-odsay": "node src/features/MS/scripts/data_utils/generate_odsay_paths.js"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
     "axios": "^1.13.6",
+    "framer-motion": "^12.35.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-icons": "^5.6.0",

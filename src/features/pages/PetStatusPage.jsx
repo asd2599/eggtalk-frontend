@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiHeart, FiActivity } from "react-icons/fi";
+import { FiGift, FiActivity, FiSmile, FiMapPin } from "react-icons/fi"; 
 import GiftModal from "./components/GiftModal";
 import GiftReplyModal from "./components/GiftReplyModal";
 
@@ -25,8 +25,7 @@ const PetStatusPage = ({ petData }) => {
     <div className="w-full max-w-[950px] mx-auto transition-all duration-500 font-sans">
       <div className="bg-white dark:bg-[#0b0f1a] rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-14 shadow-2xl lg:shadow-none border border-slate-100 dark:border-slate-900 flex flex-col lg:flex-row gap-12 lg:gap-20 items-stretch h-auto min-h-max mb-1 transition-colors duration-500 overflow-hidden relative z-10">
         
-        {/* 배경 은은한 광채 */}
-        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-sky-100 dark:bg-sky-900/10 rounded-full blur-[100px] pointer-events-none opacity-50"></div>
+        <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-sky-100 dark:bg-sky-400/5 rounded-full blur-[100px] pointer-events-none opacity-50"></div>
 
         {/* [왼쪽 프로필 영역] */}
         <div className="w-full lg:w-[320px] flex flex-col items-center lg:items-stretch flex-shrink-0">
@@ -49,20 +48,23 @@ const PetStatusPage = ({ petData }) => {
                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><FiActivity /> Status EXP</span>
                 <span className="text-[11px] font-black text-sky-400">{Math.floor(progress)}%</span>
               </div>
-              <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden shadow-inner">
+              <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden shadow-inner border border-slate-200/50 dark:border-slate-800">
                 <div className="h-full bg-sky-200 dark:bg-sky-900 shadow-[0_0_10px_rgba(186,230,253,0.3)] transition-all duration-1000" style={{ width: `${progress}%` }} />
               </div>
             </div>
 
-            <div className="flex justify-center">
-              <button 
-                onClick={() => setIsGiftModalOpen(true)} 
-                className="flex flex-col items-center justify-center w-16 h-16 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm"
-              >
-                <FiHeart className="text-[18px] text-slate-300 mb-1 transition-colors duration-300 group-hover:text-sky-400" />
-                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">
-                  교감
-                </span>
+            <div className="flex justify-center gap-2.5">
+              <button onClick={() => setIsGiftModalOpen(true)} className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm">
+                <FiGift className="text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 group-hover:text-sky-400" />
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">교감</span>
+              </button>
+              <button onClick={() => navigate("/child-room")} className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm">
+                <FiSmile className="text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 group-hover:text-sky-400" />
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">아기</span>
+              </button>
+              <button onClick={() => navigate("/ms")} className="flex-1 flex flex-col items-center justify-center py-4 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:border-sky-200 dark:hover:border-sky-900 transition-all active:scale-95 group shadow-sm">
+                <FiMapPin className="text-[18px] text-slate-300 mb-1.5 transition-colors duration-300 group-hover:text-sky-400" />
+                <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white uppercase tracking-tighter">지도</span>
               </button>
             </div>
           </div>
@@ -83,18 +85,14 @@ const PetStatusPage = ({ petData }) => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 lg:gap-x-12 gap-y-6">
                 {section.stats.map((stat, sIdx) => (
                   <div key={sIdx} className="flex items-center gap-3 group cursor-default">
-                    {/* 라벨 고정 너비 확보로 정렬 유지 */}
                     <span className="text-[12px] text-slate-500 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-sky-100 transition-colors w-14 shrink-0">{stat.label}</span>
-                    
-                    {/* 게이지 바가 남은 공간을 다 차지하도록 설정 */}
                     <div className="flex-1 h-0.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden relative">
+                      {/* ✅ bg-sky-400 앞에 !를 붙여서 최우선 적용(강제) 하였습니다. */}
                       <div 
-                        className="h-full bg-sky-200 dark:bg-sky-900 transition-all duration-1000 shadow-[0_0_8px_rgba(224,242,254,0.3)]" 
+                        className="h-full !bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.5)] transition-all duration-1000" 
                         style={{ width: `${stat.value}%` }} 
                       />
                     </div>
-
-                    {/* 수치 텍스트 우측 정렬 유지 */}
                     <span className="text-[12px] font-black text-slate-400 dark:text-slate-500 font-mono w-8 text-right group-hover:text-sky-400 transition-colors shrink-0">
                       {stat.value}
                     </span>
@@ -106,25 +104,10 @@ const PetStatusPage = ({ petData }) => {
         </div>
       </div>
 
-      <GiftModal 
-        isOpen={isGiftModalOpen} 
-        onClose={() => setIsGiftModalOpen(false)} 
-        targetPetName={petData?.name} 
-        onGiftSuccess={(giftName, targetName, msg, reply) => {
-          setReplyModalData({
-            isOpen: true,
-            replyMsg: reply,
-            targetName: targetName,
-          });
-        }} 
-      />
-
-      <GiftReplyModal 
-        isOpen={replyModalData.isOpen} 
-        replyMsg={replyModalData.replyMsg} 
-        targetName={replyModalData.targetName} 
-        onClose={() => setReplyModalData({ ...replyModalData, isOpen: false })} 
-      />
+      <GiftModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} targetPetName={petData?.name} onGiftSuccess={(giftName, targetName, msg, reply) => {
+          setReplyModalData({ isOpen: true, replyMsg: reply, targetName: targetName });
+        }} />
+      <GiftReplyModal isOpen={replyModalData.isOpen} replyMsg={replyModalData.replyMsg} targetName={replyModalData.targetName} onClose={() => setReplyModalData({ ...replyModalData, isOpen: false })} />
     </div>
   );
 };
