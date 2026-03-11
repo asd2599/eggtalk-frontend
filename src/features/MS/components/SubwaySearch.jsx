@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import odsayService from '../utils/odsayService';
+import { api } from '../../../utils/config';
 
 /**
  * [SubwaySearch.jsx]
@@ -67,7 +68,11 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
   };
 
   /**
-   * //* [Modified Code] 통합 장소 검색 (POI) 연동 및 디바운스 적용
+   * //* [Modified Code] 역/주소 통합 검색 — "OO역" → ODsay, 주소/건물 → 카카오 Places
+   *
+   * ODsay searchPOI는 대중교통 노선/정류장만 지원하므로 주소 검색에 사용 불가.
+   * - "역"으로 끝나는 키워드 → ODsay searchStation (역 좌표 정확도 최우선)
+   * - 그 외 건물명/주소 → 카카오 Maps Places API (keywordSearch)
    */
   const updateSuggestions = useCallback(async (query) => {
     if (!query || query.length < 2) {
@@ -78,31 +83,75 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
     debounceTimer.current = setTimeout(async () => {
-      try {
-        const results = await odsayService.searchPOI(query);
-        // mapObject나 좌표가 있는 POI 데이터를 정형화
-        const formatted = results.slice(0, 10).map((p) => ({
-          name: p.poiName,
-          address: p.newAddress || p.oldAddress,
-          x: p.x,
-          y: p.y,
-          isStation: p.isStation === 'Y',
-        }));
-        setSuggestions(formatted);
-        setSelectedIndex(-1);
-      } catch (err) {
-        console.error('POI 검색 실패:', err);
+      const isStationQuery = /역$/.test(query.trim());
+
+      if (isStationQuery) {
+        // --- ODsay 역 검색 ---
+        try {
+          const res = await api.get('/api/subway/search-station', {
+            params: { stationName: query },
+          });
+          const stations = res.data?.result?.station;
+          if (Array.isArray(stations) && stations.length > 0 && stations[0]) {
+            const formatted = stations
+              .filter(Boolean)
+              .slice(0, 10)
+              .map((s) => ({
+                name: s.stationName || s.poiName,
+                address: s.stationGroupName || '',
+                x: String(s.x),
+                y: String(s.y),
+                isStation: true,
+                source: 'odsay',
+              }));
+            setSuggestions(formatted);
+            setSelectedIndex(-1);
+            return; // ODsay 성공 시 카카오 검색 스킵
+          }
+        } catch (err) {
+          console.warn('[역 검색] ODsay 실패, 카카오로 대체:', err.message);
+        }
       }
-    }, 300); // 300ms 디바운스
+
+      // --- 카카오 Places 검색 (주소/건물 또는 역 검색 폴백) ---
+      if (window.kakao?.maps?.services?.Places) {
+        const ps = new window.kakao.maps.services.Places();
+        ps.keywordSearch(query, (result, status) => {
+          if (status === window.kakao.maps.services.Status.OK) {
+            const formatted = result.slice(0, 10).map((p) => ({
+              name: p.place_name,
+              address: p.road_address_name || p.address_name,
+              x: p.x, // 경도(longitude)
+              y: p.y, // 위도(latitude)
+              isStation: p.category_group_code === 'SW8', // SW8 = 지하철역
+              source: 'kakao',
+            }));
+            setSuggestions(formatted);
+          } else {
+            setSuggestions([]);
+          }
+          setSelectedIndex(-1);
+        });
+      } else {
+        console.warn('[Places] 카카오 SDK가 아직 준비되지 않았습니다.');
+        setSuggestions([]);
+      }
+    }, 300);
   }, []);
 
   const selectSuggestion = (suggestion) => {
+    const poi = {
+      name: suggestion.name,
+      x: suggestion.x,
+      y: suggestion.y,
+      source: suggestion.source || 'kakao', // 'odsay' | 'kakao'
+    };
     if (activeInput === 'start') {
       setStartQuery(suggestion.name);
-      setStartPOI({ name: suggestion.name, x: suggestion.x, y: suggestion.y });
+      setStartPOI(poi);
     } else {
       setEndQuery(suggestion.name);
-      setEndPOI({ name: suggestion.name, x: suggestion.x, y: suggestion.y });
+      setEndPOI(poi);
     }
     setSuggestions([]);
     setSelectedIndex(-1);
@@ -220,13 +269,17 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-black text-gray-800">
-                      {s.name}
+                      {s.isStation ? '🚇' : '📍'} {s.name}
                     </span>
-                    {s.isStation && (
+                    {s.source === 'odsay' ? (
                       <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded-md font-black">
-                        STATION
+                        ODsay
                       </span>
-                    )}
+                    ) : s.isStation ? (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 text-sky-600 rounded-md font-black">
+                        역
+                      </span>
+                    ) : null}
                   </div>
                   <span className="text-[10px] text-gray-400 font-medium">
                     {s.address}
@@ -273,13 +326,17 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
                 >
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-black text-gray-800">
-                      {s.name}
+                      {s.isStation ? '🚇' : '📍'} {s.name}
                     </span>
-                    {s.isStation && (
+                    {s.source === 'odsay' ? (
                       <span className="text-[9px] px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md font-black">
-                        STATION
+                        ODsay
                       </span>
-                    )}
+                    ) : s.isStation ? (
+                      <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 text-sky-600 rounded-md font-black">
+                        역
+                      </span>
+                    ) : null}
                   </div>
                   <span className="text-[10px] text-gray-400 font-medium">
                     {s.address}

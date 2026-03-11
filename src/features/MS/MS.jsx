@@ -4,7 +4,6 @@ import Pet from '../pets/pet';
 
 import ActionModal from './ActionModal';
 import { SUBWAY_STATION_COORDS_V2 } from './subwayCoords';
-// //! [Original Code] import { SUBWAY_PATHS } from './subwayPaths';
 import SubwayIcon from './components/SubwayIcon';
 import { SUBWAY_LINE_MAP } from './subwayLineMap';
 import { api } from '../../utils/config';
@@ -328,30 +327,16 @@ const MS = () => {
     let intervalId;
     const fetchBusPositions = async () => {
       try {
-        if (!busApiKey) return;
+        // //* [Modified Code] 프론트엔드 키 체크 제거 (백엔드에서 처리)
+        // if (!busApiKey) return;
 
         // 병렬 통신(다중 비동기 실행)
         const promises = SEOUL_BUS_ROUTES.map(async (route) => {
           try {
-            const url = `/api/bus/api/rest/buspos/getBusPosByRtid?serviceKey=${busApiKey}&busRouteId=${route.id}&resultType=json`;
-            const res = await axios.get(url);
-
-            if (res.data?.msgBody?.itemList) {
-              const items = Array.isArray(res.data.msgBody.itemList)
-                ? res.data.msgBody.itemList
-                : [res.data.msgBody.itemList];
-
-              return items.map((item) => ({
-                id: item.vehId,
-                lat: parseFloat(item.tmY),
-                lng: parseFloat(item.tmX),
-                plateNo: item.plainNo,
-                routeName: route.name, // 시각화를 위해 버스 번호 맵핑
-              }));
-            }
-            return [];
+            const url = `/api/bus/positions?routeId=${route.id}&routeName=${encodeURIComponent(route.name)}`;
+            const res = await api.get(url);
+            return res.data || [];
           } catch (routeErr) {
-            // 특정 노선 하나가 막히거나 에러를 뱉어도 다른 노선들을 살리기 위해 catch 처리
             console.warn(
               `[DEBUG] Bus Route ${route.name} Timeout or Error:`,
               routeErr.message,
@@ -381,7 +366,7 @@ const MS = () => {
   // //* [Modified Code] 다중 지하철 노선 상태 및 실시간 제어 로직
   const [subways, setSubways] = useState([]);
   const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false); // //* [Added Code] v13.0: 한도 초과 시 호출 차단 플래그
-  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false); // //* [Added Code] v14.0: 실시간 정보 수동 On/Off 스위치 (기본 OFF)
+  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false); // //* [Modified Code] 실시간 정보 기본 활성화 (사용자 편의성)
 
   // //* [Mentor's Tip] 핵심: 서울시의 1호선~9호선 및 신분당선, 수인분당선 전체를 가져오기 위한 다중 노선 세팅
   const SEOUL_SUBWAY_LINES = [
@@ -411,7 +396,8 @@ const MS = () => {
   ) => {
     try {
       // //* [Modified Code] v14.0: 수동 스위치가 꺼져있거나 차단 상태면 호출 안함
-      if (!subwayApiKey || isSubwayApiDisabled || !isSubwayRealtimeOn) return;
+      // //* [Modified Code] 이제 모든 API 인증은 백엔드에서 처리하므로 프론트엔드 키 체크 제거
+      if (isSubwayApiDisabled || !isSubwayRealtimeOn) return;
 
       // //* [Added Code] API 호출 횟수 최적화 1: 줌 레벨 제한 (v11.0)
       // 사용자의 요청대로 고해상도(50m, 30m, 20m)일 때만 실시간 데이터 로드
@@ -457,8 +443,13 @@ const MS = () => {
         try {
           // //* [Modified Code] 한 번에 가져오는 열차의 수를 20에서 200으로 대폭 상승
           // 2호선처럼 운행 열차가 많은 노선의 경우, 20대만 가져오면 화면 밖 열차만 가져와서 화면 안 열차가 누락되는 버그 해결
-          const url = `/api/subway/api/subway/${subwayApiKey}/json/realtimePosition/0/200/${encodeURIComponent(lineName)}`;
-          const res = await axios.get(url);
+          // //* [Modified Code] 백엔드 프록시 API 호출 (보안 및 캐싱 강화)
+          const url = `/api/subway/positions?line=${encodeURIComponent(lineName)}`;
+          const res = await api.get(url);
+
+          if (res.data) {
+            return res.data;
+          }
 
           // //* [Added Code] 서울시 API 특이사항: HTTP 200/500이면서 에러(한도초과 등)를 담아 보내는 다양한 경우 체크
           const errorData =
@@ -1147,24 +1138,59 @@ const MS = () => {
               }
             />
 
-            {/* //* [Modified Code] 노선별 색상 폴리라인 다중 렌더링 (ODsay segments 데이터 활용) */}
+            {/* //* [Modified Code] 노선별 색상 폴리라인 다중 렌더링 (도보 점선 + 대중교통 실선) */}
             {routeSegments.map((seg, segIdx) =>
               seg.path.length > 1 ? (
                 <Polyline
                   key={`route-seg-${segIdx}-${seg.laneName}`}
                   path={seg.path}
-                  strokeWeight={7}
-                  // //* [Modified Code] 배경 노선과 구분되도록 명도를 25% 하향하여 선명하게 강조
-                  strokeColor={adjustBrightness(seg.color, -25)}
-                  strokeOpacity={0.9}
-                  // //* [Added Code] 환승/도보 및 수단 변경 구간은 점선(dash)으로 처리
+                  // //* [Modified Code] 도보 구간은 가늘게(4), 대중교통은 굵게(7) 시각 구분
+                  strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7}
+                  strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)}
+                  strokeOpacity={seg.strokeStyle === 'dash' ? 0.7 : 0.9}
                   strokeStyle={seg.strokeStyle || 'solid'}
-                  zIndex={10}
+                  zIndex={seg.strokeStyle === 'dash' ? 9 : 10}
                 />
               ) : null,
             )}
 
-            {/* //* [Modified Code] 경로 경유역 마커: 첫 역(초록), 마지막 역(빨강), 중간역(흰색 작은 점) */}
+            {/* //* [Modified Code] 출발지(Origin) 마커 — 실제 검색한 장소 위치 */}
+            {routeResult && routeResult.origin && (
+              <CustomOverlayMap
+                key="route-origin-marker"
+                position={routeResult.origin}
+                zIndex={20}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="w-6 h-6 rounded-full border-3 border-white shadow-[0_2px_8px_rgba(59,130,246,0.5)] bg-blue-500 flex items-center justify-center">
+                    <span className="text-white text-[10px] font-black">S</span>
+                  </div>
+                  <div className="mt-1 bg-blue-500 px-2.5 py-1 rounded-lg shadow-lg">
+                    <span className="text-[10px] font-black text-white whitespace-nowrap">📍 출발</span>
+                  </div>
+                </div>
+              </CustomOverlayMap>
+            )}
+
+            {/* //* [Modified Code] 도착지(Destination) 마커 — 실제 검색한 장소 위치 */}
+            {routeResult && routeResult.destination && (
+              <CustomOverlayMap
+                key="route-dest-marker"
+                position={routeResult.destination}
+                zIndex={20}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="w-6 h-6 rounded-full border-3 border-white shadow-[0_2px_8px_rgba(239,68,68,0.5)] bg-red-500 flex items-center justify-center">
+                    <span className="text-white text-[10px] font-black">E</span>
+                  </div>
+                  <div className="mt-1 bg-red-500 px-2.5 py-1 rounded-lg shadow-lg">
+                    <span className="text-[10px] font-black text-white whitespace-nowrap">🏁 도착</span>
+                  </div>
+                </div>
+              </CustomOverlayMap>
+            )}
+
+            {/* //* [Modified Code] 경로 경유역 마커: 대중교통 정거장 표시 */}
             {routeResult &&
               routeResult.path &&
               routeResult.path

@@ -7,12 +7,10 @@
  * ODsay 공식 가이드 기반: path[].info.mapObj → loadLane(mapObject=0:0@{mapObj}) → lane[].section[].graphPos[]
  */
 
-import axios from 'axios';
+// //* [Added Code] v12.0: 공통 axios 인스턴스 (백엔드 경유)
+import { api } from '../../../utils/config';
 import { SUBWAY_STATION_COORDS_V2 } from '../subwayCoords';
 import { calibratePolyline } from './snapToTrack';
-
-const API_KEY = import.meta.env.VITE_ODSAY_API_KEY;
-const BASE_URL = 'https://api.odsay.com/v1/api'; // //* [Modified Code] 실배포 시에는 .env의 설정을 따르거나 실제 API 주소 사용
 
 // //* [Added Code] v11.0: API 호출 오남용 방지를 위한 요청 캐시 (과금 방지용)
 const requestCache = new Map();
@@ -154,11 +152,13 @@ const fetchLaneData = async (mapObj) => {
   }
   try {
     // ODsay 공식 가이드: "0:0@" + mapObj 형식
-    const fullMapObject = `0:0@${mapObj}`;
-    console.log('[ODsay loadLane] 호출:', fullMapObject);
+    // const fullMapObject = `0:0@${mapObj}`;
+    // console.log('[ODsay loadLane] 호출:', fullMapObject);
 
-    const res = await axios.get(`${BASE_URL}/loadLane`, {
-      params: { mapObject: fullMapObject, apiKey: API_KEY },
+    // //* [Modified Code] 백엔드에서 lane 데이터를 가져오도록 변경 가능하나, 
+    // //* 현재는 프론트엔드 가공 로직 유지를 위해 백엔드 API로 우회 호출
+    const res = await api.get('/api/subway/load-lane', {
+      params: { mapObject: mapObj },
     });
 
     const data = res.data;
@@ -214,16 +214,29 @@ const fetchLaneData = async (mapObj) => {
 const odsayService = {
   async searchStation(stationName) {
     try {
-      const res = await axios.get(`${BASE_URL}/searchStation`, {
-        params: { lang: 0, stationName, CID: 1000, apiKey: API_KEY },
+      // //* [Modified Code] 백엔드에서 이미 필터링된 데이터를 줄 수도 있으므로 구조 유연화
+      const res = await api.get('/api/subway/search-station', {
+        params: { stationName },
       });
-      if (!res.data?.result?.station) {
-        console.warn(`[ODsay searchStation] 결과 없음: ${stationName}`);
-        return null;
+      
+      const result = res.data?.result;
+      if (!result || (!result.station && !result.poi)) {
+        // //* [Added Code] 역 검색 실패 시 POI 검색으로 자동 폴백
+        const poiRes = await this.searchPOI(stationName);
+        return poiRes.length > 0 ? poiRes[0] : null;
       }
-      const stations = res.data.result.station;
-      const subwayStations = stations.filter((s) => s.stationClass === 2);
-      return subwayStations.length > 0 ? subwayStations[0] : stations[0];
+
+      if (result.station) {
+        const stations = Array.isArray(result.station) ? result.station : [result.station];
+        if (stations.length > 0) {
+          const subwayStations = stations.filter((s) => s.stationClass === 2);
+          return subwayStations.length > 0 ? subwayStations[0] : stations[0];
+        }
+      }
+
+      // 역 검색 결과 없으면 POI 폴백
+      const poiRes = await this.searchPOI(stationName);
+      return poiRes.length > 0 ? poiRes[0] : null;
     } catch (e) {
       console.error(`[ODsay searchStation] 실패: ${stationName}`, e.message);
       return null;
@@ -243,8 +256,8 @@ const odsayService = {
     requestCache.set(`poi_${searchKeyword}`, now);
 
     try {
-      const res = await axios.get(`${BASE_URL}/searchPOI`, {
-        params: { lang: 0, searchKeyword, CID: 1000, apiKey: API_KEY },
+      const res = await api.get('/api/subway/search-poi', {
+        params: { searchKeyword },
       });
       if (!res.data?.result?.poi) {
         console.warn(`[ODsay searchPOI] 결과 없음: ${searchKeyword}`);
@@ -286,7 +299,7 @@ const odsayService = {
     if (typeof start === 'object' && start.x && start.y) {
       SX = start.x;
       SY = start.y;
-      startName = start.name;
+      startName = start.name || start.poiName || start.stationName;
     } else {
       const startStation = await this.searchStation(start);
       if (!startStation)
@@ -299,7 +312,7 @@ const odsayService = {
     if (typeof end === 'object' && end.x && end.y) {
       EX = end.x;
       EY = end.y;
-      endName = end.name;
+      endName = end.name || end.poiName || end.stationName;
     } else {
       const endStation = await this.searchStation(end);
       if (!endStation) throw new Error(`도착지를 찾을 수 없습니다: "${end}"`);
@@ -312,30 +325,27 @@ const odsayService = {
       `[ODsay] ${startName} → ${endName} (${SX},${SY} → ${EX},${EY}) 통합 검색`,
     );
 
-    // 2단계: searchPubTransPathT 호출
+    // 2단계: 백엔드 통합 경로 검색 API 호출
     let pathRes;
     try {
-      pathRes = await axios.get(`${BASE_URL}/searchPubTransPathT`, {
+      pathRes = await api.get('/api/subway/search-path', {
         params: {
-          lang: 0,
-          SX: SX,
-          SY: SY,
-          EX: EX,
-          EY: EY,
-          OPT: 0,
-          // //* [Modified Code] v10.0: 최단거리가 API에 수동 매핑될 수 있으므로 분기 처리
-          SearchType: searchType === 2 ? 0 : searchType, // 2는 클라이언트에서 수동 정렬 예정
-          // //* [Modified Code] v10.0: 도보(3)는 전체(0)로 호출 후 필터링
-          SearchPathType: pathType === 3 ? 0 : pathType,
-          apiKey: API_KEY,
+          sx: SX,
+          sy: SY,
+          ex: EX,
+          ey: EY,
+          searchType,
+          pathType,
         },
       });
     } catch (err) {
-      throw new Error(`통합 경로 조회 실패: ${err.message}`);
+      // //* [Fixed] 백엔드가 500을 반환할 때 실제 에러 메시지를 추출 (기존: axios generic 메시지만 노출)
+      const serverMsg = err.response?.data?.error;
+      throw new Error(serverMsg || err.message);
     }
 
     if (pathRes.data?.error) {
-      throw new Error(pathRes.data.error.msg || '경로 검색 오류');
+      throw new Error(pathRes.data.error || '경로 검색 오류');
     }
 
     const resultPaths = pathRes.data?.result?.path;
@@ -386,6 +396,7 @@ const odsayService = {
    * //* [New Function] 선택된 경로의 상세 정보(타임라인, 지도 궤적)를 구축합니다.
    * @param {Object} selectedPath - 사용자가 선택한 경로 객체
    */
+  // //* [Modified Code] 전체 경로(도보+대중교통) 세그먼트를 subPath 순서대로 구축하도록 개편
   getPathDetail: async (selectedPath) => {
     const subPaths = selectedPath.raw.subPath || [];
     const formattedTimeline = [];
@@ -439,49 +450,178 @@ const odsayService = {
       }
     }
 
+    // //* [Modified Code] subPath 순서대로 segments를 구축 (도보 점선 + 대중교통 실선)
     const segments = [];
-    const stationPath = []; // //* [Added Code] 지도 마커용 정거장 리스트
-    const mapObj = selectedPath.raw.info?.mapObj;
-    if (mapObj) {
-      const laneData = await fetchLaneData(mapObj);
-      laneData.forEach((lane) => {
-        const laneName = LANE_TYPE_NAME[lane.type] || `노선${lane.type}`;
-        const color =
-          LANE_TYPE_COLOR[lane.type] ||
-          (lane.type < 10 ? '#33CC99' : '#666666');
+    const stationPath = [];
 
-        let path = lane.points;
-        if (lane.type <= 100) {
-          const stationCoords = SUBWAY_STATION_COORDS_V2[laneName] || {};
-          path = calibratePolyline(lane.points, stationCoords);
+    // 1) loadLane 데이터를 미리 가져옴 (대중교통 구간의 정밀 궤적용)
+    const mapObj = selectedPath.raw.info?.mapObj;
+    const allLaneData = mapObj ? await fetchLaneData(mapObj) : [];
+
+    // //* [Added Code] loadLane 데이터를 lane.type 기준으로 인덱싱 (subPath 매칭용)
+    // 같은 type(호선)이 여러번 나올 수 있으므로 배열로 관리
+    const laneDataByType = {};
+    allLaneData.forEach((lane) => {
+      if (!laneDataByType[lane.type]) laneDataByType[lane.type] = [];
+      laneDataByType[lane.type].push(lane);
+    });
+    // 각 type별 사용 인덱스 추적 (동일 호선 다중 구간 대응)
+    const laneUsageIdx = {};
+
+    // //* [Added Code] 출발지/도착지 좌표 추적
+    let originCoord = null;
+    let destCoord = null;
+
+    // 2) subPath를 순서대로 순회하며 segments 구축
+    for (let i = 0; i < subPaths.length; i++) {
+      const sub = subPaths[i];
+      const type = sub.trafficType;
+
+      if (type === 3) {
+        // //! [Original Code] 도보 구간 — 기존에는 세그먼트 생성 없이 타임라인만 추가
+        // //* [Modified Code] 도보 구간: startX/Y → endX/Y 점선 Polyline 생성
+        const startLat = parseFloat(sub.startY);
+        const startLng = parseFloat(sub.startX);
+        const endLat = parseFloat(sub.endY);
+        const endLng = parseFloat(sub.endX);
+
+        // 유효한 좌표가 있고 거리가 0 이상인 경우만 세그먼트 생성
+        if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng) && sub.distance > 0) {
+          segments.push({
+            laneName: '도보',
+            color: '#888888',
+            path: [
+              { lat: startLat, lng: startLng },
+              { lat: endLat, lng: endLng },
+            ],
+            strokeStyle: 'dash',
+          });
         }
 
-        const strokeStyle = lane.type === 3 ? 'dash' : 'solid';
-        segments.push({ laneName, color, path, strokeStyle });
-      });
-    }
+        // 출발지/도착지 좌표 추적 (첫 도보 = 출발지, 마지막 도보 = 도착지)
+        if (i === 0 && !isNaN(startLat) && !isNaN(startLng)) {
+          originCoord = { lat: startLat, lng: startLng };
+        }
+        if (i === subPaths.length - 1 && !isNaN(endLat) && !isNaN(endLng)) {
+          destCoord = { lat: endLat, lng: endLng };
+        }
 
-    // //* [Added Code] 모든 subPath의 정거장을 순회하며 stationPath 구축
-    subPaths.forEach((sub) => {
-      if (sub.trafficType === 1 || sub.trafficType === 2) {
-        const laneName = sub.lane?.[0]?.name || sub.lane?.[0]?.busNo;
-        sub.passStopList?.stations?.forEach((s) => {
-          stationPath.push({
-            name: s.stationName,
-            lat: parseFloat(s.y),
-            lng: parseFloat(s.x),
-            line: laneName,
+      } else if (type === 1 || type === 2) {
+        // //* [Modified Code] 대중교통 구간: loadLane 궤적 매칭 → 매칭 실패 시 stations 좌표 폴백
+        const lane = sub.lane?.[0] || {};
+        const stations = sub.passStopList?.stations || [];
+
+        // loadLane에서 해당 노선(subwayCode 또는 lane.type)에 대응하는 궤적 찾기
+        const laneType = lane.subwayCode || lane.type;
+        let matchedLane = null;
+
+        if (laneType && laneDataByType[laneType]) {
+          const idx = laneUsageIdx[laneType] || 0;
+          if (laneDataByType[laneType][idx]) {
+            matchedLane = laneDataByType[laneType][idx];
+            laneUsageIdx[laneType] = idx + 1;
+          }
+        }
+
+        // loadLane 매칭 실패 시 전체 laneData에서 첫 번째 미사용 lane 사용 시도
+        if (!matchedLane && allLaneData.length > 0) {
+          for (const ld of allLaneData) {
+            const ldType = ld.type;
+            const usedCount = laneUsageIdx[ldType] || 0;
+            const totalCount = (laneDataByType[ldType] || []).length;
+            if (usedCount < totalCount) {
+              // 아직 사용되지 않은 lane이 있으면 시도하지 않음 (다른 subPath용)
+            }
+          }
+        }
+
+        let segPath = [];
+        let segColor = '#666666';
+        let segName = '대중교통';
+
+        if (type === 1) {
+          // 지하철
+          segName = lane.name || '지하철';
+          segColor = LANE_TYPE_COLOR[lane.subwayCode] || '#0052A4';
+
+          if (matchedLane && matchedLane.points.length > 1) {
+            // loadLane 궤적 사용 + 보정
+            const calibLaneName = LANE_TYPE_NAME[matchedLane.type] || segName;
+            const stationCoords = SUBWAY_STATION_COORDS_V2[calibLaneName] || {};
+            segPath = calibratePolyline(matchedLane.points, stationCoords);
+          }
+        } else {
+          // 버스
+          const busInfo = BUS_TYPE_INFO[lane.type] || { name: '버스', color: '#666666' };
+          segName = `${lane.busNo || '버스'} (${busInfo.name})`;
+          segColor = busInfo.color;
+
+          if (matchedLane && matchedLane.points.length > 1) {
+            segPath = matchedLane.points;
+          }
+        }
+
+        // //* [Added Code] loadLane 매칭 실패 시 stations 좌표로 폴백
+        if (segPath.length < 2 && stations.length >= 2) {
+          segPath = stations
+            .map((s) => {
+              const lat = parseFloat(s.y);
+              const lng = parseFloat(s.x);
+              if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+                return { lat, lng };
+              }
+              // 로컬 좌표 DB에서 검색
+              const localCoord = findLocalCoords(s.stationName);
+              return localCoord || null;
+            })
+            .filter(Boolean);
+        }
+
+        if (segPath.length > 0) {
+          segments.push({
+            laneName: segName,
+            color: segColor,
+            path: segPath,
+            strokeStyle: 'solid',
           });
+        }
+
+        // stationPath 구축 (마커용)
+        stations.forEach((s) => {
+          const lat = parseFloat(s.y);
+          const lng = parseFloat(s.x);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            stationPath.push({
+              name: s.stationName,
+              lat,
+              lng,
+              line: type === 1 ? (lane.name || '지하철') : (lane.busNo || '버스'),
+            });
+          }
         });
+
+        // 출발지/도착지 좌표 폴백 (도보 구간이 없는 경우)
+        if (!originCoord && i === 0 && stations.length > 0) {
+          originCoord = { lat: parseFloat(stations[0].y), lng: parseFloat(stations[0].x) };
+        }
+        if (i === subPaths.length - 1 && stations.length > 0) {
+          const lastStation = stations[stations.length - 1];
+          if (!destCoord) {
+            destCoord = { lat: parseFloat(lastStation.y), lng: parseFloat(lastStation.x) };
+          }
+        }
       }
-    });
+    }
 
     return {
       ...selectedPath,
       walkTime: totalWalkTime,
       timeline: formattedTimeline,
       segments: segments,
-      path: stationPath, // //* [Added Code] MS.jsx 마커용
+      path: stationPath,
+      // //* [Added Code] 출발지/도착지 실제 좌표 (마커 렌더링용)
+      origin: originCoord,
+      destination: destCoord,
     };
   },
 };
@@ -616,17 +756,15 @@ export const loadLineTrack = async (lineName) => {
           continue;
         }
 
-        const pathRes = await axios.get(`${BASE_URL}/searchPubTransPathT`, {
+        // //* [Modified Code] 백엔드 통합 경로 검색 API 호출 (PreLoad 전용)
+        const pathRes = await api.get('/api/subway/search-path', {
           params: {
-            lang: 0,
-            SX: startSt.x,
-            SY: startSt.y,
-            EX: endSt.x,
-            EY: endSt.y,
-            OPT: 0,
-            SearchType: 0,
-            SearchPathType: 0,
-            apiKey: API_KEY,
+            sx: startSt.x,
+            sy: startSt.y,
+            ex: endSt.x,
+            ey: endSt.y,
+            searchType: 0,
+            pathType: 1, // 지하철 우선
           },
         });
 
