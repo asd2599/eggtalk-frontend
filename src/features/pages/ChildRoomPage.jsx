@@ -26,6 +26,11 @@ const ChildRoomPage = () => {
   const [hatchProgress, setHatchProgress] = useState(0);
   const [isHatchGameActive, setIsHatchGameActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
+
+  // 대기 및 제안 모달용 State 추가
+  const [waitingAction, setWaitingAction] = useState(null); // 내가 제안 후 대기 중인 액션 (FEED, CLEAN, PLAY)
+  const [proposedAction, setProposedAction] = useState(null); // 배우자가 제안한 액션 객체 { actionType, requesterName }
+
   const timerRef = useRef(null);
 
   const hasAlerted = useRef(false);
@@ -154,32 +159,15 @@ const ChildRoomPage = () => {
     };
 
     const handleActionProposed = ({ actionType, requesterName }) => {
-      const actionKr =
-        actionType === "FEED"
-          ? "분유 주기"
-          : actionType === "CLEAN"
-            ? "목욕 시키기"
-            : "놀아 주기";
-      if (
-        window.confirm(
-          `배우자(${requesterName})가 자식 펫에게 [${actionKr}] 활동을 제안했습니다. 함께 이동하시겠습니까?`,
-        )
-      ) {
-        socket.emit("child_action_response", {
-          childId: childPet.id,
-          approved: true,
-          actionType,
-        });
-      } else {
-        socket.emit("child_action_response", {
-          childId: childPet.id,
-          approved: false,
-          actionType,
-        });
-      }
+      // confirm 창 대신 State 업데이트로 UI에 모달 띄우기 유도
+      setProposedAction({ actionType, requesterName });
     };
 
     const handleActionSync = ({ actionType }) => {
+      // 두 사람이 모두 동의하여 게임 페이지로 넘어가기 전 모달 닫기
+      setWaitingAction(null);
+      setProposedAction(null);
+
       const pathMap = {
         FEED: "/child-room/feed",
         CLEAN: "/child-room/clean",
@@ -189,12 +177,16 @@ const ChildRoomPage = () => {
     };
 
     const handleActionRejected = ({ actionType }) => {
+      // 제안 거절됨 - 대기 모달 닫기
+      setWaitingAction(null);
+
       const actionKr =
         actionType === "FEED"
           ? "분유 주기"
           : actionType === "CLEAN"
             ? "목욕 시키기"
             : "놀아 주기";
+      // TODO: 나중에 이 alert도 커스텀 모달로 대체할 수 있으나, 일단 모달이 닫히면서 자연스럽게 알 수 있도록 유지
       alert(`배우자가 [${actionKr}] 활동에 동의하지 않았습니다. 😿`);
     };
 
@@ -383,21 +375,13 @@ const ChildRoomPage = () => {
       return;
     }
 
-    const actionKr =
-      actionType === "FEED"
-        ? "분유 주기"
-        : actionType === "CLEAN"
-          ? "목욕 시키기"
-          : "놀아 주기";
-
-    if (window.confirm(`배우자에게 [${actionKr}] 활동을 제안하시겠습니까?`)) {
-      socket.emit("child_action_request", {
-        childId: childPet.id,
-        actionType,
-        requesterName: myPet.name,
-      });
-      alert("배우자의 응답을 기다리는 중입니다... ⏳");
-    }
+    // 제안 요청 전송 후 대기 모달 오픈
+    socket.emit("child_action_request", {
+      childId: childPet.id,
+      actionType,
+      requesterName: myPet.name,
+    });
+    setWaitingAction(actionType);
   };
 
   const handleFarewellRequest = () => {
@@ -775,6 +759,99 @@ const ChildRoomPage = () => {
           </div>
         )}
       </div>
+
+      {/* --- 제안 대기 모달 (내가 제안하고 답변을 기다릴 때) --- */}
+      {waitingAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-700 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-rose-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
+              배우자를 기다리는 중...
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+              아이에게{" "}
+              <b className="text-rose-500">
+                {waitingAction === "FEED"
+                  ? "분유 주기"
+                  : waitingAction === "CLEAN"
+                    ? "목욕 시키기"
+                    : "놀아 주기"}
+              </b>
+              (을)를 제안했습니다.
+              <br />
+              배우자의 응답을 기다리고 있어요! ⏳
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* --- 제안 수락 모달 (배우자로부터 제안을 받았을 때) --- */}
+      {proposedAction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-2xl border border-rose-100 dark:border-rose-900/30 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              {proposedAction.actionType === "FEED" && (
+                <FiCoffee className="text-4xl text-rose-500 animate-bounce" />
+              )}
+              {proposedAction.actionType === "CLEAN" && (
+                <FiSettings className="text-4xl text-sky-500 animate-bounce" />
+              )}
+              {proposedAction.actionType === "PLAY" && (
+                <FiSmile className="text-4xl text-amber-500 animate-bounce" />
+              )}
+            </div>
+
+            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
+              <span className="text-rose-500">
+                {proposedAction.requesterName}
+              </span>
+              님의 제안!
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 mx-auto leading-relaxed">
+              자식 펫에게{" "}
+              <b>
+                {proposedAction.actionType === "FEED"
+                  ? "분유 주기"
+                  : proposedAction.actionType === "CLEAN"
+                    ? "목욕 시키기"
+                    : "놀아 주기"}
+              </b>{" "}
+              활동을 함께 하러 갈까요?
+            </p>
+
+            <div className="flex w-full gap-3">
+              <button
+                onClick={() => {
+                  socket.emit("child_action_response", {
+                    childId: childPet.id,
+                    approved: false,
+                    actionType: proposedAction.actionType,
+                  });
+                  setProposedAction(null);
+                }}
+                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                나중에
+              </button>
+              <button
+                onClick={() => {
+                  socket.emit("child_action_response", {
+                    childId: childPet.id,
+                    approved: true,
+                    actionType: proposedAction.actionType,
+                  });
+                  // 성공 메시지나 로딩 등은 sync 이벤트에 의해 navigate되므로 State만 정리
+                  setProposedAction(null);
+                  setWaitingAction(proposedAction.actionType); // 내가 수락했으므로 상대의 싱크를 기다리는 모드 돌입
+                }}
+                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-linear-to-r from-rose-500 to-orange-500 text-white shadow-md hover:shadow-lg transform transition hover:-translate-y-0.5"
+              >
+                좋아요! 💕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
