@@ -95,8 +95,9 @@ const ChildFeedPage = () => {
       });
     }
 
-    socket.on("ingredient_selected", ({ role, ingredientId, petName }) => {
-      if (petName === localStorage.getItem("petName")) {
+    socket.on("ingredient_selected", ({ role, ingredientId, petId }) => {
+      // 내 petId와 일치하면 내 선택, 아니면 상대방 선택으로 간주
+      if (String(petId) === String(localStorage.getItem("petId"))) {
         setMySelection((prev) => ({ ...prev, [role]: ingredientId }));
       } else {
         setPartnerSelection((prev) => ({ ...prev, [role]: ingredientId }));
@@ -118,12 +119,15 @@ const ChildFeedPage = () => {
       setIsEvaluating(false);
     });
 
-    socket.on("spouse_left_child_room", (petName) => {
+    const handlePartnerExit = (petName) => {
       alert(
         `${petName || "배우자"}님이 방에서 나갔어요. 함께 육아방으로 복귀합니다. 🐾`,
       );
       navigate("/child-room");
-    });
+    };
+
+    socket.on("spouse_left_child_room", handlePartnerExit);
+    socket.on("feed_partner_left", handlePartnerExit);
 
     return () => {
       socket.off("feed_room_waiting");
@@ -132,7 +136,8 @@ const ChildFeedPage = () => {
       socket.off("feed_game_evaluating");
       socket.off("feed_game_result");
       socket.off("feed_game_error");
-      socket.off("spouse_left_child_room");
+      socket.off("spouse_left_child_room", handlePartnerExit);
+      socket.off("feed_partner_left", handlePartnerExit);
 
       if (childPet?.id) {
         socket.emit("leave_feed_room", {
@@ -388,6 +393,10 @@ const ChildFeedPage = () => {
                     <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full ml-1">
                       내 역할
                     </span>
+                  ) : !roles.toppingSelectorId ? (
+                    <span className="text-[10px] bg-slate-400 text-white px-2 py-0.5 rounded-full ml-1 animate-pulse">
+                      배우자를 기다리는 중...
+                    </span>
                   ) : (
                     <span className="text-[10px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full ml-1">
                       상대방
@@ -403,6 +412,7 @@ const ChildFeedPage = () => {
                       disabled={
                         mySelection.topping ||
                         partnerSelection.topping ||
+                        !roles.toppingSelectorId ||
                         String(localStorage.getItem("petId")) !==
                           String(roles.toppingSelectorId)
                       }
