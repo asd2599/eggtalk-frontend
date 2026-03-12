@@ -5,15 +5,15 @@ import { api } from '../../../utils/config';
 /**
  * [SubwaySearch.jsx]
  * 역할: 출발지와 도착지를 검색하고 탐색을 시작하는 대중교통 검색바 컴포넌트입니다.
- * //* [Modified Code] UX 흐름 개편 및 통합 장소 검색(POI), 디바운스 로직이 적용되었습니다.
+ * //* [White Theme] 실시간 ON/OFF 버튼과 동일한 톤앤매너 및 로즈 컬러 제거 버전
  */
 
 const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
   const [startQuery, setStartQuery] = useState('');
   const [endQuery, setEndQuery] = useState('');
-  const [startPOI, setStartPOI] = useState(null); // //* [Added Code] 선택된 출발 POI 정보
-  const [endPOI, setEndPOI] = useState(null); // //* [Added Code] 선택된 도착 POI 정보
-  const [hasSearched, setHasSearched] = useState(false); // //* [Added Code] 첫 검색 실행 여부
+  const [startPOI, setStartPOI] = useState(null);
+  const [endPOI, setEndPOI] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const [startTime, setStartTime] = useState(
     new Date().toLocaleTimeString('en-GB', {
@@ -22,17 +22,14 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
     }),
   );
   const [suggestions, setSuggestions] = useState([]);
-  const [activeInput, setActiveInput] = useState(null); // 'start' or 'end'
-  /* //* [Modified Code] 수송 수단 및 최적화 옵션 상태 추가 (벤치마킹: ODsay) */
-  const [searchType, setSearchType] = useState(0); // 0:추천, 1:최단시간, 3:최소환승
-  const [pathType, setPathType] = useState(0); // 0:전체, 1:지하철, 2:버스
+  const [activeInput, setActiveInput] = useState(null);
+  const [searchType, setSearchType] = useState(0);
+  const [pathType, setPathType] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchRef = useRef(null);
   const debounceTimer = useRef(null);
 
-  // 외부 클릭 시 제안 목록 닫기 및 옵션 변경 감지 로직
   useEffect(() => {
-    // //* [Added Code] v10.0: 이미 검색된 상태에서 옵션이 바뀌면 자동으로 재검색 트리거
     if (hasSearched && !isLoading) {
       handleSearch();
     }
@@ -51,7 +48,6 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
 
   const handleSearch = () => {
     if (startQuery && endQuery) {
-      // //* [Modified Code] POI 객체가 있으면 객체를, 없으면 텍스트를 전달 (odsayService.getPublicTransPath 확장 대응)
       onSearch(
         startPOI || startQuery,
         endPOI || endQuery,
@@ -61,59 +57,45 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
       );
       setSuggestions([]);
       setSelectedIndex(-1);
-      setHasSearched(true); // //* [Added Code] 검색 실행 시 옵션 탭 노출을 위해 상태 변경
+      setHasSearched(true);
     } else {
       alert('출발지와 도착지를 모두 입력해주세요.');
     }
   };
 
-  /**
-   * //* [Modified Code] 역/주소 통합 검색 — "OO역" → ODsay, 주소/건물 → 카카오 Places
-   *
-   * ODsay searchPOI는 대중교통 노선/정류장만 지원하므로 주소 검색에 사용 불가.
-   * - "역"으로 끝나는 키워드 → ODsay searchStation (역 좌표 정확도 최우선)
-   * - 그 외 건물명/주소 → 카카오 Maps Places API (keywordSearch)
-   */
   const updateSuggestions = useCallback(async (query) => {
     if (!query || query.length < 2) {
       setSuggestions([]);
       return;
     }
-
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
     debounceTimer.current = setTimeout(async () => {
       const isStationQuery = /역$/.test(query.trim());
-
       if (isStationQuery) {
-        // --- ODsay 역 검색 ---
         try {
           const res = await api.get('/api/subway/search-station', {
             params: { stationName: query },
           });
           const stations = res.data?.result?.station;
           if (Array.isArray(stations) && stations.length > 0 && stations[0]) {
-            const formatted = stations
-              .filter(Boolean)
-              .slice(0, 10)
-              .map((s) => ({
-                name: s.stationName || s.poiName,
-                address: s.stationGroupName || '',
-                x: String(s.x),
-                y: String(s.y),
-                isStation: true,
-                source: 'odsay',
-              }));
+            const formatted = stations.filter(Boolean).slice(0, 10).map((s) => ({
+              name: s.stationName || s.poiName,
+              address: s.stationGroupName || '',
+              x: String(s.x),
+              y: String(s.y),
+              isStation: true,
+              source: 'odsay',
+            }));
             setSuggestions(formatted);
             setSelectedIndex(-1);
-            return; // ODsay 성공 시 카카오 검색 스킵
+            return;
           }
         } catch (err) {
-          console.warn('[역 검색] ODsay 실패, 카카오로 대체:', err.message);
+          console.warn('[역 검색] 실패');
         }
       }
 
-      // --- 카카오 Places 검색 (주소/건물 또는 역 검색 폴백) ---
       if (window.kakao?.maps?.services?.Places) {
         const ps = new window.kakao.maps.services.Places();
         ps.keywordSearch(query, (result, status) => {
@@ -121,9 +103,9 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
             const formatted = result.slice(0, 10).map((p) => ({
               name: p.place_name,
               address: p.road_address_name || p.address_name,
-              x: p.x, // 경도(longitude)
-              y: p.y, // 위도(latitude)
-              isStation: p.category_group_code === 'SW8', // SW8 = 지하철역
+              x: p.x,
+              y: p.y,
+              isStation: p.category_group_code === 'SW8',
               source: 'kakao',
             }));
             setSuggestions(formatted);
@@ -132,20 +114,12 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
           }
           setSelectedIndex(-1);
         });
-      } else {
-        console.warn('[Places] 카카오 SDK가 아직 준비되지 않았습니다.');
-        setSuggestions([]);
       }
     }, 300);
   }, []);
 
   const selectSuggestion = (suggestion) => {
-    const poi = {
-      name: suggestion.name,
-      x: suggestion.x,
-      y: suggestion.y,
-      source: suggestion.source || 'kakao', // 'odsay' | 'kakao'
-    };
+    const poi = { name: suggestion.name, x: suggestion.x, y: suggestion.y, source: suggestion.source || 'kakao' };
     if (activeInput === 'start') {
       setStartQuery(suggestion.name);
       setStartPOI(poi);
@@ -161,9 +135,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
     if (suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((prev) =>
-          prev < suggestions.length - 1 ? prev + 1 : prev,
-        );
+        setSelectedIndex((prev) => prev < suggestions.length - 1 ? prev + 1 : prev);
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
@@ -183,164 +155,123 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
     }
   };
 
-  // //* [Added Code] 수송 수단 대분류 정의
   const TRANSPORT_MODES = [
-    { label: '전체', value: 0, icon: '🚌🚇' },
-    { label: '지하철', value: 1, icon: '🚇' },
-    { label: '버스', value: 2, icon: '🚌' },
-    { label: '도보', value: 3, icon: '🚶' }, // //* [New Option] v10.0
+    { label: '전체', value: 0, icon: 'ri-command-line' },
+    { label: '지하철', value: 1, icon: 'ri-subway-line' },
+    { label: '버스', value: 2, icon: 'ri-bus-2-line' },
+    { label: '도보', value: 3, icon: 'ri-walk-line' },
   ];
 
-  // //* [Added Code] 상세 경로 옵션 정의
   const SEARCH_OPTIONS = [
-    { label: '추천', value: 0, icon: '✨' },
-    { label: '최단시간', value: 1, icon: '⚡' },
-    { label: '최소환승', value: 3, icon: '🔄' },
-    { label: '최단거리', value: 2, icon: '📏' }, // //* [New Option] v10.0
+    { label: '추천', value: 0, icon: 'ri-magic-line' },
+    { label: '최단시간', value: 1, icon: 'ri-flashlight-line' },
+    { label: '최소환승', value: 3, icon: 'ri-shuffle-line' },
+    { label: '최단거리', value: 2, icon: 'ri-ruler-2-line' },
   ];
 
   return (
     <div
       ref={searchRef}
-      className="absolute top-20 right-4 z-40 w-84 bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-5 flex flex-col gap-4 border border-indigo-100/50 pointer-events-auto transition-all duration-500"
+      className="w-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-7 flex flex-col gap-6 border-[2px] border-slate-200 pointer-events-auto"
     >
+      {/* 🧭 헤더 - 실시간 버튼의 화이트 테마 적용 */}
       <div className="flex justify-between items-center px-1">
-        <h3 className="text-base font-black text-gray-800 flex items-center gap-2">
-          <span className="p-1.5 bg-indigo-50 rounded-lg">🧭</span>
-          Place & Route
-        </h3>
+        <div className="flex flex-col">
+          <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 tracking-tight">
+            <i className="ri-compass-3-line text-sky-500 text-lg"></i>
+            NAVIGATION
+          </h3>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] ml-7">EggTalk Mobility System</span>
+        </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-rose-500 transition-colors bg-gray-50 hover:bg-rose-50 p-1.5 rounded-lg"
+            className="text-slate-400 hover:text-slate-600 transition-all bg-slate-50 hover:bg-slate-100 w-8 h-8 rounded-xl flex items-center justify-center border border-slate-100"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="3"
-            >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <i className="ri-close-fill text-xl"></i>
           </button>
         )}
       </div>
 
-      <div className="flex flex-col gap-3">
-        {/* 출발지 입력 */}
-        <div className="flex flex-col gap-1.5 relative">
-          <label className="text-[10px] font-black text-indigo-500 ml-1 uppercase tracking-widest flex items-center gap-1">
-            <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse" />
-            Origin
+      <div className="flex flex-col gap-5">
+        {/* 📍 출발지 (Origin) - 로즈 컬러를 스카이 블루로 통일 */}
+        <div className="flex flex-col gap-2 relative">
+          <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest flex items-center gap-2">
+            <i className="ri-map-pin-user-line text-xs text-sky-500"></i>
+            출발지
           </label>
-          <input
-            type="text"
-            value={startQuery}
-            onChange={(e) => {
-              setStartQuery(e.target.value);
-              setStartPOI(null); // 검색어 변경 시 좌표 정보 초기화
-              setActiveInput('start');
-              updateSuggestions(e.target.value);
-            }}
-            onFocus={() => {
-              setActiveInput('start');
-              updateSuggestions(startQuery);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="어디서 출발할까요?"
-            className="w-full h-12 px-5 bg-gray-50/50 rounded-2xl border-2 border-transparent focus:border-indigo-400 focus:bg-white outline-none text-sm transition-all shadow-sm font-bold placeholder:text-gray-300"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={startQuery}
+              onChange={(e) => {
+                setStartQuery(e.target.value);
+                setStartPOI(null);
+                setActiveInput('start');
+                updateSuggestions(e.target.value);
+              }}
+              onFocus={() => { setActiveInput('start'); updateSuggestions(startQuery); }}
+              onKeyDown={handleKeyDown}
+              placeholder="출발지를 입력하세요"
+              className="w-full h-12 px-5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-sky-500/30 focus:bg-white outline-none text-sm transition-all text-slate-800 placeholder:text-slate-300 font-bold shadow-inner"
+            />
+          </div>
           {activeInput === 'start' && suggestions.length > 0 && (
-            <div className="absolute top-[76px] left-0 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95">
               {suggestions.map((s, idx) => (
                 <div
                   key={`${s.name}-${idx}`}
                   onClick={() => selectSuggestion(s)}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`px-5 py-3 cursor-pointer transition-colors border-b border-gray-50 last:border-none flex flex-col gap-0.5 ${
-                    selectedIndex === idx
-                      ? 'bg-indigo-50'
-                      : 'hover:bg-indigo-50'
-                  }`}
+                  className={`px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-50 last:border-none flex flex-col gap-0.5 ${selectedIndex === idx ? 'bg-sky-50' : 'hover:bg-sky-50'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-gray-800">
-                      {s.isStation ? '🚇' : '📍'} {s.name}
-                    </span>
-                    {s.source === 'odsay' ? (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-indigo-100 text-indigo-600 rounded-md font-black">
-                        ODsay
-                      </span>
-                    ) : s.isStation ? (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 text-sky-600 rounded-md font-black">
-                        역
-                      </span>
-                    ) : null}
+                    <i className={`${s.isStation ? 'ri-subway-line' : 'ri-map-pin-2-line'} text-sky-500 text-xs`}></i>
+                    <span className="text-sm font-bold text-slate-700">{s.name}</span>
                   </div>
-                  <span className="text-[10px] text-gray-400 font-medium">
-                    {s.address}
-                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate ml-5">{s.address}</span>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* 도착지 입력 */}
-        <div className="flex flex-col gap-1.5 relative">
-          <label className="text-[10px] font-black text-rose-500 ml-1 uppercase tracking-widest flex items-center gap-1">
-            <div className="w-1.5 h-1.5 bg-rose-400 rounded-full animate-pulse" />
-            Destination
+        {/* 🏁 도착지 (Destination) - 로즈 컬러 대신 딥 네이비 포인트 */}
+        <div className="flex flex-col gap-2 relative">
+          <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest flex items-center gap-2">
+            <i className="ri-flag-line text-xs text-slate-800"></i>
+            도착지
           </label>
-          <input
-            type="text"
-            value={endQuery}
-            onChange={(e) => {
-              setEndQuery(e.target.value);
-              setEndPOI(null); // 검색어 변경 시 좌표 정보 초기화
-              setActiveInput('end');
-              updateSuggestions(e.target.value);
-            }}
-            onFocus={() => {
-              setActiveInput('end');
-              updateSuggestions(endQuery);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="어디로 갈까요?"
-            className="w-full h-12 px-5 bg-gray-50/50 rounded-2xl border-2 border-transparent focus:border-rose-400 focus:bg-white outline-none text-sm transition-all shadow-sm font-bold placeholder:text-gray-300"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={endQuery}
+              onChange={(e) => {
+                setEndQuery(e.target.value);
+                setEndPOI(null);
+                setActiveInput('end');
+                updateSuggestions(e.target.value);
+              }}
+              onFocus={() => { setActiveInput('end'); updateSuggestions(endQuery); }}
+              onKeyDown={handleKeyDown}
+              placeholder="목적지를 입력하세요"
+              className="w-full h-12 px-5 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-slate-800/30 focus:bg-white outline-none text-sm transition-all text-slate-800 placeholder:text-slate-300 font-bold shadow-inner"
+            />
+          </div>
           {activeInput === 'end' && suggestions.length > 0 && (
-            <div className="absolute top-[76px] left-0 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95">
               {suggestions.map((s, idx) => (
                 <div
                   key={`${s.name}-${idx}`}
                   onClick={() => selectSuggestion(s)}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`px-5 py-3 cursor-pointer transition-colors border-b border-gray-50 last:border-none flex flex-col gap-0.5 ${
-                    selectedIndex === idx ? 'bg-rose-50' : 'hover:bg-rose-50'
-                  }`}
+                  className={`px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-50 last:border-none flex flex-col gap-0.5 ${selectedIndex === idx ? 'bg-slate-100' : 'hover:bg-slate-100'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-black text-gray-800">
-                      {s.isStation ? '🚇' : '📍'} {s.name}
-                    </span>
-                    {s.source === 'odsay' ? (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-rose-100 text-rose-600 rounded-md font-black">
-                        ODsay
-                      </span>
-                    ) : s.isStation ? (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-sky-100 text-sky-600 rounded-md font-black">
-                        역
-                      </span>
-                    ) : null}
+                    <i className={`${s.isStation ? 'ri-subway-line' : 'ri-map-pin-2-line'} text-slate-600 text-xs`}></i>
+                    <span className="text-sm font-bold text-slate-700">{s.name}</span>
                   </div>
-                  <span className="text-[10px] text-gray-400 font-medium">
-                    {s.address}
-                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate ml-5">{s.address}</span>
                 </div>
               ))}
             </div>
@@ -348,81 +279,80 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
         </div>
       </div>
 
-      {/* //* [Modified Code] UX 개편: 검색 후 결과가 있거나 검색 중일 때만 옵션 탭 노출 */}
+      {/* ⚙️ 옵션 영역 - 화이트 테마에 어울리는 파스텔톤과 그레이 조합 */}
       {(hasSearched || isLoading) && (
-        <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-gray-400 ml-1 uppercase tracking-widest">
-              Optimization Matrix
-            </label>
-            <div className="flex bg-gray-100/50 p-1.5 rounded-2xl gap-1">
+        <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-500 border-t border-slate-100 pt-5">
+          <div className="flex flex-col gap-2.5">
+            <div className="flex bg-slate-100 p-1 rounded-2xl gap-1 border border-slate-200">
               {TRANSPORT_MODES.map((mode) => (
                 <button
                   key={mode.value}
                   onClick={() => setPathType(mode.value)}
-                  className={`flex-1 py-2 text-[10px] font-black rounded-xl transition-all flex flex-col items-center justify-center gap-0.5 ${
+                  className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all flex flex-col items-center gap-1 ${
                     pathType === mode.value
-                      ? 'bg-white text-indigo-600 shadow-md ring-1 ring-black/5'
-                      : 'text-gray-400 hover:text-gray-600'
+                      ? 'bg-white text-sky-500 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
-                  <span className="text-base">{mode.icon}</span>
+                  <i className={`${mode.icon} text-sm`}></i>
                   {mode.label}
-                </button>
-              ))}
-            </div>
-            <div className="flex bg-gray-100/50 p-1.5 rounded-2xl gap-1">
-              {SEARCH_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setSearchType(opt.value)}
-                  className={`flex-1 py-2.5 text-[10px] font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                    searchType === opt.value
-                      ? 'bg-white text-rose-500 shadow-md scale-[1.05]'
-                      : 'text-gray-400 hover:text-gray-600'
-                  }`}
-                >
-                  <span>{opt.icon}</span>
-                  {opt.label}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-black text-gray-400 ml-1 uppercase tracking-widest">
-              Departure Time
-            </label>
+          <div className="grid grid-cols-2 gap-2">
+            {SEARCH_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setSearchType(opt.value)}
+                className={`py-2.5 text-[10px] font-black rounded-xl transition-all flex items-center justify-center gap-2 border ${
+                  searchType === opt.value
+                    ? 'bg-slate-800 text-white border-slate-800 shadow-md'
+                    : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <i className={`${opt.icon} text-xs`}></i>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2 px-1">
+            <div className="flex items-center gap-2">
+               <i className="ri-time-line text-slate-400 text-xs"></i>
+               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">출발 시간</label>
+            </div>
             <input
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full h-11 px-5 bg-gray-50/50 rounded-2xl border-2 border-transparent focus:border-gray-200 outline-none text-sm transition-all shadow-sm font-bold"
+              className="w-full h-11 px-5 bg-slate-50 rounded-2xl border border-slate-200 outline-none text-xs text-slate-700 font-bold transition-all focus:border-sky-500/50"
             />
           </div>
         </div>
       )}
 
-      {/* 검색 버튼 */}
+      {/* 🚀 실행 버튼 - 우리 컬러 중 가장 메인인 스카이블루 활용 */}
       <button
         onClick={handleSearch}
         disabled={isLoading}
-        className={`w-full h-14 text-white font-black rounded-2xl shadow-2xl shadow-indigo-200 transition-all active:scale-[0.98] flex items-center justify-center gap-3 ${
+        className={`w-full h-14 text-white font-black rounded-2xl shadow-lg transition-all active:scale-95 flex items-center justify-center gap-3 ${
           isLoading
-            ? 'bg-gray-400 cursor-not-allowed opacity-70'
-            : 'bg-linear-to-r from-indigo-500 via-purple-500 to-rose-500 hover:shadow-indigo-300 ring-indigo-200 hover:ring-8 transition-all duration-300'
+            ? 'bg-slate-200 cursor-not-allowed text-slate-400'
+            : 'bg-sky-500 hover:bg-sky-600 shadow-sky-500/20'
         }`}
       >
         {isLoading ? (
           <>
-            <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
-            <span className="text-base">탐색 중...</span>
+            <div className="w-5 h-5 border-[3px] border-slate-300 border-t-sky-500 rounded-full animate-spin" />
+            <span className="text-sm tracking-tight text-slate-500">경로 검색 중...</span>
           </>
         ) : (
           <>
-            <span className="text-xl">🚀</span>
-            <span className="text-base">
-              {hasSearched ? '옵션으로 다시 찾기' : '모험 시작하기'}
+            <i className="ri-rocket-fill text-lg"></i>
+            <span className="text-sm font-black uppercase tracking-widest">
+              {hasSearched ? '검색하기' : '여정 떠나기'}
             </span>
           </>
         )}
