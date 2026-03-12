@@ -30,7 +30,6 @@ const CommonSide = ({ activeMenu }) => {
     { icon: FiUsers, label: "모임", path: "/lounge" },
     { icon: FiUserCheck, label: "친구", path: "/friends" },
     { icon: FiMap, label: "길찾기", path: "/ms" },
-    { icon: FiMonitor, label: "SH", path: "/sh" },
   ];
 
   return (
@@ -41,9 +40,10 @@ const CommonSide = ({ activeMenu }) => {
       </h2>
 
       {/* 2. 메인 네비게이션 트랙 */}
-      <nav className="flex-1 flex lg:flex-col items-center lg:items-center lg:p-10 overflow-hidden">
-        {/* ✅ [긴급수정 반영] justify-start를 기본으로 하되, min-w-full을 주어 '내 펫'이 밀리지 않게 고정 */}
-        <div className="flex-1 flex lg:flex-col items-center justify-start lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
+      {/* ✅ [수정] 모바일에서 중앙 정렬을 위해 justify-center 추가 */}
+      <nav className="flex-1 flex lg:flex-col items-center justify-center lg:items-center lg:p-10 overflow-hidden">
+        {/* ✅ [수정] justify-start를 justify-center로 변경하여 아이템들을 가운데로 모음 */}
+        <div className="flex-1 flex lg:flex-col items-center justify-center lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
           {/* 전체 메뉴 반복 출력 */}
           {menuItems.map((item) => (
             <button

@@ -38,7 +38,7 @@ const ChatPage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const [messages, setMessages] = useState([
-    { sender: "pet", text: "안녕! 나랑 대화하자멍 (또는 냥)!", isNew: false },
+    { sender: "pet", text: "안녕! 나랑 대화하자!", isNew: false },
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
