@@ -87,7 +87,6 @@ const PetStatusPage = ({ petData }) => {
                   <div key={sIdx} className="flex items-center gap-3 group cursor-default">
                     <span className="text-[12px] text-slate-500 dark:text-slate-400 font-bold group-hover:text-slate-900 dark:group-hover:text-sky-100 transition-colors w-14 shrink-0">{stat.label}</span>
                     <div className="flex-1 h-0.5 bg-slate-100 dark:bg-slate-900 rounded-full overflow-hidden relative">
-                      {/* ✅ bg-sky-400 앞에 !를 붙여서 최우선 적용(강제) 하였습니다. */}
                       <div 
                         className="h-full !bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.5)] transition-all duration-1000" 
                         style={{ width: `${stat.value}%` }} 
