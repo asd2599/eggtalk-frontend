@@ -2,49 +2,65 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
-  FiCoffee,
   FiStar,
+  FiMoon,
+  FiMap,
+  FiUsers,
+  FiSmile,
   FiHeart,
   FiCheckCircle,
+  FiCloud,
+  FiGift
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
 import Pet from "../pets/pet";
-import { useLocation } from "react-router-dom";
+
+const PLACES = [
+  { id: "place_star_sea", name: "별빛 바다", icon: "🌊" },
+  { id: "place_cloud_garden", name: "구름 정원", icon: "☁️" },
+  { id: "place_candy_forest", name: "캔디 숲", icon: "🍭" },
+  { id: "place_crystal_cave", name: "수정 동굴", icon: "💎" },
+  { id: "place_rainbow_hill", name: "무지개 언덕", icon: "🌈" },
+  { id: "place_moon_palace", name: "달빛 궁전", icon: "🏰" },
+];
+
+const GUIDES = [
+  { id: "guide_unicorn", name: "아기 유니콘", icon: "🦄" },
+  { id: "guide_talking_star", name: "말하는 별님", icon: "⭐" },
+  { id: "guide_little_fairy", name: "꼬마 요정", icon: "🧚" },
+  { id: "guide_gem_whale", name: "보석 고래", icon: "🐳" },
+  { id: "guide_flying_cat", name: "하늘 고양이", icon: "🐱" },
+  { id: "guide_dream_dragon", name: "꿈결 드래곤", icon: "🐉" },
+];
 
 const ChildFeedPage = () => {
   const navigate = useNavigate();
   const [childPet, setChildPet] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isFeeding, setIsFeeding] = useState(false);
 
-  // 🍼 협동 게임용 상태
-  const [gameMode, setGameMode] = useState(false); // 게임 진행 중 여부
+  // 🌌 꿈나라 모험용 상태
+  const [gameMode, setGameMode] = useState(false);
   const [hint, setHint] = useState("");
-  const [mySelection, setMySelection] = useState({ base: null, topping: null });
+  const [mySelection, setMySelection] = useState({ architect: null, guide: null });
   const [partnerSelection, setPartnerSelection] = useState({
-    base: null,
-    topping: null,
+    architect: null,
+    guide: null,
   });
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [gameResult, setGameResult] = useState(null);
-  const [waiting, setWaiting] = useState(true); // 배우자 대기용 상태
+  const [waiting, setWaiting] = useState(true);
   const [roles, setRoles] = useState({
-    baseSelectorId: null,
-    toppingSelectorId: null,
+    architect: null,
+    guide: null,
   });
 
-  const BASES = [
-    { id: "milk", name: "고소한 우유", icon: "🥛" },
-    { id: "soy", name: "담백한 두유", icon: "🫘" },
-    { id: "almond", name: "달콤 아몬드", icon: "🌰" },
-  ];
-
-  const TOPPINGS = [
-    { id: "honey", name: "달콤 꿀", icon: "🍯" },
-    { id: "choco", name: "진한 초코", icon: "🍫" },
-    { id: "berry", name: "상큼 베리", icon: "🍓" },
-  ];
+  // 내 역할인지 확인하는 헬퍼 함수
+  const isMe = (targetId) => {
+    if (!targetId) return false;
+    const myId = String(localStorage.getItem("petId") || "").trim().toLowerCase();
+    return myId === String(targetId).trim().toLowerCase();
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -54,17 +70,24 @@ const ChildFeedPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.data.childPet) {
-          setChildPet(new Pet(res.data.childPet));
+          const petObj = new Pet(res.data.childPet);
+          setChildPet(petObj);
+
+          // 소켓 룸 입장
+          socket.emit("join_dream_room", {
+            childId: petObj.id,
+            petId: localStorage.getItem("petId"),
+            petName: localStorage.getItem("petName"),
+          });
         }
       } catch (err) {
-        console.error(err);
+        console.error("Fetch Child Pet Error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
 
-    // 🍼 리스너를 먼저 등록 (서버 즉시 응답 유실 방지)
     const handleRoomWaiting = () => {
       setWaiting(true);
       setGameMode(false);
@@ -72,189 +95,170 @@ const ChildFeedPage = () => {
       setIsEvaluating(false);
     };
 
-    const handleGameStarted = ({ hint, baseSelectorId, toppingSelectorId }) => {
+    const handleGameStarted = ({ hint, rolesMap, currentChoices }) => {
+      console.log("[DREAM] Game Started Sync:", { rolesMap, currentChoices });
       setWaiting(false);
       setHint(hint);
-      setRoles({ baseSelectorId, toppingSelectorId });
       setGameMode(true);
       setGameResult(null);
       setIsEvaluating(false);
-      setMySelection({ base: null, topping: null });
-      setPartnerSelection({ base: null, topping: null });
+
+      if (rolesMap) {
+        setRoles({
+          architect: rolesMap.architect ? String(rolesMap.architect).trim() : null,
+          guide: rolesMap.guide ? String(rolesMap.guide).trim() : null
+        });
+      }
+      
+      if (currentChoices) {
+        const myId = String(localStorage.getItem("petId") || "").trim().toLowerCase();
+        const archId = String(rolesMap?.architect || "").trim().toLowerCase();
+        
+        const newMy = { architect: null, guide: null };
+        const newPartner = { architect: null, guide: null };
+
+        if (currentChoices.architect) {
+          if (myId === archId) newMy.architect = currentChoices.architect;
+          else newPartner.architect = currentChoices.architect;
+        }
+        if (currentChoices.guide) {
+          if (myId !== archId) newMy.guide = currentChoices.guide;
+          else newPartner.guide = currentChoices.guide;
+        }
+
+        setMySelection(newMy);
+        setPartnerSelection(newPartner);
+      } else {
+        setMySelection({ architect: null, guide: null });
+        setPartnerSelection({ architect: null, guide: null });
+      }
     };
 
-    socket.on("feed_room_waiting", handleRoomWaiting);
-    socket.on("feed_game_started", handleGameStarted);
+    socket.on("dream_game_started", handleGameStarted);
+    socket.on("dream_room_waiting", handleRoomWaiting);
 
-    // 리스너 등록 후 소켓 룸 입장
-    if (childPet?.id) {
-      socket.emit("join_feed_room", {
-        childId: childPet.id,
-        petId: localStorage.getItem("petId"),
-        petName: localStorage.getItem("petName"),
-      });
-    }
-
-    socket.on("ingredient_selected", ({ role, ingredientId, petId }) => {
-      // 내 petId와 일치하면 내 선택, 아니면 상대방 선택으로 간주
-      if (String(petId) === String(localStorage.getItem("petId"))) {
-        setMySelection((prev) => ({ ...prev, [role]: ingredientId }));
+    socket.on("dream_element_selected", ({ role, elementId, petId }) => {
+      const myId = String(localStorage.getItem("petId") || "").trim().toLowerCase();
+      const senderId = String(petId || "").trim().toLowerCase();
+      
+      if (senderId === myId) {
+        setMySelection((prev) => ({ ...prev, [role]: elementId }));
       } else {
-        setPartnerSelection((prev) => ({ ...prev, [role]: ingredientId }));
+        setPartnerSelection((prev) => ({ ...prev, [role]: elementId }));
       }
     });
 
-    socket.on("feed_game_evaluating", () => {
-      setIsEvaluating(true);
-    });
+    socket.on("dream_evaluating", () => setIsEvaluating(true));
 
-    socket.on("feed_game_result", (result) => {
+    socket.on("dream_game_result", (result) => {
       setIsEvaluating(false);
       setGameResult(result);
       setGameMode(false);
     });
 
-    socket.on("feed_game_error", ({ message }) => {
-      alert(message);
+    socket.on("dream_game_error", ({ message }) => {
+      alert(message || "에러가 발생했습니다.");
       setIsEvaluating(false);
     });
 
-    const handlePartnerExit = (petName) => {
-      alert(
-        `${petName || "배우자"}님이 방에서 나갔어요. 함께 육아방으로 복귀합니다. 🐾`,
-      );
-      navigate("/child-room");
+    const handlePartnerExit = (pName) => {
+      alert(`${pName || "배우자"}님이 꿈나라를 떠났습니다. 🌌`);
+      setGameMode(false);
+      setWaiting(true);
     };
 
-    socket.on("spouse_left_child_room", handlePartnerExit);
-    socket.on("feed_partner_left", handlePartnerExit);
+    socket.on("dream_partner_left", handlePartnerExit);
 
     return () => {
-      socket.off("feed_room_waiting");
-      socket.off("feed_game_started");
-      socket.off("ingredient_selected");
-      socket.off("feed_game_evaluating");
-      socket.off("feed_game_result");
-      socket.off("feed_game_error");
-      socket.off("spouse_left_child_room", handlePartnerExit);
-      socket.off("feed_partner_left", handlePartnerExit);
-
-      if (childPet?.id) {
-        socket.emit("leave_feed_room", {
-          childId: childPet.id,
-          petName: localStorage.getItem("petName"),
-        });
-      }
+      socket.off("dream_game_started");
+      socket.off("dream_room_waiting");
+      socket.off("dream_element_selected");
+      socket.off("dream_evaluating");
+      socket.off("dream_game_result");
+      socket.off("dream_game_error");
+      socket.off("dream_partner_left");
     };
-  }, [navigate, childPet?.id]);
+  }, []);
 
-  const handleFeed = async () => {
-    // 일반 분유 주기는 이제 사용하지 않음
-    return;
-  };
-
-  const handleSelectIngredient = (type, value) => {
+  const handleSelectElement = (role, elementId) => {
     if (!gameMode || isEvaluating) return;
 
-    // 역할 체크: 본인 역할이 아닌 카테고리는 선택 불가
+    if (role === "architect" && !isMe(roles.architect)) {
+      alert("배우자가 꿈의 장소를 고를 차례입니다!");
+      return;
+    }
+    if (role === "guide" && !isMe(roles.guide)) {
+      alert("배우자가 꿈의 친구를 고를 차례입니다!");
+      return;
+    }
+
     const myPetId = localStorage.getItem("petId");
-    const isBaseRole = String(myPetId) === String(roles.baseSelectorId);
-    const isToppingRole = String(myPetId) === String(roles.toppingSelectorId);
+    const myPetName = localStorage.getItem("petName");
 
-    if (type === "base" && !isBaseRole) {
-      alert("상대방이 베이스를 선택할 차례입니다!");
-      return;
-    }
-    if (type === "topping" && !isToppingRole) {
-      alert("상대방이 토핑을 선택할 차례입니다!");
-      return;
-    }
-
-    const role = type; // 서버는 role을 사용
-    const ingredientId = value;
-
-    setMySelection((prev) => ({ ...prev, [type]: value }));
-    socket.emit("select_ingredient", {
+    setMySelection((prev) => ({ ...prev, [role]: elementId }));
+    socket.emit("select_dream_element", {
       childId: childPet.id,
-      petId: socket.id,
+      petId: String(myPetId).trim().toLowerCase(),
       role,
-      ingredientId,
-      petName: childPet.name,
+      elementId,
+      petName: myPetName,
     });
   };
 
   // 결과 모달 컴포넌트
   const GameResultModal = ({ result, onClose }) => (
-    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-slate-800 w-full max-w-md rounded-[40px] overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0f172a]/80 backdrop-blur-md">
+      <div className="bg-white/10 backdrop-blur-2xl w-full max-w-md rounded-[40px] overflow-hidden shadow-[0_0_50px_rgba(99,102,241,0.3)] border border-white/20 animate-in zoom-in-95 duration-300">
         <div className="p-8 text-center">
-          <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-            <FiStar className="text-4xl text-emerald-500 fill-emerald-500" />
+          <div className="w-20 h-20 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-indigo-400/30">
+            <FiStar className="text-4xl text-indigo-400 fill-indigo-400" />
           </div>
-          <h2 className="text-3xl font-black text-slate-800 dark:text-white mb-2">
-            요리 점수: {result.score}점!
+          <h2 className="text-3xl font-black text-white mb-2">
+            꿈 탐험 완료!
           </h2>
+          <p className="text-indigo-200 font-bold mb-6 text-xl">점수: {result.score}점</p>
 
-          {/* 펫 능력치 변화 리스트 */}
-          {result.changes && (
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-2xl flex items-center gap-3 border border-rose-100 dark:border-rose-900/30">
-                <FiHeart className="text-rose-500" />
-                <div className="text-left">
-                  <p className="text-[10px] text-rose-400 font-bold uppercase">
-                    애정
-                  </p>
-                  <p className="text-sm font-black text-rose-700 dark:text-rose-300">
-                    +{result.changes.affection}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-2xl flex items-center gap-3 border border-blue-100 dark:border-blue-900/30">
-                <FiCoffee className="text-blue-500" />
-                <div className="text-left">
-                  <p className="text-[10px] text-blue-400 font-bold uppercase">
-                    허기
-                  </p>
-                  <p className="text-sm font-black text-blue-700 dark:text-blue-300">
-                    {result.changes.hunger}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-2xl flex items-center gap-3 border border-amber-100 dark:border-amber-900/30">
-                <FiStar className="text-amber-500" />
-                <div className="text-left">
-                  <p className="text-[10px] text-amber-400 font-bold uppercase">
-                    경험치
-                  </p>
-                  <p className="text-sm font-black text-amber-700 dark:text-amber-300">
-                    +{result.changes.exp}
-                  </p>
-                </div>
-              </div>
-              <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-2xl flex items-center gap-3 border border-emerald-100 dark:border-emerald-900/30">
-                <FiCheckCircle className="text-emerald-500" />
-                <div className="text-left">
-                  <p className="text-[10px] text-emerald-400 font-bold uppercase">
-                    공감
-                  </p>
-                  <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">
-                    +{result.changes.empathy}
-                  </p>
-                </div>
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="bg-rose-500/10 p-3 rounded-2xl flex items-center gap-3 border border-rose-400/20">
+              <FiHeart className="text-rose-400" />
+              <div className="text-left">
+                <p className="text-[10px] text-rose-300 font-bold uppercase">애정</p>
+                <p className="text-sm font-black text-white">+{result.changes?.affection || 0}</p>
               </div>
             </div>
-          )}
+            <div className="bg-emerald-500/10 p-3 rounded-2xl flex items-center gap-3 border border-emerald-400/20">
+              <FiCheckCircle className="text-emerald-400" />
+              <div className="text-left">
+                <p className="text-[10px] text-emerald-300 font-bold uppercase">건강</p>
+                <p className="text-sm font-black text-white">+{result.changes?.healthHp || 0}</p>
+              </div>
+            </div>
+            <div className="bg-amber-500/10 p-3 rounded-2xl flex items-center gap-3 border border-amber-400/20">
+              <FiStar className="text-amber-400" />
+              <div className="text-left">
+                <p className="text-[10px] text-amber-300 font-bold uppercase">경험치</p>
+                <p className="text-sm font-black text-white">+{result.changes?.exp || 0}</p>
+              </div>
+            </div>
+            <div className="bg-indigo-500/10 p-3 rounded-2xl flex items-center gap-3 border border-indigo-400/20">
+              <FiSmile className="text-indigo-400" />
+              <div className="text-left">
+                <p className="text-[10px] text-indigo-300 font-bold uppercase">상태</p>
+                <p className="text-[10px] font-black text-white truncate w-20">{result.changes?.hunger || "꿈결 같음"}</p>
+              </div>
+            </div>
+          </div>
 
-          <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-6 mb-8">
-            <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium text-lg">
+          <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10">
+            <p className="text-indigo-100 leading-relaxed font-medium text-lg italic">
               "{result.story}"
             </p>
           </div>
           <button
             onClick={onClose}
-            className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-black text-xl shadow-lg shadow-emerald-200 dark:shadow-none transition-all active:scale-95"
+            className="w-full py-5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-3xl font-black text-xl shadow-xl transition-all active:scale-95"
           >
-            확인! 🐾
+            기분 좋게 깨어나기 🐾
           </button>
         </div>
       </div>
@@ -263,214 +267,196 @@ const ChildFeedPage = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-[#fff9ee] dark:bg-[#0f172a] flex items-center justify-center">
-        <div className="text-slate-500 font-bold animate-pulse">로딩 중...</div>
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="text-indigo-400 font-bold animate-pulse text-xl">꿈나라로 떠나는 중...</div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-[#fff9ee] dark:bg-[#0f172a] p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-[#020617] bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] p-6 flex flex-col items-center overflow-x-hidden">
+      {gameResult && <GameResultModal result={gameResult} onClose={() => navigate("/child-room")} />}
+      
       <header className="w-full max-w-4xl flex justify-between items-center mb-12">
         <button
           onClick={() => navigate("/child-room")}
-          className="p-3 bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all text-slate-600 dark:text-slate-300"
+          className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl shadow-sm transition-all text-white/70 border border-white/10"
         >
           <FiArrowLeft size={24} />
         </button>
-        <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
-          Nursery Kitchen
-        </h1>
+        <div className="flex flex-col items-center">
+          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 uppercase tracking-[0.2em]">
+            Dream Journey
+          </h1>
+          <p className="text-[10px] text-indigo-400 font-black tracking-widest mt-1">AI 협동 꿈나라 모험</p>
+        </div>
         <div className="w-12" />
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center w-full max-w-4xl">
-        <div className="relative w-64 h-64 mb-12 animate-bounce-slow">
-          {childPet && childPet.draw("w-full h-full")}
+        <div className="relative w-64 h-64 mb-16">
+          <div className="absolute inset-0 bg-indigo-500/20 blur-[80px] rounded-full animate-pulse"></div>
+          <div className="relative z-10 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)] animate-float">
+            {childPet && childPet.draw("w-full h-full")}
+          </div>
+          <FiStar className="absolute -top-4 left-0 text-yellow-200 animate-spin-slow opacity-50" size={20} />
+          <FiMoon className="absolute top-10 -right-4 text-indigo-200 animate-bounce-slow opacity-50" size={24} />
         </div>
 
-        <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-700 w-full max-w-md text-center">
-          {waiting && !gameResult ? (
-            <div className="py-8">
-              <div className="w-16 h-16 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-                배우자를 기다리는 중...
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
-                두 명이 모두 입장하면
-                <br />
-                자동으로 AI 협동 요리가 시작됩니다!
-              </p>
-            </div>
-          ) : !gameMode && !gameResult ? (
-            <div className="py-8">
-              <div className="w-16 h-16 border-4 border-emerald-400 border-l-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-                요리 준비 중...
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
-                AI 몽글이가 오늘의 힌트를
-                <br />
-                준비하고 있습니다!
+        <div className="bg-white/5 backdrop-blur-xl p-8 rounded-[50px] border border-white/10 w-full max-w-lg shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+          {!gameMode && !gameResult ? (
+            <div className="py-12 text-center">
+              <div className="relative w-20 h-20 mx-auto mb-8">
+                <div className="absolute inset-0 border-4 border-indigo-400/20 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <h2 className="text-2xl font-black text-white mb-3">꿈나라 입구에서 대기 중</h2>
+              <p className="text-indigo-200/60 leading-relaxed font-medium">
+                배우자님과 함께 아기의 <br />
+                멋진 꿈을 설계하기 위해 연결 중입니다...
               </p>
             </div>
           ) : isEvaluating ? (
-            <div className="py-12">
-              <div className="w-16 h-16 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h2 className="text-xl font-black text-emerald-600 dark:text-emerald-400">
-                AI 몽글이가 시식 중...
+            <div className="py-12 text-center">
+              <div className="w-20 h-20 bg-indigo-500/10 rounded-full flex items-center justify-center mx-auto mb-8 animate-pulse border border-indigo-400/30">
+                <FiCloud className="text-4xl text-indigo-300" />
+              </div>
+              <h2 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-purple-300">
+                아기가 꿈을 꾸고 있어요...
               </h2>
-              <p className="text-slate-500 mt-2">잠시만 기다려주세요!</p>
+              <p className="text-indigo-200/60 mt-4 font-medium italic">"조용히 해주세요, 아주 아름다운 이야기가 만들어지고 있어요!"</p>
             </div>
           ) : (
-            <div className="space-y-8">
-              <div className="bg-amber-50 dark:bg-amber-900/20 p-5 rounded-3xl border border-amber-100 dark:border-amber-800">
-                <p className="text-amber-700 dark:text-amber-300 font-bold mb-1 flex items-center justify-center gap-2">
-                  <FiStar className="fill-amber-400 text-amber-400" />
-                  AI 몽글이의 요구
+            <div className="space-y-10">
+              <div className="bg-indigo-500/10 p-6 rounded-[32px] border border-indigo-400/20 relative overflow-hidden">
+                <div className="absolute -right-4 -top-4 opacity-10">
+                  <FiMoon size={80} />
+                </div>
+                <p className="text-[11px] text-indigo-400 font-black mb-2 flex items-center gap-2 tracking-widest uppercase">
+                  <FiStar className="fill-indigo-400" />
+                  아이의 소망
                 </p>
-                <p className="text-slate-800 dark:text-slate-100 font-medium">
+                <p className="text-white text-lg font-bold leading-relaxed relative z-10">
                   "{hint}"
                 </p>
               </div>
 
-              {/* 베이스 선택 */}
-              <div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
-                  <span className="w-8 h-px bg-slate-200 dark:bg-slate-700"></span>
-                  베이스 선택
-                  {String(localStorage.getItem("petId")) ===
-                  String(roles.baseSelectorId) ? (
-                    <span className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full ml-1">
-                      내 역할
-                    </span>
-                  ) : (
-                    <span className="text-[10px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full ml-1">
-                      상대방
-                    </span>
-                  )}
-                  <span className="w-8 h-px bg-slate-200 dark:bg-slate-700"></span>
-                </h3>
+              {/* 꿈의 장소 선택 (Architect) */}
+              <section>
+                <header className="flex items-center justify-between mb-5">
+                   <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-500/20 flex items-center justify-center">
+                      <FiMap className="text-indigo-400" size={16}/>
+                    </div>
+                    <h3 className="text-indigo-200 font-black text-sm uppercase tracking-wider">어디로 떠날까요?</h3>
+                   </div>
+                   {isMe(roles.architect) ? (
+                    <span className="px-3 py-1 bg-indigo-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-indigo-500/20">내 역할: 설계자</span>
+                   ) : (
+                    <span className="px-3 py-1 bg-white/5 text-indigo-300 text-[10px] font-black rounded-full border border-white/10">상대방: 설계자</span>
+                   )}
+                </header>
                 <div className="grid grid-cols-3 gap-3">
-                  {BASES.map((b) => (
+                  {PLACES.map((p) => (
                     <button
-                      key={b.id}
-                      onClick={() => handleSelectIngredient("base", b.id)}
-                      disabled={
-                        mySelection.base ||
-                        partnerSelection.base ||
-                        String(localStorage.getItem("petId")) !==
-                          String(roles.baseSelectorId)
-                      }
-                      className={`p-4 rounded-3xl transition-all flex flex-col items-center gap-2 border-2 ${
-                        mySelection.base === b.id
-                          ? "bg-emerald-50 border-emerald-500 text-emerald-700"
-                          : partnerSelection.base === b.id
-                            ? "bg-blue-50 border-blue-400 text-blue-700 opacity-60"
-                            : "bg-slate-50 border-transparent hover:border-slate-200 text-slate-600"
+                      key={p.id}
+                      onClick={() => handleSelectElement("architect", p.id)}
+                      disabled={mySelection.architect || partnerSelection.architect || !isMe(roles.architect)}
+                      className={`group relative p-4 rounded-3xl transition-all duration-300 border-2 overflow-hidden ${
+                        mySelection.architect === p.id
+                          ? "bg-indigo-500/20 border-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.2)]"
+                          : partnerSelection.architect === p.id
+                            ? "bg-white/5 border-white/10 opacity-40 cursor-not-allowed"
+                            : "bg-white/5 border-transparent hover:border-white/20 active:scale-95"
                       }`}
                     >
-                      <span className="text-2xl">{b.icon}</span>
-                      <span className="text-xs font-bold leading-tight">
-                        {b.name}
-                      </span>
-                      {partnerSelection.base === b.id && (
-                        <span className="text-[10px] bg-blue-400 text-white px-1.5 py-0.5 rounded-full">
-                          상대방
+                      <div className="relative z-10 flex flex-col items-center gap-2">
+                        <span className="text-2xl group-hover:scale-125 transition-transform duration-300">{p.icon}</span>
+                        <span className={`text-[11px] font-black ${mySelection.architect === p.id ? "text-indigo-200" : "text-white/60"}`}>
+                          {p.name}
                         </span>
+                      </div>
+                      {partnerSelection.architect === p.id && (
+                        <div className="absolute inset-0 bg-indigo-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                          <span className="text-[10px] font-black text-white/80 uppercase">Partner</span>
+                        </div>
                       )}
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
 
-              {/* 토핑 선택 */}
-              <div>
-                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center justify-center gap-2">
-                  <span className="w-8 h-px bg-slate-200 dark:bg-slate-700"></span>
-                  토핑 선택
-                  {String(localStorage.getItem("petId")) ===
-                  String(roles.toppingSelectorId) ? (
-                    <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full ml-1">
-                      내 역할
-                    </span>
-                  ) : !roles.toppingSelectorId ? (
-                    <span className="text-[10px] bg-slate-400 text-white px-2 py-0.5 rounded-full ml-1 animate-pulse">
-                      배우자를 기다리는 중...
-                    </span>
-                  ) : (
-                    <span className="text-[10px] bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full ml-1">
-                      상대방
-                    </span>
-                  )}
-                  <span className="w-8 h-px bg-slate-200 dark:bg-slate-700"></span>
-                </h3>
+              {/* 꿈의 가이드 선택 (Guide) */}
+              <section>
+                <header className="flex items-center justify-between mb-5">
+                   <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                      <FiUsers className="text-purple-400" size={16}/>
+                    </div>
+                    <h3 className="text-purple-200 font-black text-sm uppercase tracking-wider">누구와 함께할까요?</h3>
+                   </div>
+                   {isMe(roles.guide) ? (
+                    <span className="px-3 py-1 bg-purple-500 text-white text-[10px] font-black rounded-full shadow-lg shadow-purple-500/20">내 역할: 인도자</span>
+                   ) : (
+                    <span className="px-3 py-1 bg-white/5 text-purple-300 text-[10px] font-black rounded-full border border-white/10">상대방: 인도자</span>
+                   )}
+                </header>
                 <div className="grid grid-cols-3 gap-3">
-                  {TOPPINGS.map((t) => (
+                  {GUIDES.map((g) => (
                     <button
-                      key={t.id}
-                      onClick={() => handleSelectIngredient("topping", t.id)}
-                      disabled={
-                        mySelection.topping ||
-                        partnerSelection.topping ||
-                        !roles.toppingSelectorId ||
-                        String(localStorage.getItem("petId")) !==
-                          String(roles.toppingSelectorId)
-                      }
-                      className={`p-4 rounded-3xl transition-all flex flex-col items-center gap-2 border-2 ${
-                        mySelection.topping === t.id
-                          ? "bg-emerald-50 border-emerald-500 text-emerald-700"
-                          : partnerSelection.topping === t.id
-                            ? "bg-rose-50 border-rose-400 text-rose-700 opacity-60"
-                            : "bg-slate-50 border-transparent hover:border-slate-200 text-slate-600"
+                      key={g.id}
+                      onClick={() => handleSelectElement("guide", g.id)}
+                      disabled={mySelection.guide || partnerSelection.guide || !isMe(roles.guide)}
+                      className={`group relative p-4 rounded-3xl transition-all duration-300 border-2 overflow-hidden ${
+                        mySelection.guide === g.id
+                          ? "bg-purple-500/20 border-purple-400 shadow-[0_0_20px_rgba(168,85,247,0.2)]"
+                          : partnerSelection.guide === g.id
+                            ? "bg-white/5 border-white/10 opacity-40 cursor-not-allowed"
+                            : "bg-white/5 border-transparent hover:border-white/20 active:scale-95"
                       }`}
                     >
-                      <span className="text-2xl">{t.icon}</span>
-                      <span className="text-xs font-bold leading-tight">
-                        {t.name}
-                      </span>
-                      {partnerSelection.topping === t.id && (
-                        <span className="text-[10px] bg-rose-400 text-white px-1.5 py-0.5 rounded-full">
-                          상대방
+                      <div className="relative z-10 flex flex-col items-center gap-2">
+                        <span className="text-2xl group-hover:scale-125 transition-transform duration-300">{g.icon}</span>
+                        <span className={`text-[11px] font-black ${mySelection.guide === g.id ? "text-purple-200" : "text-white/60"}`}>
+                          {g.name}
                         </span>
+                      </div>
+                      {partnerSelection.guide === g.id && (
+                        <div className="absolute inset-0 bg-purple-900/40 backdrop-blur-[2px] flex items-center justify-center">
+                          <span className="text-[10px] font-black text-white/80 uppercase">Partner</span>
+                        </div>
                       )}
                     </button>
                   ))}
                 </div>
-              </div>
-
-              <p className="text-xs text-slate-400 font-medium">
-                {!mySelection.base && !mySelection.topping
-                  ? "하나의 재료를 골라보세요!"
-                  : "상대방의 선택을 기다려주세요..."}
-              </p>
+              </section>
             </div>
           )}
         </div>
       </main>
 
-      {gameResult && (
-        <GameResultModal
-          result={gameResult}
-          onClose={() => navigate("/child-room")}
-        />
-      )}
-
-      <style>{`
-        .animate-bounce-slow {
-          animation: bounce 3s infinite;
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        .animate-float {
+          animation: float 4s ease-in-out infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin 8s linear infinite;
         }
         @keyframes bounce {
-          0%,
-          100% {
-            transform: translateY(-5%);
-            animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-          }
-          50% {
-            transform: translateY(0);
-            animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-          }
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-10px); }
         }
-      `}</style>
+        .animate-bounce-slow {
+          animation: bounce 6s infinite;
+        }
+      `}} />
     </div>
   );
 };

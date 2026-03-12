@@ -67,6 +67,11 @@ const CreatePetPage = () => {
       });
 
       if (response.ok) {
+        const data = await response.json();
+        if (data.pet) {
+          localStorage.setItem("petId", data.pet.id);
+          localStorage.setItem("petName", data.pet.name);
+        }
         showToast("새로운 친구가 탄생했습니다! ✨");
         setTimeout(() => navigate("/main"), 1800);
       } else {

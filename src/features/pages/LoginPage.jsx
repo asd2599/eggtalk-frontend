@@ -55,6 +55,9 @@ const LoginPage = () => {
       
       if (data.token) {
         localStorage.setItem("token", data.token);
+        if (data.petId) {
+          localStorage.setItem("petId", data.petId);
+        }
         showToast("성공적으로 로그인되었습니다! ✨");
 
         setTimeout(() => {
