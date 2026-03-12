@@ -2,9 +2,9 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * [RouteList.jsx] v5.0
+ * [RouteList.jsx] v6.0
  * 검색된 경로들 중 4개 카테고리를 선별해 카드로 표시합니다.
- * //* [Tone & Manner] 화이트 테마, Remix Icon 적용 및 불투명도 강화
+ * //* [Feature Update] 목록 복귀를 위한 '뒤로 가기' 버튼 UI 추가
  */
 
 const CATEGORIES = [
@@ -56,15 +56,28 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
     : CATEGORIES;
 
   return (
-    <div className="flex flex-col gap-5 p-6 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col gap-5 p-6 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto custom-scrollbar border-[2px] border-slate-100">
+      
+      {/* ✅ 상단 헤더 영역 - 뒤로 가기 & 닫기 버튼 배치 */}
       <div className="flex justify-between items-center px-1">
-        <h3 className="text-slate-800 font-black text-base flex items-center gap-2 tracking-tight">
-          <i className="ri-list-check-2 text-sky-500"></i>
-          최적 경로
-        </h3>
+        <div className="flex items-center gap-3">
+          {/* [Added] 뒤로 가기 버튼 (검색창으로 돌아가고 싶을 때를 위한 배려) */}
+          <button
+            onClick={onClose} 
+            className="group flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-500 text-slate-400 hover:text-white transition-all border border-slate-100 hover:border-sky-400"
+            title="검색창으로 돌아가기"
+          >
+            <i className="ri-arrow-left-s-line text-xl group-hover:-translate-x-0.5 transition-transform"></i>
+          </button>
+
+          <h3 className="text-slate-800 font-black text-base flex items-center gap-2 tracking-tight">
+            최적 경로
+          </h3>
+        </div>
+
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 transition-all bg-slate-50 hover:bg-slate-100 p-1.5 rounded-xl border border-slate-100"
+          className="text-slate-400 hover:text-slate-600 transition-all bg-slate-50 hover:bg-slate-100 w-8 h-8 rounded-xl flex items-center justify-center border border-slate-100"
         >
           <i className="ri-close-fill text-lg"></i>
         </button>
@@ -84,7 +97,7 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
               onClick={() => onSelect(route)}
               className="group relative bg-slate-50/50 hover:bg-white border-[2px] border-slate-100 hover:border-sky-400 p-5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-sky-500/10"
             >
-              {/* 카테고리 라벨 배지 - Remix Icon 적용 */}
+              {/* 카테고리 라벨 배지 */}
               <div className="flex items-center gap-2 mb-4">
                 <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5 ${bg} ${color} uppercase tracking-wider`}>
                   <i className={`${icon} text-xs`}></i>
@@ -122,7 +135,7 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
                 </div>
               </div>
 
-              {/* 이동 수단 아이콘 리스트 - Remix Icon으로 시각화 */}
+              {/* 이동 수단 아이콘 리스트 */}
               <div className="flex items-center gap-2 flex-wrap bg-white/50 p-2 rounded-xl border border-slate-100 shadow-inner">
                 {route.subPaths
                   ?.filter((p) => p.trafficType !== 3)
@@ -156,7 +169,7 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
                 <span className="truncate max-w-[90px]">{route.lastEndStation}</span>
               </div>
 
-              {/* 우측 하단 화살표 */}
+              {/* 우측 하단 선택 화살표 */}
               <div className="absolute right-5 bottom-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
                 <div className="w-8 h-8 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
                   <i className="ri-arrow-right-up-line text-lg"></i>
