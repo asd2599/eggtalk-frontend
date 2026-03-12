@@ -4,7 +4,6 @@ import Pet from "../pets/pet";
 import "remixicon/fonts/remixicon.css";
 import CommonSide from "../pages/CommonSide";
 import ActionModal from "./ActionModal";
-import { SUBWAY_STATION_COORDS_V2 } from "./subwayCoords";
 import SubwayIcon from "./components/SubwayIcon";
 import { SUBWAY_LINE_MAP } from "./subwayLineMap";
 import { api } from "../../utils/config";
@@ -94,6 +93,7 @@ const MS = () => {
   const [isRouteListOpen, setIsRouteListOpen] = useState(false);
   const [petPosition, setPetPosition] = useState({ lat: 37.498095, lng: 127.02761 });
   const [mapLevel, setMapLevel] = useState(3);
+  const [currentMapLevel, setCurrentMapLevel] = useState(3);
   const mapBoundsRef = useRef(null);
 
   const [isSubwayApiDisabled] = useState(false);
@@ -179,17 +179,9 @@ const MS = () => {
       const promises = lines.map(async (lineName) => {
         try {
           const res = await api.get(`/api/subway/positions?line=${encodeURIComponent(lineName)}`);
-          if (res.data?.realtimePositionList) {
-            return res.data.realtimePositionList.map((item, index) => {
-              const rawStation = item.statnNm.trim().split("(")[0];
-              const coords = SUBWAY_STATION_COORDS_V2[lineName]?.[rawStation] || SUBWAY_STATION_COORDS_V2[lineName]?.[rawStation + "역"];
-              return coords ? {
-                id: `${item.trainNo}_${index}`, lat: coords.lat, lng: coords.lng, line: lineName,
-                updnLine: item.updnLine, angle: 0, trainName: `[${lineName}] ${item.statnNm}`,
-              } : null;
-            }).filter(Boolean);
-          }
-          return [];
+          // 백엔드는 처리된 객체 배열을 직접 반환 (lat, lng, angle, isExpress 포함)
+          const list = Array.isArray(res.data) ? res.data : [];
+          return list.filter(item => item.lat && item.lng);
         } catch (e) { return []; }
       });
       const results = await Promise.all(promises);
@@ -257,14 +249,21 @@ const MS = () => {
 
         <div className="absolute inset-0 w-full h-full z-0">
           {!error && !loading && (
-            <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => mapBoundsRef.current = { bounds: map.getBounds(), level: map.getLevel() }}>
+            <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
               <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
               {routeSegments.map((seg, i) => (
                 <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === "dash" ? 4 : 7} strokeColor={seg.strokeStyle === "dash" ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
               ))}
-              {subways.map((sub) => (
+              {currentMapLevel <= 3 && subways.map((sub) => (
                 <CustomOverlayMap key={sub.id} position={{ lat: sub.lat, lng: sub.lng }} yAnchor={0.5} zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}>
-                  <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || "#10b981"} />
+                  <div className="relative group cursor-pointer">
+                    <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || "#10b981"} isExpress={sub.isExpress} />
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 pointer-events-none">
+                      <div className="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded shadow-lg whitespace-nowrap border border-gray-200">
+                        {sub.trainName}
+                      </div>
+                    </div>
+                  </div>
                 </CustomOverlayMap>
               ))}
               {/* 펫 렌더링 생략(기존 동일) */}
