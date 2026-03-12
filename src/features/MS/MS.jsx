@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Pet from '../pets/pet';
+// //* [Added Code] 사이드바 컴포넌트 임포트
+import CommonSide from '../pages/CommonSide';
 
 import ActionModal from './ActionModal';
 import { SUBWAY_STATION_COORDS_V2 } from './subwayCoords';
@@ -794,8 +796,12 @@ const MS = () => {
   };
 
   useEffect(() => {
-    // 최초 실행 (영역 없이 전체 데이터, mapLevel 초기값 3 전달)
-    fetchSubwayPositions(null, 3);
+    // //* [Modified Code] 컴포넌트 마운트 및 의존성 변경 시, 켜져있다면 최초 실행
+    // 맵이 아직 초기화되지 않았다면 전체 데이터(bounds=null) 호출
+    if (isSubwayRealtimeOn && !mapBoundsRef.current?.bounds) {
+      fetchSubwayPositions(null, 3);
+    }
+    
     // //* [Modified Code] 인터벌 내부에서 Ref를 사용하여 항상 최신 영역과 확대 상태를 호출 (부하 감소를 위해 45초로 연장)
     const intervalId = setInterval(() => {
       // //* [Modified Code] v14.0: 수동 On 상태일 때만 정기 업데이트 수행
@@ -813,11 +819,11 @@ const MS = () => {
           mapBoundsRef.current?.level,
         );
       } else {
-        if (subways.length > 0) setSubways([]);
+        setSubways((prev) => (prev.length > 0 ? [] : prev));
       }
     }, 45000);
     return () => clearInterval(intervalId);
-  }, [subwayError]); // subwayError 상태를 감시하여 한도 초과 시 기민하게 대응
+  }, [subwayError, isSubwayRealtimeOn, isSubwayApiDisabled]); // //* [Modified Code] 상태들을 의존성 배열에 추가하여 폐쇄 함수(Closure) 업데이트
 
   // //* [Modified Code] 지도를 움직일 때마다 즉시 호출하는 대신 2초 Debounce 적용 (API 횟수 절약 핵심)
   useEffect(() => {
@@ -830,7 +836,7 @@ const MS = () => {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [mapBounds, mapLevel, subwayError, isSubwayApiDisabled]);
+  }, [mapBounds, mapLevel, subwayError, isSubwayApiDisabled, isSubwayRealtimeOn]); // //* [Modified Code] 스위치를 켰을 때도 즉시 반영되도록 의존성 추가
 
   // 키보드 방향키 이벤트를 감지하여 펫을 이동시키는 플로우 (다중 키 지원)
   useEffect(() => {
@@ -972,8 +978,14 @@ const MS = () => {
   const strokeDashoffset = circumference - (expPercent / 100) * circumference;
 
   return (
-    <div className="relative w-full h-screen bg-[#FDF0F5] overflow-hidden flex flex-col justify-between z-0">
-      {/* 상단 섹션 */}
+    // //* [Modified Code] 좌측 사이드바(CommonSide) 배치 영역 추가 (전체 flex 컨테이너)
+    <div className="flex w-full h-screen overflow-hidden">
+      {/* //* [Added Code] 공통 사이드바 삽입 (MS 메뉴 활성화) */}
+      <CommonSide activeMenu="MS" />
+      
+      {/* //* [Modified Code] 기존 MS 컨텐츠 영역 (flex-1 할당하여 나머지 영역 차지) */}
+      <div className="relative flex-1 h-screen bg-[#FDF0F5] overflow-hidden flex flex-col justify-between z-0">
+        {/* 상단 섹션 */}
       <div className="absolute top-0 left-0 w-full z-20 flex justify-between items-start p-4 h-32 pointer-events-none">
         {/* 좌측 상단: 레벨 & EXP 도넛 */}
         <div className="relative flex items-center justify-center w-[80px] h-[80px] pointer-events-auto">
@@ -1041,7 +1053,19 @@ const MS = () => {
         {/* //* [Added Code] v14.0: 실시간 지하철 위치 토글 버튼 (수동 제어 모드) */}
         <div className="absolute top-4 right-4 z-40 flex flex-col gap-2 items-end">
           <button
-            onClick={() => setIsSubwayRealtimeOn(!isSubwayRealtimeOn)}
+            onClick={() => {
+              const nextState = !isSubwayRealtimeOn;
+              setIsSubwayRealtimeOn(nextState);
+              if (!nextState) {
+                setSubways([]); // //* [Modified Code] 끄는 순간 마커 즉시 지우기
+              } else if (!isSubwayApiDisabled) {
+                // //* [Modified Code] 켜는 순간 현재 뷰페이저 기준으로 즉시 호출 (사용자 응답성 강화)
+                fetchSubwayPositions(
+                  mapBoundsRef.current?.bounds || null,
+                  mapBoundsRef.current?.level !== undefined ? mapBoundsRef.current?.level : 3
+                );
+              }
+            }}
             disabled={isSubwayApiDisabled}
             className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-lg transition-all active:scale-95 border-2 ${
               isSubwayRealtimeOn
@@ -1154,7 +1178,11 @@ const MS = () => {
                   path={seg.path}
                   // //* [Modified Code] 도보 구간은 가늘게(4), 대중교통은 굵게(7) 시각 구분
                   strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7}
-                  strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)}
+                  strokeColor={
+                    seg.strokeStyle === 'dash'
+                      ? seg.color
+                      : adjustBrightness(seg.color, -25)
+                  }
                   strokeOpacity={seg.strokeStyle === 'dash' ? 0.7 : 0.9}
                   strokeStyle={seg.strokeStyle || 'solid'}
                   zIndex={seg.strokeStyle === 'dash' ? 9 : 10}
@@ -1174,7 +1202,9 @@ const MS = () => {
                     <span className="text-white text-[10px] font-black">S</span>
                   </div>
                   <div className="mt-1 bg-blue-500 px-2.5 py-1 rounded-lg shadow-lg">
-                    <span className="text-[10px] font-black text-white whitespace-nowrap">📍 출발</span>
+                    <span className="text-[10px] font-black text-white whitespace-nowrap">
+                      📍 출발
+                    </span>
                   </div>
                 </div>
               </CustomOverlayMap>
@@ -1192,7 +1222,9 @@ const MS = () => {
                     <span className="text-white text-[10px] font-black">E</span>
                   </div>
                   <div className="mt-1 bg-red-500 px-2.5 py-1 rounded-lg shadow-lg">
-                    <span className="text-[10px] font-black text-white whitespace-nowrap">🏁 도착</span>
+                    <span className="text-[10px] font-black text-white whitespace-nowrap">
+                      🏁 도착
+                    </span>
                   </div>
                 </div>
               </CustomOverlayMap>
@@ -1375,9 +1407,9 @@ const MS = () => {
             // //* [Added Code] 타임라인 구간 클릭 시 해당 위치로 지도 중심 이동 (팬 뷰)
             onSegmentClick={(step) => {
               if (step.startX && step.startY) {
-                setPetPosition({ 
-                  lat: parseFloat(step.startY), 
-                  lng: parseFloat(step.startX) 
+                setPetPosition({
+                  lat: parseFloat(step.startY),
+                  lng: parseFloat(step.startX),
                 });
               }
             }}
@@ -1439,10 +1471,10 @@ const MS = () => {
 
       {/* 선택된 모달 팝업 렌더링 영역 */}
       {renderActiveModal()}
+      </div>
     </div>
   );
 };
-
 
 // TEST
 export default MS;
