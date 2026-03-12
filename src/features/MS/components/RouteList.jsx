@@ -39,20 +39,29 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
     );
   }
 
-  // 4개 카테고리별 최적 경로 선별
-  const bestRoutes = {
-    optimal:     routes[0],
-    minTime:     [...routes].sort((a, b) => a.totalTime - b.totalTime)[0],
-    minTransfer: [...routes].sort((a, b) => a.transferCount - b.transferCount)[0],
-    minDistance: [...routes].sort((a, b) => a.totalDistance - b.totalDistance)[0],
-  };
+  // //* [Added Code] 순수 도보 탐색 여부 확인
+  const isWalkOnly = routes[0]?.isWalkOnly;
+
+  // 4개 카테고리별 최적 경로 선별 (도보 전용일 경우 1개만)
+  const bestRoutes = isWalkOnly 
+    ? { optimal: routes[0] }
+    : {
+        optimal:     routes[0],
+        minTime:     [...routes].sort((a, b) => a.totalTime - b.totalTime)[0],
+        minTransfer: [...routes].sort((a, b) => a.transferCount - b.transferCount)[0],
+        minDistance: [...routes].sort((a, b) => a.totalDistance - b.totalDistance)[0],
+      };
+
+  const categoriesToRender = isWalkOnly 
+    ? [ { key: 'optimal', label: '도보 여정', icon: '🚶', sortKey: null } ]
+    : CATEGORIES;
 
   return (
     <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
       <div className="flex justify-between items-center mb-1">
         <h3 className="text-white font-bold text-lg flex items-center gap-2">
           <span className="bg-blue-500/20 text-blue-400 p-1.5 rounded-lg text-sm">
-            4가지
+            {isWalkOnly ? '단일' : '4가지'}
           </span>
           추천 경로
         </h3>
@@ -65,7 +74,7 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
       </div>
 
       <AnimatePresence>
-        {CATEGORIES.map(({ key, label, icon }, index) => {
+        {categoriesToRender.map(({ key, label, icon }, index) => {
           const route = bestRoutes[key];
           if (!route) return null;
 

@@ -211,6 +211,40 @@ const fetchLaneData = async (mapObj) => {
   }
 };
 
+/**
+ * //* [Added Code] Tmap API를 통해 실제 도보 경로 궤적 좌표를 가져온다.
+ * @param {number} startX - 출발지 경도 (lng)
+ * @param {number} startY - 출발지 위도 (lat)
+ * @param {number} endX - 도착지 경도 (lng)
+ * @param {number} endY - 도착지 위도 (lat)
+ * @param {string} startName - 출발지 이름 (옵션)
+ * @param {string} endName - 도착지 이름 (옵션)
+ * @returns {Promise<Array<{lat, lng}>>}
+ */
+const fetchTmapPedestrianPath = async (startX, startY, endX, endY, startName, endName) => {
+  if (!startX || !startY || !endX || !endY) return null;
+  try {
+    const res = await api.get('/api/tmap/pedestrian', {
+      params: {
+        startX,
+        startY,
+        endX,
+        endY,
+        startName: startName || '출발지',
+        endName: endName || '도착지'
+      }
+    });
+
+    if (res.data?.success && res.data?.result) {
+      return res.data.result; // //* [Modified Code] 반환 갱신: { path, totalDistance, totalTime }
+    }
+    return null;
+  } catch (err) {
+    console.warn('[Tmap Pedestrian] 호출 실패:', err.message);
+    return null;
+  }
+};
+
 const odsayService = {
   async searchStation(stationName) {
     try {
@@ -325,6 +359,60 @@ const odsayService = {
       `[ODsay] ${startName} → ${endName} (${SX},${SY} → ${EX},${EY}) 통합 검색`,
     );
 
+    // //* [Added Code] v12.0: 순수 도보(pathType === 3) 요청 시 Tmap API로 완전 우회 (Mocking)
+    if (pathType === 3) {
+      const walkResult = await fetchTmapPedestrianPath(SX, SY, EX, EY, startName, endName);
+      if (!walkResult || !walkResult.path || walkResult.path.length === 0) {
+        throw new Error('검색된 도보 경로가 없습니다.');
+      }
+      
+      // //* [Fixed] 백엔드가 재시작되지 않았을 경우를 대비하여 rawFeatureCollection에서도 추출 시도
+      const properties = walkResult.rawFeatureCollection?.features?.[0]?.properties || {};
+      const totalDist = walkResult.totalDistance || properties.totalDistance || 0;
+      const totalTimeSec = walkResult.totalTime || properties.totalTime || 0;
+      const totalTimeMin = Math.ceil(totalTimeSec / 60);
+
+      // ODsay 응답 형식(formattedPath)으로 완벽하게 Mocking하여 반환
+      return [{
+        pathType: 3, // 통합/도보
+        totalTime: totalTimeMin,
+        totalDistance: totalDist,
+        totalWalkDistance: totalDist,
+        totalFare: 0,
+        transferCount: 0,
+        firstStartStation: startName,
+        lastEndStation: endName,
+        mapObj: null, // 도보는 mapObj (ODsay 궤적) 없음
+        subPaths: [
+            {
+                trafficType: 3, 
+                distance: totalDist, 
+                sectionTime: totalTimeMin, 
+                startX: SX, 
+                startY: SY, 
+                endX: EX, 
+                endY: EY 
+            }
+        ],
+        raw: {
+            subPath: [
+                {
+                    trafficType: 3, 
+                    distance: totalDist, 
+                    sectionTime: totalTimeMin, 
+                    startX: SX, 
+                    startY: SY, 
+                    endX: EX, 
+                    endY: EY 
+                }
+            ]
+        },
+        queryOrigin: { lat: parseFloat(SY), lng: parseFloat(SX) },
+        queryDest: { lat: parseFloat(EY), lng: parseFloat(EX) },
+        isWalkOnly: true
+      }];
+    }
+
     // 2단계: 백엔드 통합 경로 검색 API 호출
     let pathRes;
     try {
@@ -375,6 +463,8 @@ const odsayService = {
         mapObj: path.info.mapObj,
         subPaths: path.subPath,
         raw: path,
+        queryOrigin: { lat: parseFloat(SY), lng: parseFloat(SX) },
+        queryDest: { lat: parseFloat(EY), lng: parseFloat(EX) },
       };
     });
 
@@ -383,11 +473,7 @@ const odsayService = {
       formattedPaths.sort((a, b) => a.totalDistance - b.totalDistance);
     }
 
-    // //* [Added Code] v10.0: 도보(3) 선택 시 필터링 (도보가 포함된 전체 경로 중 추천)
-    if (pathType === 3) {
-      // ODsay 결과 중 도보 비중이 높거나 우선순위가 높은 것 위주로 필터링 (또는 전체 노출하되 도보 최적화)
-      // 여기서는 전체를 보여주되, UI에서 '도보' 강조를 위해 그대로 둠 (또는 도보 전용 검색 메시지 유도)
-    }
+    // //* [Modified Code] v10.0: 도보 코드는 상단에서 가로챘으므로 제거
 
     return formattedPaths;
   },
@@ -414,6 +500,9 @@ const odsayService = {
           subwayCode: lane.subwayCode,
           startName: stations[0]?.stationName,
           endName: stations[stations.length - 1]?.stationName,
+          // //* [Added Code] 지도 이동을 위해 구간의 시작 좌표를 저장
+          startX: stations[0]?.x,
+          startY: stations[0]?.y,
           stationCount: sub.stationCount,
           time: sub.sectionTime,
           distance: sub.distance,
@@ -433,6 +522,9 @@ const odsayService = {
           color: busInfo.color,
           startName: stations[0]?.stationName,
           endName: stations[stations.length - 1]?.stationName,
+          // //* [Added Code] 지도 이동을 위해 구간의 시작 좌표를 저장
+          startX: stations[0]?.x,
+          startY: stations[0]?.y,
           stationCount: sub.stationCount,
           time: sub.sectionTime,
           distance: sub.distance,
@@ -445,6 +537,9 @@ const odsayService = {
             type: 'WALK',
             time: sub.sectionTime,
             distance: sub.distance,
+            // //* [Added Code] 지도 이동을 위해 도보 구간의 시작 좌표를 저장
+            startX: sub.startX,
+            startY: sub.startY,
           });
         }
       }
@@ -468,42 +563,81 @@ const odsayService = {
     // 각 type별 사용 인덱스 추적 (동일 호선 다중 구간 대응)
     const laneUsageIdx = {};
 
-    // //* [Added Code] 출발지/도착지 좌표 추적
-    let originCoord = null;
-    let destCoord = null;
+    // //* [Added Code] 출발지/도착지 좌표 추적 (검색 원본 좌표)
+    let originCoord = selectedPath.queryOrigin || null;
+    let destCoord = selectedPath.queryDest || null;
+
+    let lastPoint = originCoord; // 도보 연결용 이전 노드 좌표 추적
 
     // 2) subPath를 순서대로 순회하며 segments 구축
     for (let i = 0; i < subPaths.length; i++) {
       const sub = subPaths[i];
       const type = sub.trafficType;
+      const isLast = i === subPaths.length - 1;
 
       if (type === 3) {
         // //! [Original Code] 도보 구간 — 기존에는 세그먼트 생성 없이 타임라인만 추가
-        // //* [Modified Code] 도보 구간: startX/Y → endX/Y 점선 Polyline 생성
-        const startLat = parseFloat(sub.startY);
-        const startLng = parseFloat(sub.startX);
-        const endLat = parseFloat(sub.endY);
-        const endLng = parseFloat(sub.endX);
+        // //* [Modified Code] 도보 구간: 이전 노드의 끝 좌표부터 다음 노드의 시작 좌표까지 점선 연결(직접 계산)
+        let walkStart = lastPoint;
+        let walkEnd = null;
 
-        // 유효한 좌표가 있고 거리가 0 이상인 경우만 세그먼트 생성
-        if (!isNaN(startLat) && !isNaN(startLng) && !isNaN(endLat) && !isNaN(endLng) && sub.distance > 0) {
+        if (isLast) {
+          walkEnd = destCoord;
+        } else {
+          // 다음 대중교통 구간의 첫 번째 정거장 좌표를 도보의 목적지로 설정
+          const nextSub = subPaths[i + 1];
+          if (nextSub && (nextSub.trafficType === 1 || nextSub.trafficType === 2)) {
+            const nextStations = nextSub.passStopList?.stations || [];
+            if (nextStations.length > 0) {
+              walkEnd = { lat: parseFloat(nextStations[0].y), lng: parseFloat(nextStations[0].x) };
+            }
+          }
+        }
+
+        // 혹시 위치를 못 찾았다면 ODsay 응답값으로 폴백
+        if (!walkStart) {
+          walkStart = { lat: parseFloat(sub.startY), lng: parseFloat(sub.startX) };
+        }
+        if (!walkEnd) {
+          walkEnd = { lat: parseFloat(sub.endY), lng: parseFloat(sub.endX) };
+        }
+
+        if (
+          walkStart?.lat && !isNaN(walkStart.lat) && 
+          walkEnd?.lat && !isNaN(walkEnd.lat) && 
+          sub.distance > 0
+        ) {
+          // //* [Modified Code] Tmap API를 호출하여 실제 도보 경로 궤적 확보
+          let walkPathCoordinates = [];
+          try {
+            const walkResult = await fetchTmapPedestrianPath(
+              walkStart.lng,
+              walkStart.lat,
+              walkEnd.lng,
+              walkEnd.lat
+            );
+            if (walkResult && walkResult.path) {
+              walkPathCoordinates = walkResult.path;
+            }
+          } catch (e) {
+            console.warn('[Tmap] 도보 궤적 확보 실패, 직선으로 폴백합니다.', e);
+          }
+
+          // Tmap 결과가 없으면 기존처럼 직선 배열로 폴백
+          if (!walkPathCoordinates || walkPathCoordinates.length === 0) {
+            walkPathCoordinates = [walkStart, walkEnd];
+          }
+
           segments.push({
             laneName: '도보',
             color: '#888888',
-            path: [
-              { lat: startLat, lng: startLng },
-              { lat: endLat, lng: endLng },
-            ],
+            path: walkPathCoordinates,
             strokeStyle: 'dash',
           });
         }
 
-        // 출발지/도착지 좌표 추적 (첫 도보 = 출발지, 마지막 도보 = 도착지)
-        if (i === 0 && !isNaN(startLat) && !isNaN(startLng)) {
-          originCoord = { lat: startLat, lng: startLng };
-        }
-        if (i === subPaths.length - 1 && !isNaN(endLat) && !isNaN(endLng)) {
-          destCoord = { lat: endLat, lng: endLng };
+        if (walkEnd && !isNaN(walkEnd.lat)) {
+          lastPoint = walkEnd;
         }
 
       } else if (type === 1 || type === 2) {
@@ -599,6 +733,12 @@ const odsayService = {
             });
           }
         });
+
+        // //* [Added Code] 본 구간의 마지막 좌표를 lastPoint로 업데이트하여 다음 도보의 시작점으로 사용
+        if (stations.length > 0) {
+          const lastSt = stations[stations.length - 1];
+          lastPoint = { lat: parseFloat(lastSt.y), lng: parseFloat(lastSt.x) };
+        }
 
         // 출발지/도착지 좌표 폴백 (도보 구간이 없는 경우)
         if (!originCoord && i === 0 && stations.length > 0) {
