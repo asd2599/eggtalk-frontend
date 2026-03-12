@@ -57,6 +57,8 @@ const DatingPage = () => {
 
   const [roomUsers, setRoomUsers] = useState([]);
   const [messages, setMessages] = useState([]);
+  const messagesRef = useRef([]); // 최신 메시지 내역 추적 (타이머 리셋 방지용)
+  const isLeaving = useRef(false); // 퇴장 중인지 확인용
   const [inputValue, setInputValue] = useState("");
 
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
@@ -84,8 +86,13 @@ const DatingPage = () => {
     roomUsersRef.current = roomUsers;
   }, [roomUsers]);
 
+  // messages가 변경될 때마다 ref 업데이트
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   const fetchRoomInfo = useCallback(async () => {
-    if (!roomId) return;
+    if (!roomId || isLeaving.current) return;
     try {
       const token = localStorage.getItem("token");
       const res = await api.get(`/api/rooms/${roomId}`, {
@@ -100,9 +107,14 @@ const DatingPage = () => {
         roomUsersRef.current = usersWithInstances;
       }
     } catch (err) {
+      if (isLeaving.current) return;
       console.error("[DatingPage] Failed to fetch room info:", err);
+      if (err.response?.status === 404) {
+        alert("존재하지 않거나 이미 종료된 대화방입니다. 라운지로 이동합니다.");
+        navigate("/lounge");
+      }
     }
-  }, [roomId]);
+  }, [roomId, navigate]);
 
   // 1️⃣ 초기 방 정보 및 소켓 연결 로직 (중복 제거 및 통합)
   useEffect(() => {
@@ -161,21 +173,31 @@ const DatingPage = () => {
   const silenceTimerRef = useRef(null);
   const isAutoCommenting = useRef(false);
 
-  const handleAutoComment = async () => {
-    if (isAutoCommenting.current || roomUsers.length < 2) return;
+  // 메시지 하단 자동 스크롤
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollTop = chatEndRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleAutoComment = useCallback(async () => {
+    if (isAutoCommenting.current || roomUsers.length < 2 || isLeaving.current)
+      return;
     isAutoCommenting.current = true;
     try {
       const token = localStorage.getItem("token");
-      const lastTen = messages
+      const lastTen = messagesRef.current
         .filter((m) => !m.isSystem)
         .slice(-10)
         .map((m) => ({ sender: m.sender, message: m.message }));
+
       const res = await api.post(
         "/api/pets/auto-comment",
         { lastMessages: lastTen },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      if (res.data.reply) {
+
+      if (res.data.reply && !isLeaving.current) {
         const petReplyMsg = {
           sender: petData.name,
           message: res.data.reply,
@@ -197,26 +219,29 @@ const DatingPage = () => {
       console.error(err);
     } finally {
       isAutoCommenting.current = false;
+      // AI 답변 완료 후 10초 타이머 다시 시작
+      resetSilenceTimer();
     }
-  };
+  }, [roomId, petData?.name, roomUsers.length]);
 
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     if (
       roomUsers.length < 2 ||
       isAutoCommenting.current ||
-      !isAutoCommentEnabled
+      !isAutoCommentEnabled ||
+      isLeaving.current
     )
       return;
     silenceTimerRef.current = setTimeout(() => handleAutoComment(), 10000);
-  }, [roomUsers.length, messages, isAutoCommentEnabled]);
+  }, [roomUsers.length, isAutoCommentEnabled, handleAutoComment]);
 
   useEffect(() => {
     resetSilenceTimer();
     return () => {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     };
-  }, [messages, isAutoCommentEnabled, resetSilenceTimer]);
+  }, [resetSilenceTimer]);
 
   // 4️⃣ 소켓 리스너 (교배/친구 통합)
   useEffect(() => {
@@ -401,6 +426,9 @@ const DatingPage = () => {
       sender: targetName,
       isPetReply: true,
     });
+
+    // 선물 전송 성공 시 타이머 리셋
+    resetSilenceTimer();
   };
 
   const handleSendFriendRequest = async () => {
@@ -465,6 +493,7 @@ const DatingPage = () => {
       navigate("/lounge");
       return;
     }
+    isLeaving.current = true; // 퇴장 플래그 설정
     try {
       const token = localStorage.getItem("token");
       await api.post(
@@ -503,6 +532,8 @@ const DatingPage = () => {
       sender: petData.name,
     });
     setInputValue("");
+    // 메시지 전송 시 타이머 리셋
+    resetSilenceTimer();
   };
 
   if (loading)
