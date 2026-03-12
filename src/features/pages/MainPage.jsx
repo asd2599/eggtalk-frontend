@@ -61,6 +61,11 @@ const MainPage = () => {
           const loadedPet = new Pet(response.data.pet);
           setPetData(loadedPet);
           petNameRef.current = loadedPet.name;
+          
+          // 로컬 스토리지에 펫 정보 저장 (소켓 핸들러 및 다른 페이지에서 활용)
+          localStorage.setItem("petId", loadedPet.id);
+          localStorage.setItem("petName", loadedPet.name);
+          
           // 본인 로그인 알림 전송
           socket.emit("user_login", loadedPet.name);
         } else {
