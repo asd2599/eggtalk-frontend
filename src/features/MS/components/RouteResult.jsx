@@ -6,7 +6,8 @@ import { SUBWAY_LINE_COLORS } from '../MS';
  * 역할: 탐색된 통합 대중교통(지하철+버스+도보) 경로의 상세 정보를 시각적으로 보여주는 결과창 컴포넌트입니다.
  */
 
-const RouteResult = ({ result, startTime, onClose }) => {
+// //* [Modified Code] onSegmentClick 프롭스 추가 (구간 클릭 시 지도 중심 이동 처리용)
+const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
   if (!result) return null;
 
   // 전체 요금 포맷팅
@@ -103,7 +104,9 @@ const RouteResult = ({ result, startTime, onClose }) => {
             return (
               <div
                 key={index}
-                className="flex gap-4 min-h-[50px] relative group"
+                // //* [Modified Code] 클릭 시 지도 이동을 위한 인터랙션, hover 효과, cursor-pointer 추가
+                className="flex gap-4 min-h-[50px] relative group cursor-pointer hover:bg-gray-50/80 p-2 -mx-2 rounded-xl transition-all"
+                onClick={() => onSegmentClick && onSegmentClick(step)}
               >
                 {/* 수직 라인 */}
                 {index < result.timeline.length - 1 && (

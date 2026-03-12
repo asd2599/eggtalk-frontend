@@ -283,8 +283,8 @@ const MS = () => {
     };
   };
 
-  // 내 위치 받아와서 펫을 내 위치로 이동시키기
-  useEffect(() => {
+  // //* [Added Code] [Mentor's Tip] 위치 업데이트 로직을 별도로 분리하여 버튼 클릭 시에도 재사용할 수 있도록 합니다.
+  const handleCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -295,10 +295,18 @@ const MS = () => {
         },
         (err) => {
           console.error('Geolocation error:', err);
+          alert('위치 정보를 가져올 수 없습니다. 권한을 확인해주세요.');
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
       );
+    } else {
+      alert('이 브라우저에서는 현재 위치 기능을 지원하지 않습니다.');
     }
+  };
+
+  // //* [Modified Code] 초기 로드 시 내 위치 받아와서 펫을 내 위치로 이동시키기
+  useEffect(() => {
+    handleCurrentLocation();
   }, []);
 
   // //* [Modified Code] 공식 카카오맵 로더(Hook) 사용: 바닐라 JS 스크립트 조작 대신 React-way로 가장 안전하게 로드합니다.
@@ -1364,10 +1372,44 @@ const MS = () => {
               // //* [Modified Code] routePathCoords → routeSegments 초기화
               setRouteSegments([]);
             }}
+            // //* [Added Code] 타임라인 구간 클릭 시 해당 위치로 지도 중심 이동 (팬 뷰)
+            onSegmentClick={(step) => {
+              if (step.startX && step.startY) {
+                setPetPosition({ 
+                  lat: parseFloat(step.startY), 
+                  lng: parseFloat(step.startX) 
+                });
+              }
+            }}
           />
         )}
       </div>
 
+      {/* //* [Added Code] 내 위치(GPS)로 카메라 복귀 버튼 */}
+      <button
+        onClick={handleCurrentLocation}
+        className="absolute bottom-28 right-4 z-40 w-12 h-12 bg-white rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.15)] flex items-center justify-center border border-gray-100 hover:bg-gray-50 active:scale-95 transition-all duration-200 group"
+        title="현재 내 위치로 이동"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="w-6 h-6 text-gray-500 group-hover:text-[#00B4FF] transition-colors"
+        >
+          <circle cx="12" cy="12" r="4" fill="currentColor"></circle>
+          <path d="M12 2v3"></path>
+          <path d="M12 19v3"></path>
+          <path d="M5 12H2"></path>
+          <path d="M22 12h-3"></path>
+          <circle cx="12" cy="12" r="9" strokeWidth="2"></circle>
+        </svg>
+      </button>
+
+      {/* 바닥 액션 메뉴 바 */}
       <div className="w-full absolute bottom-6 left-0 right-0 z-20 flex justify-center gap-2 px-4 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
         {/* //* [Modified Code] 고유한 이름과 아이콘을 가진 배열 데이터를 기반으로 개별적인 박스 렌더링 */}
         {ACTION_MENUS.map((menu) => (
