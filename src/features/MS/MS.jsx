@@ -318,14 +318,18 @@ const MS = () => {
             <RouteResult 
               result={routeResult} 
               startTime={routeStartTime} 
-              onClose={() => { setRouteResult(null); setRouteSegments([]); }} 
+              onClose={() => {
+                setRouteResult(null);         // 1. 상세 정보창만 끈다.
+                setIsRouteListOpen(true);     // 2. 결과 목록 리스트는 다시 켠다.
+                setShowSearch(true);          // 3. 길 찾기 검색창도 그대로 유지한다!
+              }} 
               onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })} 
             />
           )}
         </div>
 
         {/* 현재 위치 버튼 */}
-        <div className="absolute bottom-52 right-[11px] z-45">
+        <div className="absolute bottom-54 right-[2px] z-45">
            <button
             onClick={handleCurrentLocation}
             className="w-9 h-9 bg-white rounded-md shadow-md flex items-center justify-center border border-slate-200 hover:bg-sky-50 active:scale-95 transition-all group"
