@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import Pet from '../pets/pet';
 import 'remixicon/fonts/remixicon.css'
-
-// ✅ 사이드바 컴포넌트 임포트
 import CommonSide from '../pages/CommonSide';
 
 import ActionModal from './ActionModal';
@@ -217,59 +215,60 @@ const MS = () => {
       
       <main className="flex-1 relative overflow-hidden">
         
-        {/* ✅ [레이아웃 최적화] 좌측 상단 영역: 버튼, 검색창, 결과창이 유기적으로 배치됨 */}
-        <div className="absolute top-6 left-8 md:left-10 z-50 flex flex-row items-start gap-4 pointer-events-none transition-all duration-300">
+        {/* 상단 버튼 영역 레이아웃 분리 */}
+        <div className="absolute top-6 left-8 md:left-10 z-50 flex flex-col items-start gap-4 pointer-events-none transition-all duration-300">
           
-          {/* 1. 길찾기 버튼 & 검색창 (수직 묶음) */}
-          <div className="flex flex-col items-start gap-1.5 pointer-events-auto">
+          {/* 1. 상단 고정 버튼 트랙 */}
+          <div className="flex flex-row items-center gap-3 pointer-events-auto">
+            {/* 길찾기 버튼 */}
             <button
               onClick={() => { setShowSearch(!showSearch); if (isRouteListOpen) setIsRouteListOpen(false); }}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 ${
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
                 showSearch 
                 ? 'bg-blue-600/90 border-blue-400 text-white shadow-blue-500/20' 
                 : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
               }`}
             >
               <i className={`ri-route-line text-lg ${showSearch ? 'text-white' : 'text-sky-500'}`}></i>
-              <div className="flex flex-col items-start pr-1">
-                <span className="text-[10px] font-black leading-none mb-0.5">길 찾기 {showSearch ? '닫기' : ''}</span>
+              <div className="flex flex-col items-start overflow-hidden">
+                <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">길 찾기 {showSearch ? '닫기' : ''}</span>
                 <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${showSearch ? 'text-blue-200' : 'text-slate-400'}`}>Route Finder</span>
               </div>
             </button>
 
-            {/* 버튼 바로 아래에 뜨는 검색창 */}
-            {showSearch && (
-              <div className="w-[280px] sm:w-[320px] mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+            {/* 실시간 버튼 */}
+            <button
+              onClick={() => { setIsSubwayRealtimeOn(!isSubwayRealtimeOn); if (isSubwayRealtimeOn) setSubways([]); }}
+              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
+                isSubwayRealtimeOn 
+                ? 'bg-blue-600/90 border-blue-400 text-white shadow-blue-500/20' 
+                : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
+              }`}
+            >
+              <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-white' : 'text-slate-400'}`}></i>
+              <div className="flex flex-col items-start overflow-hidden">
+                <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">실시간 {isSubwayRealtimeOn ? 'ON' : 'OFF'}</span>
+                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${isSubwayRealtimeOn ? 'text-blue-200' : 'text-slate-400'}`}>Realtime</span>
+              </div>
+            </button>
+          </div>
+
+          {/* 2. 하부 컨텐츠 */}
+          <div className="flex flex-row items-start gap-4 w-full">
+             {/* 검색창 */}
+             {showSearch && (
+              <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
                 <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} />
               </div>
             )}
+
+            {/* 결과 목록 */}
+            {isRouteListOpen && (
+              <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl">
+                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
+              </div>
+            )}
           </div>
-
-          {/* ✅ [핵심 수정] 2. 결과 목록(RouteList): 검색창의 오른쪽으로 배치 */}
-          {isRouteListOpen && (
-            <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl mt-[52px]">
-              {/* mt-[52px]는 '길찾기' 버튼의 높이와 간격을 고려하여 검색창 상단 라인에 맞춘 값입니다. */}
-              <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
-            </div>
-          )}
-        </div>
-
-        {/* 3. 우측 상단 실시간 버튼 */}
-        <div className="absolute top-6 right-8 md:right-10 z-50 pointer-events-none transition-all duration-300">
-          <button
-            onClick={() => { setIsSubwayRealtimeOn(!isSubwayRealtimeOn); if (isSubwayRealtimeOn) setSubways([]); }}
-            className={`pointer-events-auto flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 ${
-              isSubwayRealtimeOn 
-              ? 'bg-blue-600/90 border-blue-400 text-white shadow-blue-500/20' 
-              : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
-            }`}
-          >
-            <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-white' : 'text-slate-400'}`}></i>
-            <div className="flex flex-col items-start">
-              <span className="text-[10px] font-black leading-none mb-0.5">실시간 {isSubwayRealtimeOn ? 'ON' : 'OFF'}</span>
-              <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${isSubwayRealtimeOn ? 'text-blue-200' : 'text-slate-400'}`}>Realtime</span>
-            </div>
-          </button>
         </div>
 
         <div className="absolute inset-0 w-full h-full z-0">
@@ -283,7 +282,6 @@ const MS = () => {
             >
               <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
 
-              {/* 경로 폴리라인 및 마커 유지 */}
               {routeSegments.map((seg, i) => (
                 <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
               ))}
@@ -296,7 +294,6 @@ const MS = () => {
                 </CustomOverlayMap>
               ))}
 
-              {/* PET 얼굴 & 경험치 보더 */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
                 <div 
                   className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
@@ -313,22 +310,20 @@ const MS = () => {
             </Map>
           )}
 
-          {/* 최종 경로 결과 위젯 */}
           {routeResult && (
             <RouteResult 
               result={routeResult} 
               startTime={routeStartTime} 
               onClose={() => {
-                setRouteResult(null);         // 1. 상세 정보창만 끈다.
-                setIsRouteListOpen(true);     // 2. 결과 목록 리스트는 다시 켠다.
-                setShowSearch(true);          // 3. 길 찾기 검색창도 그대로 유지한다!
+                setRouteResult(null);
+                setIsRouteListOpen(true);
+                setShowSearch(true);
               }} 
               onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })} 
             />
           )}
         </div>
 
-        {/* 현재 위치 버튼 */}
         <div className="absolute bottom-54 right-[2px] z-45">
            <button
             onClick={handleCurrentLocation}
