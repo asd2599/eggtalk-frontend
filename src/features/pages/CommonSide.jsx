@@ -11,6 +11,7 @@ import {
   FiUsers,
   FiUserCheck,
   FiHeart,
+  FiMap,
 } from "react-icons/fi";
 
 const CommonSide = ({ activeMenu }) => {
@@ -23,13 +24,12 @@ const CommonSide = ({ activeMenu }) => {
 
   const menuItems = [
     { icon: FiSmile, label: "내 펫", path: "/main" },
-    { icon: FiHeart, label: "공동육아", path: "/child-room" },
+    { icon: FiHeart, label: "육아", path: "/child-room" },
     { icon: FiAward, label: "랭킹", path: "/ranking" },
     { icon: FiMessageCircle, label: "대화", path: "/chat" },
-    { icon: FiUsers, label: "라운지", path: "/lounge" },
+    { icon: FiUsers, label: "모임", path: "/lounge" },
     { icon: FiUserCheck, label: "친구", path: "/friends" },
-    { icon: FiBox, label: "DD", path: "/dd" },
-    { icon: FiCloud, label: "MS", path: "/ms" },
+    { icon: FiMap, label: "길찾기", path: "/ms" },
     { icon: FiMonitor, label: "SH", path: "/sh" },
   ];
 

@@ -2,24 +2,25 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * [RouteList.jsx] v4.0
- * 검색된 경로들 중 4개 카테고리(최적/최소시간/최소환승/최소거리)를 선별해 카드로 표시합니다.
+ * [RouteList.jsx] v5.0
+ * 검색된 경로들 중 4개 카테고리를 선별해 카드로 표시합니다.
+ * //* [Tone & Manner] 화이트 테마, Remix Icon 적용 및 불투명도 강화
  */
 
 const CATEGORIES = [
-  { key: 'optimal',     label: '최적',    icon: '✨', sortKey: null },
-  { key: 'minTime',     label: '최소시간', icon: '⚡', sortKey: 'totalTime' },
-  { key: 'minTransfer', label: '최소환승', icon: '🔄', sortKey: 'transferCount' },
-  { key: 'minDistance', label: '최소거리', icon: '📏', sortKey: 'totalDistance' },
+  { key: 'optimal',     label: '최적',     icon: 'ri-magic-line',     color: 'text-sky-500',   bg: 'bg-sky-50' },
+  { key: 'minTime',     label: '최소시간',  icon: 'ri-flashlight-line', color: 'text-amber-500', bg: 'bg-amber-50' },
+  { key: 'minTransfer', label: '최소환승',  icon: 'ri-shuffle-line',    color: 'text-indigo-500', bg: 'bg-indigo-50' },
+  { key: 'minDistance', label: '최소거리',  icon: 'ri-ruler-2-line',    color: 'text-emerald-500', bg: 'bg-emerald-50' },
 ];
 
 const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center p-10 space-y-4">
-        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-400 font-medium animate-pulse text-lg">
-          최적의 모험 경로를 계산 중입니다...
+      <div className="flex flex-col items-center justify-center p-12 space-y-4 bg-white rounded-[2rem]">
+        <div className="w-10 h-10 border-[3px] border-sky-100 border-t-sky-500 rounded-full animate-spin" />
+        <p className="text-slate-400 font-bold animate-pulse text-sm uppercase tracking-widest">
+          경로 탐색 중...
         </p>
       </div>
     );
@@ -27,22 +28,20 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
 
   if (!routes || routes.length === 0) {
     return (
-      <div className="p-8 text-center bg-slate-800/50 rounded-2xl border border-slate-700/50">
-        <span className="text-4xl mb-3 block">🗺️</span>
-        <p className="text-slate-300 font-semibold mb-1">탐색된 경로가 없습니다.</p>
-        <p className="text-slate-500 text-sm">
+      <div className="p-10 text-center bg-white rounded-[2rem] border border-slate-200 shadow-xl">
+        <i className="ri-map-pin-range-line text-4xl text-slate-300 mb-4 block"></i>
+        <p className="text-slate-600 font-bold mb-2 text-lg">탐색된 경로가 없습니다.</p>
+        <p className="text-slate-400 text-xs leading-relaxed font-medium">
           도보 전용 경로는 1.5km 이내일 때 가장 효율적입니다.
           <br />
-          수단 옵션을 '전체'로 변경하여 대중교통을 확인해보세요.
+          옵션을 '전체'로 변경하여 다시 확인해보세요.
         </p>
       </div>
     );
   }
 
-  // //* [Added Code] 순수 도보 탐색 여부 확인
   const isWalkOnly = routes[0]?.isWalkOnly;
 
-  // 4개 카테고리별 최적 경로 선별 (도보 전용일 경우 1개만)
   const bestRoutes = isWalkOnly 
     ? { optimal: routes[0] }
     : {
@@ -53,94 +52,95 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
       };
 
   const categoriesToRender = isWalkOnly 
-    ? [ { key: 'optimal', label: '도보 여정', icon: '🚶', sortKey: null } ]
+    ? [ { key: 'optimal', label: '도보 여정', icon: 'ri-walk-line', color: 'text-sky-500', bg: 'bg-sky-50' } ]
     : CATEGORIES;
 
   return (
-    <div className="flex flex-col gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
-      <div className="flex justify-between items-center mb-1">
-        <h3 className="text-white font-bold text-lg flex items-center gap-2">
-          <span className="bg-blue-500/20 text-blue-400 p-1.5 rounded-lg text-sm">
-            {isWalkOnly ? '단일' : '4가지'}
-          </span>
-          추천 경로
+    <div className="flex flex-col gap-5 p-6 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto custom-scrollbar">
+      <div className="flex justify-between items-center px-1">
+        <h3 className="text-slate-800 font-black text-base flex items-center gap-2 tracking-tight">
+          <i className="ri-list-check-2 text-sky-500"></i>
+          최적 경로
         </h3>
         <button
           onClick={onClose}
-          className="text-slate-500 hover:text-white transition-colors text-sm font-medium"
+          className="text-slate-400 hover:text-slate-600 transition-all bg-slate-50 hover:bg-slate-100 p-1.5 rounded-xl border border-slate-100"
         >
-          닫기
+          <i className="ri-close-fill text-lg"></i>
         </button>
       </div>
 
       <AnimatePresence>
-        {categoriesToRender.map(({ key, label, icon }, index) => {
+        {categoriesToRender.map(({ key, label, icon, color, bg }, index) => {
           const route = bestRoutes[key];
           if (!route) return null;
 
           return (
             <motion.div
               key={key}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.07 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.08 }}
               onClick={() => onSelect(route)}
-              className="group relative bg-slate-800/80 hover:bg-slate-700/90 border border-slate-700/50 hover:border-blue-500/50 p-4 rounded-2xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-blue-500/10"
+              className="group relative bg-slate-50/50 hover:bg-white border-[2px] border-slate-100 hover:border-sky-400 p-5 rounded-2xl cursor-pointer transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-sky-500/10"
             >
-              {/* 카테고리 라벨 배지 */}
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-black px-2.5 py-1 rounded-lg bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  {icon} {label}
+              {/* 카테고리 라벨 배지 - Remix Icon 적용 */}
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5 ${bg} ${color} uppercase tracking-wider`}>
+                  <i className={`${icon} text-xs`}></i>
+                  {label}
                 </span>
               </div>
 
               {/* 시간 & 요금 정보 */}
-              <div className="flex justify-between items-start mb-3">
+              <div className="flex justify-between items-start mb-4">
                 <div className="flex flex-col">
-                  <span className="text-2xl font-black text-white group-hover:text-blue-400 transition-colors">
-                    {route.totalTime}
-                    <span className="text-sm font-normal ml-1 text-slate-400">분</span>
-                  </span>
-                  <span className="text-xs text-slate-500 mt-0.5">
-                    환승 {route.transferCount}회 |{' '}
-                    {route.totalDistance >= 1000
-                      ? (route.totalDistance / 1000).toFixed(1) + 'km'
-                      : route.totalDistance + 'm'}
-                  </span>
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-3xl font-black text-slate-800 group-hover:text-sky-500 transition-colors">
+                      {route.totalTime}
+                    </span>
+                    <span className="text-sm font-bold text-slate-400 ml-1">분</span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
+                      <i className="ri-repeat-2-line text-sky-400 text-xs"></i>
+                      환승 {route.transferCount}
+                    </span>
+                    <span className="text-slate-300 text-[10px]">|</span>
+                    <span className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
+                      <i className="ri-pin-distance-line text-sky-400 text-xs"></i>
+                      {route.totalDistance >= 1000
+                        ? (route.totalDistance / 1000).toFixed(1) + 'km'
+                        : route.totalDistance + 'm'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="bg-slate-900/50 text-emerald-400 px-3 py-1 rounded-full text-sm font-bold border border-emerald-500/20">
+                <div className="flex flex-col items-end gap-1.5">
+                  <span className="bg-slate-800 text-white px-3 py-1.5 rounded-xl text-xs font-black shadow-md">
                     {route.totalFare?.toLocaleString() ?? 0}원
                   </span>
-                  {route.totalWalkDistance > 0 &&
-                    route.totalWalkDistance === route.totalDistance && (
-                      <span className="text-[10px] bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-md border border-indigo-500/30">
-                        도보 추천
-                      </span>
-                    )}
                 </div>
               </div>
 
-              {/* 이동 수단 아이콘 리스트 */}
-              <div className="flex items-center gap-1.5 flex-wrap">
+              {/* 이동 수단 아이콘 리스트 - Remix Icon으로 시각화 */}
+              <div className="flex items-center gap-2 flex-wrap bg-white/50 p-2 rounded-xl border border-slate-100 shadow-inner">
                 {route.subPaths
                   ?.filter((p) => p.trafficType !== 3)
                   .map((sub, i) => (
                     <React.Fragment key={i}>
-                      {i > 0 && <span className="text-slate-600 text-[10px]">▶</span>}
+                      {i > 0 && <i className="ri-arrow-right-s-line text-slate-300 text-xs"></i>}
                       <div
-                        className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-bold"
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border"
                         style={{
-                          backgroundColor:
-                            sub.trafficType === 1 ? '#0052A420' : '#33CC9920',
-                          color: sub.trafficType === 1 ? '#4C9AFF' : '#52E0A5',
-                          border: `1px solid ${sub.trafficType === 1 ? '#0052A440' : '#33CC9940'}`,
+                          backgroundColor: sub.trafficType === 1 ? '#00B4FF08' : '#10b98108',
+                          color: sub.trafficType === 1 ? '#00B4FF' : '#10b981',
+                          borderColor: sub.trafficType === 1 ? '#00B4FF30' : '#10b98130',
                         }}
                       >
-                        <span>{sub.trafficType === 1 ? '🚇' : '🚌'}</span>
+                        <i className={sub.trafficType === 1 ? 'ri-subway-line text-xs' : 'ri-bus-2-line text-xs'}></i>
                         <span>
                           {sub.trafficType === 1
-                            ? sub.lane[0]?.name
+                            ? sub.lane[0]?.name.replace('지하철 ', '')
                             : sub.lane[0]?.busNo}
                         </span>
                       </div>
@@ -149,15 +149,18 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
               </div>
 
               {/* 정류장 요약 */}
-              <div className="mt-3 flex items-center gap-2 text-xs text-slate-400 border-t border-slate-700/30 pt-3">
-                <span className="truncate max-w-[100px]">{route.firstStartStation}</span>
-                <span className="text-[10px]">→</span>
-                <span className="truncate max-w-[100px]">{route.lastEndStation}</span>
+              <div className="mt-4 flex items-center gap-2 text-[11px] text-slate-400 font-bold border-t border-slate-50 pt-4">
+                <i className="ri-map-pin-2-fill text-sky-400 text-xs"></i>
+                <span className="truncate max-w-[90px]">{route.firstStartStation}</span>
+                <i className="ri-arrow-right-line text-slate-200"></i>
+                <span className="truncate max-w-[90px]">{route.lastEndStation}</span>
               </div>
 
-              {/* 우측 하단 선택 화살표 */}
-              <div className="absolute right-4 bottom-4 opacity-0 group-hover:opacity-100 transition-opacity transform translate-x-2 group-hover:translate-x-0">
-                <span className="text-blue-400">➜</span>
+              {/* 우측 하단 화살표 */}
+              <div className="absolute right-5 bottom-5 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                <div className="w-8 h-8 bg-sky-500 rounded-full flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
+                  <i className="ri-arrow-right-up-line text-lg"></i>
+                </div>
               </div>
             </motion.div>
           );
