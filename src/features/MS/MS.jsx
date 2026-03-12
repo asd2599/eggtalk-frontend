@@ -82,7 +82,7 @@ const MS = () => {
 
   const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false);
   
-  // 기본값 OFF
+  // 기본값
   const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false);
 
   // --- [기능 로직] ---
