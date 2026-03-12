@@ -81,7 +81,9 @@ const MS = () => {
   const mapBoundsRef = useRef(null);
 
   const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false);
-  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(true);
+  
+  // 기본값 OFF
+  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false);
 
   // --- [기능 로직] ---
   const handleRouteSearch = async (start, end, time, searchType = 0, pathType = 0) => {
@@ -145,36 +147,59 @@ const MS = () => {
   });
 
   const [subways, setSubways] = useState([]);
+
+  // 지하철 실시간 위치 데이터를 가져오는 함수
   const fetchSubwayPositions = async (currentBounds = null, currentLevel = null) => {
     try {
-      if (isSubwayApiDisabled || !isSubwayRealtimeOn || (currentLevel !== null && currentLevel > 3)) {
+      // API 중단 상태이거나 스위치가 꺼져있으면 데이터를 비우고 종료
+      if (isSubwayApiDisabled || !isSubwayRealtimeOn || (currentLevel !== null && currentLevel > 4)) {
         if (subways.length > 0) setSubways([]);
         return;
       }
+
       const lines = ['1호선', '2호선', '3호선', '4호선', '5호선', '6호선', '7호선', '8호선', '9호선', '신분당선', '수인분당선'];
       const promises = lines.map(async (lineName) => {
         try {
           const res = await api.get(`/api/subway/positions?line=${encodeURIComponent(lineName)}`);
+          
+          // API 한도 초과 에러 처리
+          if (res.data?.RESULT?.CODE === 'ERROR-337') {
+            setIsSubwayApiDisabled(true);
+            setIsSubwayRealtimeOn(false);
+            return [];
+          }
+
           if (res.data?.realtimePositionList) {
              return res.data.realtimePositionList.map((item, index) => {
                 const rawStation = item.statnNm.trim().split('(')[0];
                 const coords = SUBWAY_STATION_COORDS_V2[lineName]?.[rawStation] || SUBWAY_STATION_COORDS_V2[lineName]?.[rawStation + '역'];
+                
                 if (coords) {
                    return {
-                      id: `${item.trainNo}_${index}`, lat: coords.lat, lng: coords.lng, line: lineName,
-                      updnLine: item.updnLine, angle: 0, 
-                      trainName: `[${lineName}] ${item.statnNm}`
+                      id: `${item.trainNo}_${index}`, 
+                      lat: coords.lat, 
+                      lng: coords.lng, 
+                      line: lineName,
+                      updnLine: item.updnLine, 
+                      angle: 0, 
+                      trainName: `[${lineName}] ${item.statnNm} ${item.trainSttus === '0' ? '진입' : item.trainSttus === '1' ? '도착' : '출발'}`
                    };
                 }
                 return null;
              }).filter(Boolean);
           }
           return [];
-        } catch (e) { return []; }
+        } catch (e) { 
+          console.error(`${lineName} 위치 수집 실패:`, e);
+          return []; 
+        }
       });
+
       const results = await Promise.all(promises);
       setSubways(results.flat());
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error('Subway tracking error:', err); 
+    }
   };
 
   useEffect(() => {
@@ -218,9 +243,7 @@ const MS = () => {
         {/* 상단 버튼 영역 레이아웃 분리 */}
         <div className="absolute top-6 left-8 md:left-10 z-50 flex flex-col items-start gap-4 pointer-events-none transition-all duration-300">
           
-          {/* 1. 상단 고정 버튼 트랙 */}
           <div className="flex flex-row items-center gap-3 pointer-events-auto">
-            {/* 길찾기 버튼 */}
             <button
               onClick={() => { setShowSearch(!showSearch); if (isRouteListOpen) setIsRouteListOpen(false); }}
               className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
@@ -236,7 +259,6 @@ const MS = () => {
               </div>
             </button>
 
-            {/* 실시간 버튼 */}
             <button
               onClick={() => { setIsSubwayRealtimeOn(!isSubwayRealtimeOn); if (isSubwayRealtimeOn) setSubways([]); }}
               className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
@@ -253,16 +275,13 @@ const MS = () => {
             </button>
           </div>
 
-          {/* 2. 하부 컨텐츠 */}
           <div className="flex flex-row items-start gap-4 w-full">
-             {/* 검색창 */}
              {showSearch && (
               <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
                 <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} />
               </div>
             )}
 
-            {/* 결과 목록 */}
             {isRouteListOpen && (
               <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl">
                 <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
@@ -282,14 +301,37 @@ const MS = () => {
             >
               <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
 
+              {/* 도보 점선 */}
               {routeSegments.map((seg, i) => (
-                <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
+                <Polyline 
+                  key={i} 
+                  path={seg.path} 
+                  strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} 
+                  strokeColor={seg.strokeStyle === 'dash' ? '#94a3b8' : adjustBrightness(seg.color, -25)} 
+                  strokeOpacity={0.8} 
+                  strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'} 
+                  zIndex={10} 
+                />
               ))}
 
+              {/* 지하철 아이콘 */}
               {subways.map((sub) => (
-                <CustomOverlayMap key={sub.id} position={{ lat: sub.lat, lng: sub.lng }} yAnchor={0.5} zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}>
-                  <div onClick={(e) => { e.stopPropagation(); setSelectedTrainId(selectedTrainId === sub.id ? null : sub.id); }} className="cursor-pointer transition-transform hover:scale-110">
-                    <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'} />
+                <CustomOverlayMap 
+                  key={sub.id} 
+                  position={{ lat: sub.lat, lng: sub.lng }} 
+                  yAnchor={0.5} 
+                  zIndex={SUBWAY_LINE_ZINDEX[sub.line] ? SUBWAY_LINE_ZINDEX[sub.line] + 10 : 200}
+                >
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); setSelectedTrainId(selectedTrainId === sub.id ? null : sub.id); }} 
+                    className="cursor-pointer transition-transform hover:scale-110"
+                  >
+                    <SubwayIcon 
+                      direction="up" 
+                      angle={sub.angle} 
+                      width={28} 
+                      arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'} 
+                    />
                   </div>
                 </CustomOverlayMap>
               ))}
