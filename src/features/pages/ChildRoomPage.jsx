@@ -200,10 +200,10 @@ const ChildRoomPage = () => {
 
       const actionKr =
         actionType === "FEED"
-          ? "분유 주기"
+          ? "창의력 이야기"
           : actionType === "CLEAN"
-            ? "목욕 시키기"
-            : "놀아 주기";
+            ? "스무고개 퀴즈"
+            : "역할극 게임";
       // TODO: 나중에 이 alert도 커스텀 모달로 대체할 수 있으나, 일단 모달이 닫히면서 자연스럽게 알 수 있도록 유지
       alert(`배우자가 [${actionKr}] 활동에 동의하지 않았습니다. 😿`);
     };
@@ -651,9 +651,9 @@ const ChildRoomPage = () => {
         {childPet.isHatched && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-2xl animate-fade-in px-4">
             {[
-              { label: "분유 주기", icon: FiCoffee, type: "FEED" },
-              { label: "목욕 시키기", icon: FiSettings, type: "CLEAN" },
-              { label: "놀아 주기", icon: FiSmile, type: "PLAY" }
+              { label: "창의력 이야기", icon: FiCoffee, type: "FEED" },
+              { label: "스무고개 퀴즈", icon: FiSettings, type: "CLEAN" },
+              { label: "역할극 게임", icon: FiSmile, type: "PLAY" }
             ].map((btn, i) => (
               <button
                 key={i}
@@ -701,10 +701,10 @@ const ChildRoomPage = () => {
               아이에게{" "}
               <b className="text-sky-500">
                 {waitingAction === "FEED"
-                  ? "분유 주기"
+                  ? "창의력 이야기"
                   : waitingAction === "CLEAN"
-                    ? "목욕 시키기"
-                    : "놀아 주기"}
+                    ? "스무고개 퀴즈"
+                    : "역할극 게임"}
               </b>
               (을)를 제안했습니다.
               <br />
@@ -740,10 +740,10 @@ const ChildRoomPage = () => {
               자식 펫에게{" "}
               <b>
                 {proposedAction.actionType === "FEED"
-                  ? "분유 주기"
+                  ? "창의력 이야기"
                   : proposedAction.actionType === "CLEAN"
-                    ? "목욕 시키기"
-                    : "놀아 주기"}
+                    ? "스무고개 퀴즈"
+                    : "역할극 게임"}
               </b>{" "}
               활동을 함께 하러 갈까요?
             </p>

@@ -2,65 +2,114 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
-  FiStar,
-  FiMoon,
-  FiMap,
-  FiUsers,
-  FiSmile,
-  FiHeart,
+  FiEdit3,
   FiCheckCircle,
-  FiCloud,
-  FiGift
+  FiLoader,
+  FiHeart,
+  FiZap,
+  FiBookOpen,
+  FiSmile,
+  FiClock,
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
 import Pet from "../pets/pet";
 
-const PLACES = [
-  { id: "place_star_sea", name: "별빛 바다", icon: "🌊" },
-  { id: "place_cloud_garden", name: "구름 정원", icon: "☁️" },
-  { id: "place_candy_forest", name: "캔디 숲", icon: "🍭" },
-  { id: "place_crystal_cave", name: "수정 동굴", icon: "💎" },
-  { id: "place_rainbow_hill", name: "무지개 언덕", icon: "🌈" },
-  { id: "place_moon_palace", name: "달빛 궁전", icon: "🏰" },
-];
+const CATEGORY_LABELS = {
+  who: "누가",
+  when: "언제",
+  where: "어디서",
+  what: "무엇을",
+  how: "어떻게",
+  why: "왜",
+};
 
-const GUIDES = [
-  { id: "guide_unicorn", name: "아기 유니콘", icon: "🦄" },
-  { id: "guide_talking_star", name: "말하는 별님", icon: "⭐" },
-  { id: "guide_little_fairy", name: "꼬마 요정", icon: "🧚" },
-  { id: "guide_gem_whale", name: "보석 고래", icon: "🐳" },
-  { id: "guide_flying_cat", name: "하늘 고양이", icon: "🐱" },
-  { id: "guide_dream_dragon", name: "꿈결 드래곤", icon: "🐉" },
-];
+const CATEGORY_ICONS = {
+  who: "👤",
+  when: "⏰",
+  where: "📍",
+  what: "🎁",
+  how: "✨",
+  why: "❓",
+};
+
+// 🌟 React 컴포넌트는 반드시 외부에서 정의해야 포커스를 잃지 않습니다.🐾
+const CategoryCard = ({ cat, isOwner, word, inputValue, onChange, onSubmit }) => {
+  const isSubmitted = !!word;
+
+  return (
+    <div
+      className={`relative p-5 rounded-[32px] border-2 transition-all duration-300 ${
+        isSubmitted
+          ? "bg-emerald-500/10 border-emerald-400/30 scale-100"
+          : isOwner
+          ? "bg-indigo-500/10 border-indigo-400/50 shadow-[0_0_20px_rgba(99,102,241,0.1)]"
+          : "bg-white/5 border-white/5 opacity-60"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">{CATEGORY_ICONS[cat]}</span>
+          <span className="text-xs font-black text-white/50 uppercase tracking-tighter">
+            {cat}
+          </span>
+        </div>
+        {isSubmitted && <FiCheckCircle className="text-emerald-400" />}
+      </div>
+
+      <h3 className="text-lg font-black text-white mb-4">
+        {CATEGORY_LABELS[cat]}
+      </h3>
+
+      {isOwner && !isSubmitted ? (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="..."
+            className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-white font-bold outline-none focus:border-indigo-400 transition-all text-sm"
+            value={inputValue}
+            onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+          />
+          <button
+            onClick={onSubmit}
+            className="p-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl transition-all shadow-lg"
+          >
+            <FiZap />
+          </button>
+        </div>
+      ) : (
+        <div className="h-10 flex items-center">
+          {isSubmitted ? (
+            <span className="text-white font-black text-sm">{word}</span>
+          ) : (
+            <span className="text-white/20 text-xs font-bold animate-pulse">
+              대기 중...
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ChildFeedPage = () => {
   const navigate = useNavigate();
   const [childPet, setChildPet] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🌌 꿈나라 모험용 상태
+  // 📝 육하원칙 게임 상태
   const [gameMode, setGameMode] = useState(false);
-  const [hint, setHint] = useState("");
-  const [mySelection, setMySelection] = useState({ architect: null, guide: null });
-  const [partnerSelection, setPartnerSelection] = useState({
-    architect: null,
-    guide: null,
-  });
+  const [assignments, setAssignments] = useState({}); // { petId: ["who", "when"] }
+  const [allWords, setAllWords] = useState({}); // { who: "단어", ... }
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [gameResult, setGameResult] = useState(null);
   const [waiting, setWaiting] = useState(true);
-  const [roles, setRoles] = useState({
-    architect: null,
-    guide: null,
-  });
 
-  // 내 역할인지 확인하는 헬퍼 함수
-  const isMe = (targetId) => {
-    if (!targetId) return false;
-    const myId = String(localStorage.getItem("petId") || "").trim().toLowerCase();
-    return myId === String(targetId).trim().toLowerCase();
-  };
+  const [inputVal, setInputVal] = useState({}); // { category: "사용자 입력" }
+
+  const petId = localStorage.getItem("petId");
+  const petName = localStorage.getItem("petName");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -73,135 +122,70 @@ const ChildFeedPage = () => {
           const petObj = new Pet(res.data.childPet);
           setChildPet(petObj);
 
-          // 소켓 룸 입장
-          socket.emit("join_dream_room", {
+          socket.emit("join_feed_room", {
             childId: petObj.id,
-            petId: localStorage.getItem("petId"),
-            petName: localStorage.getItem("petName"),
+            petId,
+            petName,
           });
         }
       } catch (err) {
-        console.error("Fetch Child Pet Error:", err);
+        console.error("Fetch Error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
 
-    const handleRoomWaiting = () => {
-      setWaiting(true);
-      setGameMode(false);
-      setGameResult(null);
-      setIsEvaluating(false);
-    };
-
-    const handleGameStarted = ({ hint, rolesMap, currentChoices }) => {
-      console.log("[DREAM] Game Started Sync:", { rolesMap, currentChoices });
+    socket.on("feed_game_started", ({ assignments: asgn, currentWords }) => {
       setWaiting(false);
-      setHint(hint);
       setGameMode(true);
+      setAssignments(asgn);
+      setAllWords(currentWords || {});
       setGameResult(null);
       setIsEvaluating(false);
-
-      if (rolesMap) {
-        setRoles({
-          architect: rolesMap.architect ? String(rolesMap.architect).trim() : null,
-          guide: rolesMap.guide ? String(rolesMap.guide).trim() : null
-        });
-      }
-      
-      if (currentChoices) {
-        const myId = String(localStorage.getItem("petId") || "").trim().toLowerCase();
-        const archId = String(rolesMap?.architect || "").trim().toLowerCase();
-        
-        const newMy = { architect: null, guide: null };
-        const newPartner = { architect: null, guide: null };
-
-        if (currentChoices.architect) {
-          if (myId === archId) newMy.architect = currentChoices.architect;
-          else newPartner.architect = currentChoices.architect;
-        }
-        if (currentChoices.guide) {
-          if (myId !== archId) newMy.guide = currentChoices.guide;
-          else newPartner.guide = currentChoices.guide;
-        }
-
-        setMySelection(newMy);
-        setPartnerSelection(newPartner);
-      } else {
-        setMySelection({ architect: null, guide: null });
-        setPartnerSelection({ architect: null, guide: null });
-      }
-    };
-
-    socket.on("dream_game_started", handleGameStarted);
-    socket.on("dream_room_waiting", handleRoomWaiting);
-
-    socket.on("dream_element_selected", ({ role, elementId, petId }) => {
-      const myId = String(localStorage.getItem("petId") || "").trim().toLowerCase();
-      const senderId = String(petId || "").trim().toLowerCase();
-      
-      if (senderId === myId) {
-        setMySelection((prev) => ({ ...prev, [role]: elementId }));
-      } else {
-        setPartnerSelection((prev) => ({ ...prev, [role]: elementId }));
-      }
     });
 
-    socket.on("dream_evaluating", () => setIsEvaluating(true));
+    socket.on("feed_word_submitted", ({ category, word }) => {
+      setAllWords((prev) => ({ ...prev, [category]: word }));
+    });
 
-    socket.on("dream_game_result", (result) => {
+    socket.on("feed_story_creating", () => setIsEvaluating(true));
+
+    socket.on("feed_game_result", (result) => {
       setIsEvaluating(false);
       setGameResult(result);
       setGameMode(false);
     });
 
-    socket.on("dream_game_error", ({ message }) => {
-      alert(message || "에러가 발생했습니다.");
+    socket.on("feed_game_error", ({ message }) => {
+      alert(message);
       setIsEvaluating(false);
     });
 
-    const handlePartnerExit = (pName) => {
-      alert(`${pName || "배우자"}님이 꿈나라를 떠났습니다. 🌌`);
-      setGameMode(false);
-      setWaiting(true);
-    };
-
-    socket.on("dream_partner_left", handlePartnerExit);
+    socket.on("feed_partner_left", (pName) => {
+      alert(`${pName || "배우자"}님이 나갔습니다. 함께 종료됩니다.`);
+      navigate("/child-room");
+    });
 
     return () => {
-      socket.off("dream_game_started");
-      socket.off("dream_room_waiting");
-      socket.off("dream_element_selected");
-      socket.off("dream_evaluating");
-      socket.off("dream_game_result");
-      socket.off("dream_game_error");
-      socket.off("dream_partner_left");
+      socket.off("feed_game_started");
+      socket.off("feed_word_submitted");
+      socket.off("feed_story_creating");
+      socket.off("feed_game_result");
+      socket.off("feed_game_error");
+      socket.off("feed_partner_left");
     };
-  }, []);
+  }, [petId, petName, navigate]);
 
-  const handleSelectElement = (role, elementId) => {
-    if (!gameMode || isEvaluating) return;
+  const handleSubmitWord = (category) => {
+    const word = inputVal[category];
+    if (!word || !word.trim()) return;
 
-    if (role === "architect" && !isMe(roles.architect)) {
-      alert("배우자가 꿈의 장소를 고를 차례입니다!");
-      return;
-    }
-    if (role === "guide" && !isMe(roles.guide)) {
-      alert("배우자가 꿈의 친구를 고를 차례입니다!");
-      return;
-    }
-
-    const myPetId = localStorage.getItem("petId");
-    const myPetName = localStorage.getItem("petName");
-
-    setMySelection((prev) => ({ ...prev, [role]: elementId }));
-    socket.emit("select_dream_element", {
+    socket.emit("submit_feed_word", {
       childId: childPet.id,
-      petId: String(myPetId).trim().toLowerCase(),
-      role,
-      elementId,
-      petName: myPetName,
+      petId,
+      category,
+      word: word.trim(),
     });
   };
 
@@ -247,7 +231,6 @@ const ChildFeedPage = () => {
                 <p className="text-[10px] font-black text-white truncate w-20">{result.changes?.hunger || "꿈결 같음"}</p>
               </div>
             </div>
-          </div>
 
           <div className="bg-white/5 rounded-3xl p-6 mb-8 border border-white/10 shadow-inner">
             <p className="text-sky-100 leading-relaxed font-medium text-lg italic">
@@ -312,7 +295,7 @@ const ChildFeedPage = () => {
               <h2 className="text-2xl font-black text-white mb-3 tracking-tight">꿈나라 입구에서 대기 중</h2>
               <p className="text-sky-200/60 leading-relaxed font-medium">
                 배우자님과 함께 아기의 <br />
-                멋진 꿈을 설계하기 위해 연결 중입니다...
+                창의력 이야기를 설계 중입니다...
               </p>
             </div>
           ) : isEvaluating ? (
@@ -434,29 +417,19 @@ const ChildFeedPage = () => {
         </div>
       </main>
 
-      <style dangerouslySetInnerHTML={{ __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @keyframes float {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
+          50% { transform: translateY(-10px); }
         }
         .animate-float {
           animation: float 4s ease-in-out infinite;
         }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin 8s linear infinite;
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce 6s infinite;
-        }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 };
