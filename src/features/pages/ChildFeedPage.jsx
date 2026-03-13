@@ -2,10 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
+  FiEdit3,
   FiCheckCircle,
   FiLoader,
+  FiHeart,
   FiZap,
   FiBookOpen,
+  FiSmile,
+  FiClock,
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
@@ -297,7 +301,7 @@ const ChildFeedPage = () => {
               <div className="relative w-24 h-24 mx-auto mb-8">
                 <div className="absolute inset-0 border-4 border-sky-400/20 rounded-full" />
                 <div className="absolute inset-0 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
-                <FiBookOpen className="absolute inset-0 m-auto text-3xl text-sky-400 animate-bounce" />
+                <FiEdit3 className="absolute inset-0 m-auto text-3xl text-sky-400 animate-bounce" />
               </div>
               <h2 className="text-white font-black text-xl mb-2">
                 이야기를 짓는 중...
