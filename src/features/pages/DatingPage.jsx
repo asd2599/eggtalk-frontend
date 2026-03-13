@@ -12,8 +12,8 @@ import {
   FiMessageCircle,
   FiGift,
   FiUserPlus,
-  FiHeart, // 교배 아이콘 유지
-  FiZap, // develop의 번개 아이콘(필요시 사용)도 임포트 유지
+  FiHeart,
+  FiZap, 
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import socket from "../../utils/socket";
@@ -68,7 +68,7 @@ const DatingPage = () => {
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [isAutoCommentEnabled, setIsAutoCommentEnabled] = useState(true);
 
-  // 교배 관련 상태 (HB 브랜치 기능 유지)
+  // 교배 관련 상태
   const [isBreedingRequestModalOpen, setIsBreedingRequestModalOpen] =
     useState(false);
   const [isSendingBreedingRequest, setIsSendingBreedingRequest] =

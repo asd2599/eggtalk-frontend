@@ -347,8 +347,8 @@ const ChildPlayPage = () => {
             <FiStar className="text-amber-400 fill-amber-400" size={15} />
             {scenario?.title || (waiting ? "배우자 입장 대기 중..." : "상황극")}
           </h1>
-          <p className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">
-            Role-Play Game (역할극 게임)
+          <p className="text-[10px] text-sky-500 font-bold uppercase tracking-wider">
+            Role-Play Game
           </p>
         </div>
         <div className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 px-3 py-1 rounded-full font-black text-sky-600 dark:text-sky-300 text-sm">

@@ -10,8 +10,8 @@ import {
   FiClock,
   FiTrash2,
   FiZap,
-  FiSun,   // ✅ 아이콘 추가
-  FiMoon,  // ✅ 아이콘 추가
+  FiSun,  
+  FiMoon, 
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
@@ -51,7 +51,7 @@ const ChildRoomPage = () => {
     }
   }, []);
 
-  // ✅ 다크모드 토글 함수 추가
+  // 다크모드 토글 함수
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
     localStorage.setItem("theme", isDark ? "dark" : "light");

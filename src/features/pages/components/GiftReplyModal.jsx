@@ -4,7 +4,7 @@ import { FiMessageSquare, FiX } from "react-icons/fi";
 const GiftReplyModal = ({ isOpen, replyMsg, targetName, stats, onClose }) => {
   const [randomMsg, setRandomMsg] = useState("");
 
-  // ✅ 스탯별 맞춤 문구 데이터베이스
+  // 스탯별 맞춤 문구 데이터베이스
   const customMessages = {
     affection: [
       "너의 마음이 느껴져... 나도 네가 정말 좋아! ❤️",
