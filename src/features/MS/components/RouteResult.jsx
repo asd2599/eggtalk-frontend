@@ -1,12 +1,6 @@
 import React from 'react';
 import { SUBWAY_LINE_COLORS } from '../MS';
 
-/**
- * [RouteResult.jsx] v4.0
- * 역할: 탐색된 통합 대중교통 경로의 상세 정보를 보여주는 결과창입니다.
- * //* [Tone & Manner] 화이트 테마, 시그니처 블루, 뒤로 가기 버튼 적용
- */
-
 const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
   if (!result) return null;
 
@@ -25,10 +19,10 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
   return (
     <div className="absolute top-20 left-8 md:left-10 z-50 w-84 bg-white rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.2)] p-6 border-[2px] border-slate-100 flex flex-col gap-5 pointer-events-auto animate-in fade-in slide-in-from-left-4 duration-300">
       
-      {/* 헤더 섹션: 뒤로 가기 버튼 추가 */}
+      {/* 헤더 섹션 */}
       <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-3">
-          {/* ✅ 뒤로 가기 버튼: 결과 목록으로 돌아가는 역할 (onClose 활용) */}
+          {/* 뒤로 가기 버튼 */}
           <button
             onClick={onClose}
             className="group flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-500 text-slate-400 hover:text-white transition-all border border-slate-100"
@@ -50,7 +44,7 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
         </button>
       </div>
 
-      {/* ✅ 요약 카드: 시그니처 딥 네이비 & 스카이 블루 적용 */}
+      {/* 요약 카드 */}
       <div className="bg-slate-900 rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden border border-white/5">
         {/* 배경 포인트 광원 */}
         <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-sky-500/20 rounded-full blur-2xl" />

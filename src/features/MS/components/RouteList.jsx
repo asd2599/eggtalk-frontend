@@ -1,12 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * [RouteList.jsx] v6.0
- * 검색된 경로들 중 4개 카테고리를 선별해 카드로 표시합니다.
- * //* [Feature Update] 목록 복귀를 위한 '뒤로 가기' 버튼 UI 추가
- */
-
 const CATEGORIES = [
   { key: 'optimal',     label: '최적',     icon: 'ri-magic-line',     color: 'text-sky-500',   bg: 'bg-sky-50' },
   { key: 'minTime',     label: '최소시간',  icon: 'ri-flashlight-line', color: 'text-amber-500', bg: 'bg-amber-50' },
@@ -58,10 +52,10 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
   return (
     <div className="flex flex-col gap-5 p-6 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto custom-scrollbar border-[2px] border-slate-100">
       
-      {/* ✅ 상단 헤더 영역 - 뒤로 가기 & 닫기 버튼 배치 */}
+      {/* 상단 헤더 영역 - 뒤로 가기 & 닫기 버튼 배치 */}
       <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-3">
-          {/* [Added] 뒤로 가기 버튼 (검색창으로 돌아가고 싶을 때를 위한 배려) */}
+          {/* 뒤로 가기 버튼 */}
           <button
             onClick={onClose} 
             className="group flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-500 text-slate-400 hover:text-white transition-all border border-slate-100 hover:border-sky-400"

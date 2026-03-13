@@ -40,9 +40,8 @@ const CommonSide = ({ activeMenu }) => {
       </h2>
 
       {/* 2. 메인 네비게이션 트랙 */}
-      {/* ✅ [수정] 모바일에서 중앙 정렬을 위해 justify-center 추가 */}
+      {/* 모바일 중앙 정렬 포함 */}
       <nav className="flex-1 flex lg:flex-col items-center justify-center lg:items-center lg:p-10 overflow-hidden">
-        {/* ✅ [수정] justify-start를 justify-center로 변경하여 아이템들을 가운데로 모음 */}
         <div className="flex-1 flex lg:flex-col items-center justify-center lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
           {/* 전체 메뉴 반복 출력 */}
           {menuItems.map((item) => (
@@ -62,7 +61,7 @@ const CommonSide = ({ activeMenu }) => {
             </button>
           ))}
 
-          {/* [모바일 전용] 로그아웃 버튼 */}
+          {/* 모바일 로그아웃 버튼 */}
           <button
             onClick={handleLogout}
             className="flex lg:hidden flex-col items-center justify-center gap-1 px-4 py-2 rounded-2xl transition-all h-[60px] min-w-[75px] flex-shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
