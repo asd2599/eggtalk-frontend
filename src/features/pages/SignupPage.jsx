@@ -63,7 +63,7 @@ const SignupPage = () => {
   return (
     <div className="flex justify-center items-center h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-300 relative overflow-hidden font-sans">
       
-      {/* ✅ 다크모드에서 화사하게 퍼지는 스카이 블루 광채 */}
+      {/* 광채 표현 */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-sky-100 dark:bg-sky-400/10 rounded-full blur-[120px] pointer-events-none opacity-60"></div>
 
       <button
@@ -76,14 +76,13 @@ const SignupPage = () => {
 
       <div className="w-full max-w-[340px] px-6 relative z-10">
         <div className="text-center mb-10">
-          {/* ✅ 아이콘 박스 대비 강화 및 디자인 통일 */}
+          {/* 아이콘 박스 */}
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-[1.5rem] bg-slate-900 dark:bg-sky-400 mb-5 shadow-2xl shadow-sky-500/20 transition-all">
             <FiUserPlus className="text-sky-300 dark:text-slate-950 text-2xl" />
           </div>
           <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter italic uppercase leading-tight">
             Sign Up <span className="text-sky-400 font-sans not-italic">.</span>
           </h2>
-          {/* ✅ 가독성 확보 (slate-500 -> slate-200) */}
           <p className="text-[11px] text-slate-400 dark:text-slate-200 mt-2 font-bold uppercase tracking-widest opacity-80">
             Join the EggTalk Family
           </p>

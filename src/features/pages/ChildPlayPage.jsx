@@ -19,15 +19,15 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
       key: "stress",
       label: "스트레스",
       icon: "💆",
-      color: "text-blue-400",
-      bg: "bg-blue-50 dark:bg-blue-900/20",
+      color: "text-sky-400",
+      bg: "bg-sky-50 dark:bg-sky-900/20",
     },
     {
       key: "empathy",
       label: "공감능력",
       icon: "💖",
-      color: "text-rose-500",
-      bg: "bg-rose-50 dark:bg-rose-900/20",
+      color: "text-indigo-500",
+      bg: "bg-indigo-50 dark:bg-indigo-900/20",
     },
     {
       key: "affection",
@@ -40,29 +40,29 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
       key: "altruism",
       label: "이타심",
       icon: "🤝",
-      color: "text-green-500",
-      bg: "bg-green-50 dark:bg-green-900/20",
+      color: "text-emerald-500",
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
     },
     {
       key: "knowledge",
       label: "지식",
       icon: "📚",
-      color: "text-purple-500",
-      bg: "bg-purple-50 dark:bg-purple-900/20",
+      color: "text-blue-500",
+      bg: "bg-blue-50 dark:bg-blue-900/20",
     },
     {
       key: "logic",
       label: "논리력",
       icon: "🧠",
-      color: "text-indigo-500",
-      bg: "bg-indigo-50 dark:bg-indigo-900/20",
+      color: "text-slate-600 dark:text-slate-300",
+      bg: "bg-slate-100 dark:bg-slate-800/50",
     },
     {
       key: "health_hp",
       label: "건강",
       icon: "💪",
-      color: "text-emerald-500",
-      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+      color: "text-cyan-500",
+      bg: "bg-cyan-50 dark:bg-cyan-900/20",
     },
     {
       key: "hunger",
@@ -90,9 +90,9 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
   const avgScore = statChanges?.avgScore ?? 0; // 0~100
   const grade =
     avgScore >= 80
-      ? { label: "🏆 완벽한 연기!", color: "text-amber-500" }
+      ? { label: "🏆 완벽한 연기!", color: "text-sky-500" }
       : avgScore >= 55
-        ? { label: "🌟 훌륭해요!", color: "text-rose-500" }
+        ? { label: "🌟 훌륭해요!", color: "text-indigo-500" }
         : avgScore >= 30
           ? { label: "👍 괜찮아요!", color: "text-blue-500" }
           : { label: "🌱 연습이 필요해요", color: "text-slate-500" };
@@ -107,7 +107,7 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
         </div>
 
         {/* 총점 */}
-        <div className="flex items-center justify-center gap-2 bg-linear-to-r from-rose-400 to-amber-400 text-white font-black text-3xl rounded-2xl px-8 py-3 shadow-lg">
+        <div className="flex items-center justify-center gap-2 bg-gradient-to-r from-sky-400 to-blue-500 text-white font-black text-3xl rounded-2xl px-8 py-3 shadow-lg">
           <FiStar className="fill-white" size={24} />
           {totalScore}점{" "}
           <span className="text-lg opacity-80">(평균 {avgScore}점)</span>
@@ -139,7 +139,7 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
 
         <button
           onClick={onClose}
-          className="w-full py-4 bg-gradient-to-r from-rose-500 to-amber-500 text-white font-black rounded-2xl shadow-lg hover:opacity-90 transition-all active:scale-95"
+          className="w-full py-4 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 font-black rounded-2xl shadow-lg hover:opacity-90 transition-all active:scale-95"
         >
           확인하고 나가기 🐾
         </button>
@@ -157,14 +157,13 @@ const ChildPlayPage = () => {
 
   const [scenario, setScenario] = useState(null);
   const [myRole, setMyRole] = useState("");
-  const [messages, setMessages] = useState([]); // { ...msg } | { type: "score", value: N }
+  const [messages, setMessages] = useState([]); 
   const [inputText, setInputText] = useState("");
   const [totalScore, setTotalScore] = useState(0);
   const [waiting, setWaiting] = useState(true);
   const [canSpeak, setCanSpeak] = useState(true);
   const [turnStatus, setTurnStatus] = useState("");
 
-  // 결과 모달
   const [showResult, setShowResult] = useState(false);
   const [statChanges, setStatChanges] = useState(null);
 
@@ -173,7 +172,7 @@ const ChildPlayPage = () => {
   const myPetIdRef = useRef(null);
   const myPetObjRef = useRef(null);
   const totalScoreRef = useRef(0);
-  const roundCountRef = useRef(0); // 완료된 라운드 수
+  const roundCountRef = useRef(0);
 
   useEffect(() => {
     totalScoreRef.current = totalScore;
@@ -226,7 +225,7 @@ const ChildPlayPage = () => {
     };
     const onRoundScore = ({ score }) => {
       setTotalScore((prev) => prev + score);
-      roundCountRef.current += 1; // 라운드 완료 카운트
+      roundCountRef.current += 1;
       setMessages((prev) => [
         ...prev,
         { type: "score", value: score, id: Date.now() },
@@ -249,7 +248,6 @@ const ChildPlayPage = () => {
       navigate("/child-room");
     };
     const onGameFinished = ({ totalScore: ts, statChanges: sc }) => {
-      // 총점은 현재 누적값 사용 (서버에서 전달된 ts는 종료자 기준이므로 내 점수 우선)
       setStatChanges(sc);
       setShowResult(true);
     };
@@ -307,7 +305,6 @@ const ChildPlayPage = () => {
     setInputText("");
   };
 
-  // 종료 버튼 → 소켓으로 finish_play_room 전송 → 서버가 DB 업데이트 후 결과 브로드캐스트
   const handleFinish = () => {
     if (!childPet) return;
     socket.emit("finish_play_room", {
@@ -321,13 +318,13 @@ const ChildPlayPage = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-[#fff5f5] flex items-center justify-center">
-        <div className="text-slate-500 font-bold animate-pulse">로딩 중...</div>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-sky-500 font-bold animate-pulse">로딩 중...</div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-[#fff5f5] dark:bg-[#0f172a] flex flex-col h-screen overflow-hidden">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0f172a] flex flex-col h-screen overflow-hidden font-sans">
       {/* 결과 모달 */}
       {showResult && (
         <ResultModal
@@ -338,10 +335,10 @@ const ChildPlayPage = () => {
       )}
 
       {/* 헤더 */}
-      <header className="px-5 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-rose-100 dark:border-slate-700 flex justify-between items-center">
+      <header className="px-5 py-4 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
         <button
           onClick={() => navigate("/child-room")}
-          className="p-2 hover:bg-rose-50 dark:hover:bg-slate-700 rounded-xl text-slate-600 dark:text-slate-300"
+          className="p-2 hover:bg-sky-50 dark:hover:bg-slate-700 rounded-xl text-slate-600 dark:text-slate-300 transition-colors"
         >
           <FiArrowLeft size={22} />
         </button>
@@ -350,20 +347,20 @@ const ChildPlayPage = () => {
             <FiStar className="text-amber-400 fill-amber-400" size={15} />
             {scenario?.title || (waiting ? "배우자 입장 대기 중..." : "상황극")}
           </h1>
-          <p className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">
-            Role-Play Game (역할극 게임)
+          <p className="text-[10px] text-sky-500 font-bold uppercase tracking-wider">
+            Role-Play Game
           </p>
         </div>
-        <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 px-3 py-1 rounded-full font-black text-rose-600 dark:text-rose-300 text-sm">
+        <div className="flex items-center gap-1 bg-sky-100 dark:bg-sky-900/30 px-3 py-1 rounded-full font-black text-sky-600 dark:text-sky-300 text-sm">
           <FiStar size={12} /> {totalScore}
         </div>
       </header>
 
       {/* 역할 바 */}
       {!waiting && scenario && (
-        <div className="bg-white/60 dark:bg-slate-900/60 px-5 py-2 border-b border-rose-50 dark:border-slate-800 flex items-center gap-3 text-xs font-bold text-slate-500">
-          <FiInfo size={13} className="text-rose-400 shrink-0" />내 역할:{" "}
-          <span className="text-rose-600 dark:text-rose-300">{myRole}</span>
+        <div className="bg-white/60 dark:bg-slate-900/60 px-5 py-2 border-b border-slate-50 dark:border-slate-800 flex items-center gap-3 text-xs font-bold text-slate-500">
+          <FiInfo size={13} className="text-sky-500 shrink-0" />내 역할:{" "}
+          <span className="text-sky-600 dark:text-sky-300">{myRole}</span>
           <span className="text-slate-300">|</span>
           <span className="truncate max-w-xs opacity-70">
             {scenario.description}
@@ -385,17 +382,17 @@ const ChildPlayPage = () => {
             >
               {childPet?.draw("w-full h-full")}
             </div>
-            <h2 className="text-xl font-black text-slate-700 dark:text-white mb-2">
+            <h2 className="text-xl font-black text-slate-700 dark:text-white mb-2 text-center">
               배우자를 기다리는 중이에요...
             </h2>
-            <p className="text-sm text-slate-400 italic">
+            <p className="text-sm text-slate-400 italic text-center">
               둘 다 들어오면 자식 펫이 상황극을 제안해요! ✨
             </p>
             <div className="mt-6 flex gap-2">
               {[0, 0.2, 0.4].map((d) => (
                 <div
                   key={d}
-                  className="w-2 h-2 bg-rose-400 rounded-full"
+                  className="w-2 h-2 bg-sky-400 rounded-full"
                   style={{ animation: `bounce 1s ${d}s infinite` }}
                 />
               ))}
@@ -406,11 +403,10 @@ const ChildPlayPage = () => {
         {/* 메시지 */}
         {!waiting &&
           messages.map((msg, idx) => {
-            // 점수 뱃지
             if (msg.type === "score")
               return (
                 <div key={msg.id || idx} className="flex justify-center my-2">
-                  <div className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-rose-400 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-md">
+                  <div className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-sky-400 text-white text-xs font-black px-4 py-1.5 rounded-full shadow-md">
                     <FiZap size={12} /> 이번 라운드 +{msg.value}점 획득! 🎉
                   </div>
                 </div>
@@ -427,12 +423,12 @@ const ChildPlayPage = () => {
                   [{isPet ? "🐾 아기 펫" : msg.role}] {msg.senderName}
                 </span>
                 <div
-                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm font-medium shadow-sm ${
+                  className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm font-medium shadow-sm transition-all ${
                     isMe
-                      ? "bg-rose-500 text-white rounded-tr-none"
+                      ? "bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-tr-none"
                       : isPet
                         ? "bg-amber-100 dark:bg-amber-900/40 text-slate-800 dark:text-slate-100 rounded-tl-none border border-amber-200"
-                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none border border-rose-50"
+                        : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-100"
                   }`}
                 >
                   {msg.content}
@@ -457,7 +453,7 @@ const ChildPlayPage = () => {
 
       {/* 입력창 */}
       {!waiting && (
-        <footer className="p-4 bg-white dark:bg-slate-900 border-t border-rose-100 dark:border-slate-800">
+        <footer className="p-4 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800">
           {turnStatus && (
             <div className="mb-2 text-center text-xs font-bold text-amber-500 animate-pulse">
               {turnStatus}
@@ -474,7 +470,7 @@ const ChildPlayPage = () => {
                   ? `${myRole} 역할로 대화해보세요...`
                   : "상대방 차례를 기다리는 중..."
               }
-              className={`flex-1 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-rose-400 outline-none text-sm dark:text-white transition-all ${
+              className={`flex-1 px-4 py-3 rounded-2xl focus:ring-2 focus:ring-sky-400 outline-none text-sm dark:text-white transition-all ${
                 canSpeak
                   ? "bg-slate-50 dark:bg-slate-800"
                   : "bg-slate-100 dark:bg-slate-900 cursor-not-allowed opacity-50"
@@ -483,7 +479,7 @@ const ChildPlayPage = () => {
             <button
               type="submit"
               disabled={!inputText.trim() || !canSpeak}
-              className="p-3 bg-rose-500 hover:bg-rose-600 disabled:bg-slate-200 dark:disabled:bg-slate-700 text-white rounded-2xl transition-all active:scale-95"
+              className="p-3 bg-slate-900 dark:bg-sky-400 hover:opacity-90 disabled:bg-slate-200 dark:disabled:bg-slate-700 text-white dark:text-slate-950 rounded-2xl transition-all active:scale-95 shadow-md"
             >
               <FiSend size={20} />
             </button>
@@ -491,7 +487,7 @@ const ChildPlayPage = () => {
           <div className="mt-3 flex justify-center">
             <button
               onClick={handleFinish}
-              className="text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors flex items-center gap-1"
+              className="text-xs font-bold text-slate-400 hover:text-sky-500 transition-colors flex items-center gap-1"
             >
               <FiCheckCircle size={12} /> 상황극 종료
             </button>
