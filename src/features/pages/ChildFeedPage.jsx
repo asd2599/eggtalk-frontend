@@ -37,9 +37,9 @@ const CategoryCard = ({ cat, isOwner, word, inputValue, onChange, onSubmit }) =>
     <div
       className={`relative p-5 rounded-[32px] border-2 transition-all duration-300 ${
         isSubmitted
-          ? "bg-emerald-500/10 border-emerald-400/30 scale-100"
+          ? "bg-sky-500/10 border-sky-400/30 scale-100"
           : isOwner
-          ? "bg-indigo-500/10 border-indigo-400/50 shadow-[0_0_20px_rgba(99,102,241,0.1)]"
+          ? "bg-slate-800/40 border-sky-400/50 shadow-[0_0_20px_rgba(14,165,233,0.1)]"
           : "bg-white/5 border-white/5 opacity-60"
       }`}
     >
@@ -50,7 +50,7 @@ const CategoryCard = ({ cat, isOwner, word, inputValue, onChange, onSubmit }) =>
             {cat}
           </span>
         </div>
-        {isSubmitted && <FiCheckCircle className="text-emerald-400" />}
+        {isSubmitted && <FiCheckCircle className="text-sky-400" />}
       </div>
 
       <h3 className="text-lg font-black text-white mb-4">
@@ -62,14 +62,14 @@ const CategoryCard = ({ cat, isOwner, word, inputValue, onChange, onSubmit }) =>
           <input
             type="text"
             placeholder="..."
-            className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-white font-bold outline-none focus:border-indigo-400 transition-all text-sm"
+            className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-white font-bold outline-none focus:border-sky-400 transition-all text-sm"
             value={inputValue}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           />
           <button
             onClick={onSubmit}
-            className="p-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl transition-all shadow-lg"
+            className="p-3 bg-sky-500 hover:bg-sky-600 text-slate-950 rounded-2xl transition-all shadow-lg"
           >
             <FiZap />
           </button>
@@ -189,26 +189,26 @@ const ChildFeedPage = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
-        <div className="text-indigo-400 font-bold animate-pulse">
+      <div className="min-h-screen bg-[#0b0f1a] flex items-center justify-center">
+        <div className="text-sky-400 font-bold animate-pulse">
           연결 중...🐾
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-[#020617] p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-[#0b0f1a] p-6 flex flex-col items-center">
       {/* 결과 모달 */}
       {gameResult && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#020617]/90 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0f1a]/90 backdrop-blur-xl">
           <div className="bg-white/10 border border-white/20 p-8 rounded-[40px] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="w-20 h-20 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-indigo-400/30">
-              <FiBookOpen className="text-4xl text-indigo-400" />
+            <div className="w-20 h-20 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-sky-400/30">
+              <FiBookOpen className="text-4xl text-sky-400" />
             </div>
             <h2 className="text-3xl font-black text-white text-center mb-2">
               우리의 이야기 완성!
             </h2>
-            <p className="text-center text-indigo-300 font-black text-xl mb-6">
+            <p className="text-center text-sky-300 font-black text-xl mb-6">
               점수: {gameResult.score}점
             </p>
 
@@ -216,37 +216,37 @@ const ChildFeedPage = () => {
               <p className="text-white text-lg leading-relaxed text-center">
                 "{gameResult.story}"
               </p>
-              <p className="text-indigo-200/50 text-xs mt-4 text-center">
+              <p className="text-sky-200/50 text-xs mt-4 text-center">
                 {gameResult.feedback}
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-8">
-              <div className="bg-orange-500/10 p-3 rounded-2xl text-center border border-orange-400/20">
-                <p className="text-[10px] text-orange-400 font-black uppercase">허기</p>
+              <div className="bg-sky-500/10 p-3 rounded-2xl text-center border border-sky-400/20">
+                <p className="text-[10px] text-sky-300 font-black uppercase">허기</p>
                 <p className="text-white font-black">{gameResult.rewards.hunger > 0 ? `+${gameResult.rewards.hunger}` : gameResult.rewards.hunger}</p>
               </div>
-              <div className="bg-rose-500/10 p-3 rounded-2xl text-center border border-rose-400/20">
-                <p className="text-[10px] text-rose-400 font-black uppercase">애정</p>
+              <div className="bg-sky-400/10 p-3 rounded-2xl text-center border border-sky-400/20">
+                <p className="text-[10px] text-sky-200 font-black uppercase">애정</p>
                 <p className="text-white font-black">{gameResult.rewards.affection > 0 ? `+${gameResult.rewards.affection}` : gameResult.rewards.affection}</p>
               </div>
-              <div className="bg-purple-500/10 p-3 rounded-2xl text-center border border-purple-400/20">
-                <p className="text-[10px] text-purple-400 font-black uppercase">지식</p>
+              <div className="bg-slate-700/50 p-3 rounded-2xl text-center border border-slate-600/30">
+                <p className="text-[10px] text-slate-300 font-black uppercase">지식</p>
                 <p className="text-white font-black">{gameResult.rewards.knowledge > 0 ? `+${gameResult.rewards.knowledge}` : gameResult.rewards.knowledge}</p>
               </div>
-              <div className="bg-blue-500/10 p-3 rounded-2xl text-center border border-blue-400/20">
-                <p className="text-[10px] text-blue-400 font-black uppercase">경험치</p>
+              <div className="bg-sky-500/10 p-3 rounded-2xl text-center border border-sky-400/20">
+                <p className="text-[10px] text-sky-400 font-black uppercase">경험치</p>
                 <p className="text-white font-black">+{gameResult.rewards.exp}</p>
               </div>
-              <div className="col-span-2 bg-red-500/10 p-3 rounded-2xl text-center border border-red-400/20">
-                <p className="text-[10px] text-red-400 font-black uppercase">스트레스</p>
+              <div className="col-span-2 bg-slate-800/80 p-3 rounded-2xl text-center border border-slate-700/50">
+                <p className="text-[10px] text-sky-600 font-black uppercase">스트레스</p>
                 <p className="text-white font-black">{gameResult.rewards.stress > 0 ? `+${gameResult.rewards.stress}` : gameResult.rewards.stress}</p>
               </div>
             </div>
 
             <button
               onClick={() => navigate("/child-room")}
-              className="w-full py-5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-3xl font-black text-xl shadow-xl active:scale-95 transition-all"
+              className="w-full py-5 bg-sky-500 text-slate-950 rounded-3xl font-black text-xl shadow-xl active:scale-95 transition-all"
             >
               확인하고 나가기 🐾
             </button>
@@ -261,12 +261,12 @@ const ChildFeedPage = () => {
         >
           <FiArrowLeft size={24} />
         </button>
-        <div className="text-center">
-          <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400 uppercase tracking-widest">
+        <div className="text-center font-sans">
+          <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-sky-200 uppercase tracking-widest">
             5W1H Story
           </h1>
-          <p className="text-[10px] text-indigo-500/50 font-black">
-            협동 육하원칙 이야기 만들기
+          <p className="text-[10px] text-sky-500/50 font-black uppercase">
+            Collaborative Storytelling
           </p>
         </div>
         <div className="w-12" />
@@ -274,16 +274,16 @@ const ChildFeedPage = () => {
 
       <main className="w-full max-w-lg flex flex-col items-center flex-1">
         <div className="relative w-48 h-48 mb-8">
-          <div className="absolute inset-0 bg-indigo-500/10 blur-[60px] rounded-full animate-pulse" />
+          <div className="absolute inset-0 bg-sky-500/10 blur-[60px] rounded-full animate-pulse" />
           <div className="relative z-10 animate-float">
             {childPet && childPet.draw("w-full h-full")}
           </div>
         </div>
 
-        <div className="w-full space-y-4 mb-20">
+        <div className="w-full space-y-4 mb-20 font-sans">
           {waiting ? (
             <div className="bg-white/5 p-12 rounded-[50px] border border-white/5 text-center">
-              <FiLoader className="text-4xl text-indigo-400 animate-spin mx-auto mb-6" />
+              <FiLoader className="text-4xl text-sky-400 animate-spin mx-auto mb-6" />
               <h2 className="text-white font-black text-xl mb-2">
                 참가자 대기 중
               </h2>
@@ -295,14 +295,14 @@ const ChildFeedPage = () => {
           ) : isEvaluating ? (
             <div className="bg-white/5 p-12 rounded-[50px] border border-white/5 text-center">
               <div className="relative w-24 h-24 mx-auto mb-8">
-                <div className="absolute inset-0 border-4 border-indigo-400/20 rounded-full" />
-                <div className="absolute inset-0 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                <FiEdit3 className="absolute inset-0 m-auto text-3xl text-indigo-400 animate-bounce" />
+                <div className="absolute inset-0 border-4 border-sky-400/20 rounded-full" />
+                <div className="absolute inset-0 border-4 border-sky-400 border-t-transparent rounded-full animate-spin" />
+                <FiBookOpen className="absolute inset-0 m-auto text-3xl text-sky-400 animate-bounce" />
               </div>
               <h2 className="text-white font-black text-xl mb-2">
                 이야기를 짓는 중...
               </h2>
-              <p className="text-indigo-400/50 text-xs font-black italic">
+              <p className="text-sky-400/50 text-xs font-black italic">
                 AI가 여러분의 단어로 마법을 부리고 있어요!
               </p>
             </div>
