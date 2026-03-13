@@ -12,8 +12,9 @@ import {
   FiMessageCircle,
   FiGift,
   FiUserPlus,
-  FiHeart, // 교배 아이콘 유지
-  FiZap, // develop의 번개 아이콘(필요시 사용)도 임포트 유지
+  FiHeart,
+  FiZap,
+  FiMessageSquare, // ✅ 더 직관적인 AI 메시지 아이콘 추가
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import socket from "../../utils/socket";
@@ -213,6 +214,7 @@ const DatingPage = () => {
           sender: petReplyMsg.sender,
           isSystem: false,
           isPetReply: true,
+          isNew: true,
         });
       }
     } catch (err) {
@@ -348,7 +350,7 @@ const DatingPage = () => {
       socket.off("breeding_accepted");
       socket.off("breeding_rejected");
     };
-  }, [petData, roomId, navigate]);
+  }, [petData, roomId, navigate, fetchRoomInfo]);
 
   // 5️⃣ 핸들러 함수들 (Develop의 예외처리 + HB의 기능)
   const handleGiftSuccess = (
@@ -539,7 +541,7 @@ const DatingPage = () => {
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen dark:bg-[#0b0f1a]">
-        <div className="w-8 h-8 border-2 border-t-slate-900 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-slate-100 border-t-sky-400 rounded-full animate-spin" />
       </div>
     );
 
@@ -550,95 +552,81 @@ const DatingPage = () => {
   );
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500">
-      <header className="h-16 lg:h-20 border-b dark:border-slate-900 flex items-center justify-between px-4 lg:px-8 z-50">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-[#0b0f1a] transition-colors duration-500 font-sans relative">
+      <header className="h-16 lg:h-20 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 flex items-center justify-between px-3 lg:px-8 z-50 shrink-0">
+        <div className="flex items-center gap-2 lg:gap-4 flex-1 min-w-0">
           <button
             onClick={handleLeaveRoom}
-            className="p-2 lg:p-3 bg-slate-50 dark:bg-slate-900 rounded-xl transition-all hover:bg-slate-200 dark:hover:bg-slate-800"
+            className="p-2 lg:p-3 bg-slate-50 dark:bg-slate-800 rounded-xl transition-all hover:text-sky-500 border border-slate-100 dark:border-slate-700 shadow-sm shrink-0"
           >
-            <FiArrowLeft />
+            <FiArrowLeft size={18} />
           </button>
-          <div>
-            <h1 className="text-lg lg:text-xl font-black dark:text-white uppercase italic">
-              1:1 라이브 채팅
+          <div className="min-w-0">
+            <h1 className="text-[14px] lg:text-xl font-black dark:text-white uppercase italic tracking-tighter truncate leading-tight">
+              1:1 Live Chat <span className="text-sky-400">.</span>
             </h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-              {isWaiting ? "연결 대기 중..." : "대화 중"} ({roomUsers.length}/2)
+            <p className="text-[9px] lg:text-[10px] text-slate-400 font-bold uppercase tracking-widest whitespace-nowrap">
+              {isWaiting ? "Waiting..." : "Active"} ({roomUsers.length}/2)
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 lg:gap-3 shrink-0 ml-2">
           <button
             onClick={handleSendFriendRequest}
             disabled={isWaiting || isSendingRequest}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900 rounded-xl text-[11px] font-black uppercase"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl text-[10px] lg:text-[11px] font-black uppercase border border-slate-100 dark:border-slate-700 disabled:opacity-30 active:scale-95 transition-transform"
           >
-            <FiUserPlus /> 친구
+            <FiUserPlus className="text-sky-500" />
+            <span className="hidden sm:inline">친구</span>
           </button>
           <button
             onClick={() => setIsGiftModalOpen(true)}
             disabled={isWaiting}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl text-[11px] font-black italic"
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-xl text-[10px] lg:text-[11px] font-black italic shadow-lg shadow-sky-500/10 disabled:opacity-30 active:scale-95 transition-transform"
           >
-            <FiGift /> 교감
+            <FiGift />
+            <span className="hidden sm:inline">교감</span>
           </button>
-
-          {/* 교배 버튼 (HB 기능 반영) */}
           <button
             onClick={handleSendBreedingRequest}
-            disabled={
-              isWaiting ||
-              isSendingBreedingRequest ||
-              petData?.spouseId ||
-              otherPet?.petInstance?.spouseId
-            }
-            className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-xl text-[11px] font-black italic border border-rose-100 dark:border-rose-800"
+            disabled={isWaiting || isSendingBreedingRequest || petData?.spouseId || otherPet?.petInstance?.spouseId}
+            className="flex items-center gap-1 px-2.5 py-1.5 bg-rose-50 dark:bg-rose-950/30 text-rose-500 rounded-xl text-[10px] lg:text-[11px] font-black italic border border-rose-100 dark:border-rose-900/30 disabled:opacity-30 active:scale-95 transition-transform"
           >
-            <FiHeart /> 교배
+            <FiHeart />
+            <span className="hidden sm:inline">교배</span>
           </button>
 
-          {/* AI 자동 답변 스위치 */}
-          {!isWaiting && (
-            <div className="hidden lg:flex items-center gap-2 bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl border dark:border-slate-800">
-              <span className="text-[9px] font-black dark:text-slate-400 uppercase">
-                AI 답변
-              </span>
-              <button
-                onClick={() => setIsAutoCommentEnabled(!isAutoCommentEnabled)}
-                className={`relative w-8 h-4.5 rounded-full transition-all ${isAutoCommentEnabled ? "bg-sky-400" : "bg-slate-300"}`}
-              >
-                <div
-                  className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-white rounded-full transition-transform ${isAutoCommentEnabled ? "translate-x-3.5" : ""}`}
-                />
-              </button>
-            </div>
-          )}
+          {/* [모바일] AI 자동 답변 스위치 - 아이콘 변경 (FiZap -> FiMessageSquare) */}
+          <button 
+            onClick={() => setIsAutoCommentEnabled(!isAutoCommentEnabled)}
+            className={`p-2 lg:p-2.5 rounded-xl transition-all border ${isAutoCommentEnabled ? "bg-sky-500/10 border-sky-500 text-sky-500" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400"}`}
+            title="AI 자동 답변 모드"
+          >
+            <FiMessageSquare className={isAutoCommentEnabled ? "animate-pulse" : ""} size={16} />
+          </button>
 
           <button
             onClick={toggleTheme}
-            className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900"
+            className="p-2 lg:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-sky-400 border border-slate-100 dark:border-slate-800 transition-all active:scale-95"
           >
-            <FiSun />
+            {isDarkMode ? <FiSun size={16} /> : <FiMoon size={16} />}
           </button>
         </div>
       </header>
 
-      <main className="flex-1 overflow-hidden relative flex flex-col items-center bg-slate-50 dark:bg-[#0b0f1a] p-4">
-        <div className="w-full max-w-5xl h-full flex flex-col bg-white dark:bg-slate-900/40 border dark:border-slate-800 rounded-[2.5rem] shadow-sm overflow-hidden">
+      <main className="flex-1 overflow-hidden relative flex flex-col items-center bg-slate-50 dark:bg-[#0b0f1a] p-3 lg:p-4">
+        <div className="w-full max-w-5xl h-full flex flex-col bg-white dark:bg-slate-900/40 rounded-[2.5rem] shadow-sm overflow-hidden relative border-none">
           <div
             ref={chatEndRef}
-            className="flex-1 overflow-y-auto p-5 lg:p-10 space-y-6 custom-scrollbar"
+            className="flex-1 overflow-y-auto p-4 lg:p-10 space-y-5 lg:space-y-6 custom-scrollbar"
           >
             {messages.map((msg, idx) => {
-              const isFromMe =
-                msg.sender?.toLowerCase().trim() ===
-                  petData?.name?.toLowerCase().trim() || msg.isMine;
+              const isFromMe = msg.sender?.toLowerCase().trim() === petData?.name?.toLowerCase().trim() || msg.isMine;
               if (msg.isSystem)
                 return (
-                  <div key={idx} className="flex justify-center my-4">
-                    <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-400 text-[10px] rounded-full font-black uppercase">
+                  <div key={idx} className="flex justify-center my-4 animate-in fade-in slide-in-from-top-1">
+                    <span className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800/50 text-slate-400 text-[10px] rounded-full font-black uppercase tracking-widest border border-slate-200 dark:border-slate-700">
                       {msg.message}
                     </span>
                   </div>
@@ -647,38 +635,26 @@ const DatingPage = () => {
               return (
                 <div
                   key={idx}
-                  className={`flex ${isFromMe ? "justify-end" : "justify-start"} animate-fade-in-up`}
+                  className={`flex ${isFromMe ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}
                 >
-                  <div
-                    className={`max-w-[80%] flex items-start gap-3 ${isFromMe ? "flex-row-reverse" : ""}`}
-                  >
-                    <div
-                      className={`w-10 h-10 rounded-xl overflow-hidden border ${isFromMe ? "bg-slate-900" : "bg-white dark:bg-slate-800"}`}
-                    >
+                  <div className={`max-w-[85%] lg:max-w-[80%] flex items-start gap-2.5 lg:gap-3 ${isFromMe ? "flex-row-reverse" : ""}`}>
+                    <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden border-2 shrink-0 ${isFromMe ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 shadow-sm"}`}>
                       {msg.isPetReply ? (
-                        isFromMe ? (
-                          petData?.draw("scale-125")
-                        ) : (
-                          otherPet?.petInstance?.draw("scale-125")
-                        )
+                        isFromMe ? petData?.draw("scale-125") : otherPet?.petInstance?.draw("scale-125")
                       ) : (
-                        <FiUser className="m-auto h-full" />
+                        <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-900 text-slate-400"><FiUser /></div>
                       )}
                     </div>
-                    <div
-                      className={`flex flex-col ${isFromMe ? "items-end" : ""}`}
-                    >
-                      <span className="text-[10px] text-slate-400 font-black mb-1">
+                    <div className={`flex flex-col ${isFromMe ? "items-end" : "items-start"}`}>
+                      <span className="text-[10px] text-slate-400 font-black mb-1 px-1">
                         {msg.isPetReply ? `${msg.sender} [AI]` : msg.sender}
                       </span>
-                      <div
-                        className={`px-4 py-2 rounded-2xl text-sm ${isFromMe ? "bg-slate-900 text-white rounded-tr-none" : "bg-white dark:bg-slate-800 dark:text-white border dark:border-slate-700 rounded-tl-none"}`}
-                      >
-                        {msg.isPetReply && msg.isNew ? (
-                          <TypingText text={msg.message} />
-                        ) : (
-                          msg.message
-                        )}
+                      <div className={`px-4 py-2.5 rounded-2xl text-[13px] lg:text-sm font-medium shadow-sm transition-all ${
+                        isFromMe 
+                          ? "bg-slate-900 text-white rounded-tr-none" 
+                          : "bg-white dark:bg-slate-800 dark:text-slate-100 border border-slate-50 dark:border-slate-700 rounded-tl-none"
+                      }`}>
+                        {msg.isPetReply && msg.isNew ? <TypingText text={msg.message} /> : msg.message}
                       </div>
                     </div>
                   </div>
@@ -687,28 +663,26 @@ const DatingPage = () => {
             })}
           </div>
 
-          <div className="p-5 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t dark:border-slate-800">
+          <div className="p-4 lg:p-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-t border-slate-100 dark:border-slate-800">
             {isWaiting ? (
-              <div className="text-center py-4 text-slate-400 text-[11px] font-black uppercase">
+              <div className="text-center py-4 text-slate-400 text-[11px] font-black uppercase tracking-[0.2em] animate-pulse italic">
                 대화 상대를 기다리는 중입니다...
               </div>
             ) : (
-              <form
-                onSubmit={handleSendMessage}
-                className="relative flex max-w-4xl mx-auto"
-              >
+              <form onSubmit={handleSendMessage} className="relative flex max-w-4xl mx-auto group">
                 <input
                   type="text"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
                   placeholder="메시지를 입력하세요..."
-                  className="w-full bg-slate-100 dark:bg-slate-950 px-6 py-4 rounded-full text-sm font-bold focus:outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-950 px-6 py-4 lg:py-4.5 rounded-full text-sm font-bold focus:outline-none focus:ring-2 focus:ring-sky-400/20 border-2 border-slate-50 dark:border-slate-900 transition-all dark:text-white"
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 p-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-full"
+                  disabled={!inputValue.trim()}
+                  className="absolute right-2 top-1.5 lg:top-2 p-3 lg:p-3.5 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-full shadow-lg transition-all active:scale-90 hover:scale-105 disabled:opacity-30"
                 >
-                  <FiSend />
+                  <FiSend size={18} />
                 </button>
               </form>
             )}
@@ -716,7 +690,6 @@ const DatingPage = () => {
         </div>
       </main>
 
-      {/* 모달 모음 */}
       <GiftModal
         isOpen={isGiftModalOpen}
         onClose={() => setIsGiftModalOpen(false)}
@@ -750,6 +723,16 @@ const DatingPage = () => {
         receiverPetName={breedingData.receiverPetName}
         isSender={breedingData.isSender}
       />
+
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }
+        @keyframes fade-in-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up { animation: fade-in-up 0.3s ease-out forwards; }
+      `}</style>
     </div>
   );
 };

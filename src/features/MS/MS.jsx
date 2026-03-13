@@ -93,6 +93,8 @@ const MS = () => {
   const [isRouteListOpen, setIsRouteListOpen] = useState(false);
   const [petPosition, setPetPosition] = useState({ lat: 37.498095, lng: 127.02761 });
   const [mapLevel, setMapLevel] = useState(3);
+  const [savedStart, setSavedStart] = useState({ query: '', poi: null });
+  const [savedEnd, setSavedEnd] = useState({ query: '', poi: null });
   const [currentMapLevel, setCurrentMapLevel] = useState(3);
   const mapBoundsRef = useRef(null);
 
@@ -109,6 +111,8 @@ const MS = () => {
       if (result && result.length > 0) {
         setRouteList(result);
         setIsRouteListOpen(true);
+        // 모바일 UI 최적화: 검색 후 검색창은 닫아줌
+        if (window.innerWidth < 768) setShowSearch(false);
       } else { alert("입력하신 경로를 찾을 수 없습니다."); }
     } catch (error) { console.error(error); } finally { setRouteLoading(false); }
   };
@@ -134,6 +138,12 @@ const MS = () => {
     } catch (error) { console.error(error); } finally { setRouteLoading(false); }
   };
 
+  const handleRouteResultBack = () => {
+    setRouteResult(null);
+    setIsRouteListOpen(false);
+    setShowSearch(true);
+  };
+
   useEffect(() => {
     const fetchPetParams = async () => {
       try {
@@ -152,7 +162,6 @@ const MS = () => {
     fetchPetParams();
   }, []);
 
-// //* [Modified Code] 컴포넌트 마운트 시 사용자의 현재 위치를 자동으로 가져오도록 useEffect 추가
   useEffect(() => {
     handleCurrentLocation();
   }, []);
@@ -181,7 +190,6 @@ const MS = () => {
   // 지하철 실시간 위치 데이터를 가져오는 함수
   const fetchSubwayPositions = async (currentBounds = null, currentLevel = null) => {
     try {
-      // API 중단 상태이거나 스위치가 꺼져있으면 데이터를 비우고 종료
       if (isSubwayApiDisabled || !isSubwayRealtimeOn || (currentLevel !== null && currentLevel > 3)) {
         if (subways.length > 0) setSubways([]);
         return;
@@ -190,7 +198,6 @@ const MS = () => {
       const promises = lines.map(async (lineName) => {
         try {
           const res = await api.get(`/api/subway/positions?line=${encodeURIComponent(lineName)}`);
-          // 백엔드는 처리된 객체 배열을 직접 반환 (lat, lng, angle, isExpress 포함)
           const list = Array.isArray(res.data) ? res.data : [];
           return list.filter((item) => item.lat && item.lng);
         } catch (e) {
@@ -219,71 +226,136 @@ const MS = () => {
     <div className="flex w-full h-screen overflow-hidden font-sans bg-white dark:bg-[#0b0f1a]">
       <CommonSide activeMenu="길찾기" />
       <main className="flex-1 relative overflow-hidden">
-        {/* develop 스타일의 상단 버튼 영역 */}
-        <div className="absolute top-6 left-8 md:left-10 z-50 flex flex-col items-start gap-4 pointer-events-none transition-all duration-300">
-          
-          {/* 1. 상단 고정 버튼 트랙 */}
+        
+        {/* [Mobile] 헤더 검색바 */}
+        <div className="md:hidden absolute top-4 left-4 right-4 z-[55] flex flex-col gap-3 pointer-events-none">
+          <div className="flex items-center gap-2 pointer-events-auto bg-white/90 dark:bg-slate-900/90 backdrop-blur-md p-2 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-800">
+            <button 
+              onClick={() => { setShowSearch(true); setIsRouteListOpen(false); }}
+              className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-slate-50 dark:bg-slate-800 text-slate-400`}
+            >
+              <i className="ri-search-2-line text-lg text-sky-500"></i>
+              <span className="text-[13px] font-black tracking-tight uppercase">어디로 갈까요?</span>
+            </button>
+            <button 
+              onClick={() => setIsSubwayRealtimeOn(!isSubwayRealtimeOn)}
+              className={`p-3 rounded-xl transition-all ${isSubwayRealtimeOn ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 dark:bg-slate-800 text-slate-400'}`}
+            >
+              <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-sky-400' : ''}`}></i>
+            </button>
+          </div>
+        </div>
+
+        {/* [Mobile] 검색 입력 바텀 시트 */}
+        {showSearch && (
+          <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto md:hidden">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowSearch(false)}></div>
+            <div className="relative bg-white dark:bg-slate-950 rounded-t-[3rem] shadow-2xl p-6 pb-10 max-h-[90vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-full duration-300">
+              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6"></div>
+              <div className="flex items-center justify-between mb-4 px-2">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter">경로 찾기</h2>
+                <button onClick={() => setShowSearch(false)} className="text-slate-400 text-2xl"><i className="ri-close-line"></i></button>
+              </div>
+              <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
+            </div>
+          </div>
+        )}
+
+        {/* [Mobile] 경로 목록 바텀 시트 */}
+        {isRouteListOpen && (
+          <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto md:hidden">
+            {!routeResult && <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-[2px]" onClick={() => setIsRouteListOpen(false)}></div>}
+              
+              <div className="relative bg-white dark:bg-slate-950 rounded-t-[3rem] shadow-2xl p-6 pb-10 max-h-[75vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-full duration-300">
+                <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6"></div>
+                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => { setIsRouteListOpen(false); setShowSearch(true); }} />
+              </div>
+            </div>
+          )}
+
+          {routeResult && (
+            <div className="fixed inset-0 z-[150] bg-white dark:bg-slate-950 md:absolute md:inset-0 md:bg-transparent pointer-events-auto overflow-y-auto no-scrollbar">
+               <div className="min-h-full">
+                  <RouteResult
+                    result={routeResult}
+                    startTime={routeStartTime}
+                    onClose={handleRouteResultBack}
+                    onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })}
+                  />
+               </div>
+            </div>
+          )}
+
+        {/* [PC] 레이아웃 영역 */}
+        <div className="hidden md:flex absolute top-6 left-10 z-50 flex-col items-start gap-4 pointer-events-none transition-all duration-300">
           <div className="flex flex-row items-center gap-3 pointer-events-auto">
             <button
               onClick={() => { setShowSearch(!showSearch); if (isRouteListOpen) setIsRouteListOpen(false); }}
               className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
-                showSearch ? 'bg-blue-600/90 border-blue-400 text-white shadow-blue-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
+                showSearch ? 'bg-slate-900 border-sky-400 text-white shadow-sky-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
               }`}
             >
-              <i className={`ri-route-line text-lg ${showSearch ? 'text-white' : 'text-sky-500'}`}></i>
+              <i className={`ri-route-line text-lg ${showSearch ? 'text-sky-400' : 'text-sky-500'}`}></i>
               <div className="flex flex-col items-start overflow-hidden">
                 <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">길 찾기 {showSearch ? '닫기' : ''}</span>
-                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${showSearch ? 'text-blue-200' : 'text-slate-400'}`}>Route Finder</span>
+                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${showSearch ? 'text-sky-200' : 'text-slate-400'}`}>Route Finder</span>
               </div>
             </button>
 
             <button
               onClick={() => setIsSubwayRealtimeOn(!isSubwayRealtimeOn)}
               className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
-                isSubwayRealtimeOn ? 'bg-blue-600/90 border-blue-400 text-white shadow-blue-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
+                isSubwayRealtimeOn ? 'bg-slate-900 border-sky-400 text-white shadow-sky-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
               }`}
             >
-              <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-white' : 'text-slate-400'}`}></i>
+              <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-sky-400' : 'text-slate-400'}`}></i>
               <div className="flex flex-col items-start overflow-hidden">
                 <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">실시간 {isSubwayRealtimeOn ? 'ON' : 'OFF'}</span>
-                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${isSubwayRealtimeOn ? 'text-blue-200' : 'text-slate-400'}`}>Realtime</span>
+                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${isSubwayRealtimeOn ? 'text-sky-200' : 'text-slate-400'}`}>Realtime</span>
               </div>
             </button>
           </div>
 
-          <div className="flex flex-row items-start gap-4 w-full">
-             {/* 검색창 */}
+          <div className="flex flex-col items-start gap-4 w-full h-full">
              {showSearch && (
               <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
-                <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} />
+                <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
               </div>
             )}
-
-            {/* 결과 목록 */}
             {isRouteListOpen && (
-              <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white">
+              <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
                 <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
               </div>
             )}
           </div>
         </div>
 
+        {/* 지도 영역 */}
         <div className="absolute inset-0 w-full h-full z-0">
           {!error && !loading && (
             <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
               
-              {/* GPS 실시간 내 위치 버튼 */}
-              <div className="absolute bottom-[220px] right-[2px] z-10">
+              <div className="absolute bottom-24 right-3 md:bottom-28 md:right-5 z-20 pointer-events-auto">
                 <button
                   onClick={handleCurrentLocation}
-                  className="w-9 h-9 bg-white rounded-md shadow-md flex items-center justify-center border border-slate-200 hover:bg-sky-50 active:scale-95 transition-all group"
-                  title="현재 내 위치"
+                  className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
                 >
-                  <i className="ri-focus-3-line text-xl text-slate-400 group-hover:text-sky-500"></i>
+                  <i className="ri-focus-3-line text-2xl md:text-xl"></i>
                 </button>
               </div>
 
-              {/* 내 위치로 이동하는 전용 버튼 */}
+              <div className="absolute bottom-40 right-3 md:bottom-44 md:right-5 z-20 pointer-events-auto">
+                <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+                  <button onClick={() => setMapLevel(prev => Math.max(prev - 1, 1))} className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 border-b dark:border-slate-700 transition-all">
+                    <i className="ri-add-line text-xl"></i>
+                  </button>
+                  <button onClick={() => setMapLevel(prev => Math.min(prev + 1, 14))} className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 transition-all">
+                    <i className="ri-subtract-line text-xl"></i>
+                  </button>
+                </div>
+              </div>
+
+              {/* //* [Modified Code] 내 위치로 이동하는 전용 버튼 추가 (ZoomControl 위쪽 배치) */}
               <div 
                 className="absolute bottom-28 right-2 z-10 flex flex-col gap-2"
                 style={{ marginRight: '10px', marginBottom: '10px' }}
@@ -297,40 +369,29 @@ const MS = () => {
                 </button>
               </div>
 
-              <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
-
               {routeSegments.map((seg, i) => (
-                <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
+                <Polyline 
+                  key={i} 
+                  path={seg.path} 
+                  strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} 
+                  strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} 
+                  strokeOpacity={0.8} 
+                  zIndex={10} 
+                  /* 도보(dash) 점선 */
+                  strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'}
+                />
               ))}
 
               {currentMapLevel <= 3 &&
                 subways.map((sub) => (
-                  <CustomOverlayMap
-                    key={sub.id}
-                    position={{ lat: sub.lat, lng: sub.lng }}
-                    yAnchor={0.5}
-                    zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}
-                  >
-                    <div className="relative group cursor-pointer">
-                      <SubwayIcon
-                        direction="up"
-                        angle={sub.angle}
-                        width={28}
-                        arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'}
-                        isExpress={sub.isExpress}
-                      />
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 pointer-events-none">
-                        <div className="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded shadow-lg whitespace-nowrap border border-gray-200">
-                          {sub.trainName}
-                        </div>
-                      </div>
-                    </div>
+                  <CustomOverlayMap key={sub.id} position={{ lat: sub.lat, lng: sub.lng }} yAnchor={0.5} zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}>
+                    <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'} isExpress={sub.isExpress} />
                   </CustomOverlayMap>
-              ))}
-              {/* PET 얼굴 & 경험치 보더 */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                <div 
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
+                ))}
+
+              <div className="absolute top-1/2 left-1/2 z-10 pointer-events-none animate-bounce-slight">
+                <div
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl"
                   style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
                 >
                   <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
@@ -343,11 +404,28 @@ const MS = () => {
               </div>
             </Map>
           )}
+
+          {/* 상세 경로 결과 */}
           {routeResult && (
-            <RouteResult result={routeResult} startTime={routeStartTime} onClose={() => { setRouteResult(null); setIsRouteListOpen(true); setShowSearch(true); }} onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })} />
+            <div className="fixed inset-0 z-[120] bg-white dark:bg-slate-950 md:absolute md:inset-0 md:bg-transparent pointer-events-auto overflow-y-auto no-scrollbar">
+               <div className="min-h-full">
+                  <RouteResult 
+                    result={routeResult} 
+                    startTime={routeStartTime} 
+                    onClose={handleRouteResultBack} 
+                    onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })} 
+                  />
+               </div>
+            </div>
           )}
         </div>
       </main>
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .animate-bounce-slight { animation: bounceSlight 2s ease-in-out infinite; }
+        @keyframes bounceSlight { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -60%); } }
+      `}</style>
     </div>
   );
 };
