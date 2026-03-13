@@ -97,7 +97,7 @@ const MS = () => {
   const mapBoundsRef = useRef(null);
 
   const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false);
-  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(true);
+  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false);
 
   const handleRouteSearch = async (start, end, time, searchType = 0, pathType = 0) => {
     try {
@@ -173,7 +173,7 @@ const MS = () => {
   const fetchSubwayPositions = async (currentBounds = null, currentLevel = null) => {
     try {
       // API 중단 상태이거나 스위치가 꺼져있으면 데이터를 비우고 종료
-      if (isSubwayApiDisabled || !isSubwayRealtimeOn || (currentLevel !== null && currentLevel > 4)) {
+      if (isSubwayApiDisabled || !isSubwayRealtimeOn || (currentLevel !== null && currentLevel > 3)) {
         if (subways.length > 0) setSubways([]);
         return;
       }
@@ -181,22 +181,12 @@ const MS = () => {
       const promises = lines.map(async (lineName) => {
         try {
           const res = await api.get(`/api/subway/positions?line=${encodeURIComponent(lineName)}`);
-          if (res.data?.realtimePositionList) {
-             return res.data.realtimePositionList.map((item, index) => {
-                const rawStation = item.statnNm.trim().split('(')[0];
-                const coords = SUBWAY_STATION_COORDS_V2[lineName]?.[rawStation] || SUBWAY_STATION_COORDS_V2[lineName]?.[rawStation + '역'];
-                if (coords) {
-                   return {
-                      id: `${item.trainNo}_${index}`, lat: coords.lat, lng: coords.lng, line: lineName,
-                      updnLine: item.updnLine, angle: 0, 
-                      trainName: `[${lineName}] ${item.statnNm}`
-                   };
-                }
-                return null;
-             }).filter(Boolean);
-          }
+          // 백엔드는 처리된 객체 배열을 직접 반환 (lat, lng, angle, isExpress 포함)
+          const list = Array.isArray(res.data) ? res.data : [];
+          return list.filter((item) => item.lat && item.lng);
+        } catch (e) {
           return [];
-        } catch (e) { return []; }
+        }
       });
 
       const results = await Promise.all(promises);
@@ -272,20 +262,62 @@ const MS = () => {
         <div className="absolute inset-0 w-full h-full z-0">
           {!error && !loading && (
             <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
+              
+              {/* GPS 실시간 내 위치 버튼 */}
+              <div className="absolute bottom-[220px] right-[2px] z-10">
+                <button
+                  onClick={handleCurrentLocation}
+                  className="w-9 h-9 bg-white rounded-md shadow-md flex items-center justify-center border border-slate-200 hover:bg-sky-50 active:scale-95 transition-all group"
+                  title="현재 내 위치"
+                >
+                  <i className="ri-focus-3-line text-xl text-slate-400 group-hover:text-sky-500"></i>
+                </button>
+              </div>
+
               <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
 
               {routeSegments.map((seg, i) => (
                 <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
               ))}
 
-              {subways.map((sub) => (
-                <CustomOverlayMap key={sub.id} position={{ lat: sub.lat, lng: sub.lng }} yAnchor={0.5} zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}>
-                  <div onClick={(e) => { e.stopPropagation(); setSelectedTrainId(selectedTrainId === sub.id ? null : sub.id); }} className="cursor-pointer transition-transform hover:scale-110">
-                    <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'} />
-                  </div>
-                </CustomOverlayMap>
+              {currentMapLevel <= 3 &&
+                subways.map((sub) => (
+                  <CustomOverlayMap
+                    key={sub.id}
+                    position={{ lat: sub.lat, lng: sub.lng }}
+                    yAnchor={0.5}
+                    zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}
+                  >
+                    <div className="relative group cursor-pointer">
+                      <SubwayIcon
+                        direction="up"
+                        angle={sub.angle}
+                        width={28}
+                        arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'}
+                        isExpress={sub.isExpress}
+                      />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 pointer-events-none">
+                        <div className="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded shadow-lg whitespace-nowrap border border-gray-200">
+                          {sub.trainName}
+                        </div>
+                      </div>
+                    </div>
+                  </CustomOverlayMap>
               ))}
-              {/* 펫 렌더링 생략(기존 동일) */}
+              {/* PET 얼굴 & 경험치 보더 */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                <div 
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
+                  style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
+                >
+                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+                    {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
+                  </div>
+                </div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white shadow-md">
+                  LV.{level}
+                </div>
+              </div>
             </Map>
           )}
           {routeResult && (
