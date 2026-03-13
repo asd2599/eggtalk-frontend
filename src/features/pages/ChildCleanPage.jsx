@@ -32,6 +32,10 @@ const ChildCleanPage = () => {
   const [giveupProposer, setGiveupProposer] = useState(null);
   const [extraHintProposer, setExtraHintProposer] = useState(null);
 
+  // 🔔 모달 전용 상태 추가
+  const [confirmModal, setConfirmModal] = useState(null); // { title: "", desc: "", onConfirm: () => {} }
+  const [infoModal, setInfoModal] = useState(null); // { title: "", desc: "" }
+
   const myPetId = localStorage.getItem("petId");
   const myPetName = localStorage.getItem("petName");
   const childIdRef = useRef(null);
@@ -148,14 +152,20 @@ const ChildCleanPage = () => {
     };
     const handleExtraHintRejected = () => {
       setExtraHintProposer(null);
-      alert("배우자가 추가 힌트 사용을 거절했습니다. 좀 더 힘내봐요! 💪");
+      setInfoModal({
+        title: "배우자 거절",
+        desc: "배우자가 추가 힌트 사용을 거절했습니다. 좀 더 힘내봐요! 💪",
+      });
     };
     const handleGiveupProposed = ({ proposerName }) => {
       setGiveupProposer(proposerName);
     };
     const handleGiveupRejected = () => {
       setGiveupProposer(null);
-      alert("배우자가 포기 요청을 거절했습니다. 게임을 계속 진행합니다! 💪");
+      setInfoModal({
+        title: "기권 거절",
+        desc: "배우자가 포기 요청을 거절했습니다. 게임을 계속 진행합니다! 💪",
+      });
     };
 
     socket.on("bath_room_waiting", handleWaiting);
@@ -226,10 +236,21 @@ const ChildCleanPage = () => {
 
   const handleRequestHint = () => {
     if (extraHintRevealed) return;
-    if (window.confirm("추가 힌트를 요청하시겠습니까? (배우자 동의 필요, 보상이 50% 줄어듭니다!)")) {
-      socket.emit("propose_bath_extra_hint", { childId: childIdRef.current, petName: myPetName });
-      alert("배우자에게 추가 힌트 동의 요청을 보냈습니다. ⏳");
-    }
+    setConfirmModal({
+      title: "추가 힌트 요청",
+      desc: "추가 힌트를 요청하시겠습니까?\n(배우자 동의 필요, 보상이 50% 줄어듭니다!)",
+      onConfirm: () => {
+        socket.emit("propose_bath_extra_hint", {
+          childId: childIdRef.current,
+          petName: myPetName,
+        });
+        setConfirmModal(null);
+        setInfoModal({
+          title: "요청 전송 완료",
+          desc: "배우자에게 추가 힌트 동의 요청을 보냈습니다. ⏳",
+        });
+      },
+    });
   };
 
   const handleRespondExtraHint = (approved) => {
@@ -238,10 +259,21 @@ const ChildCleanPage = () => {
   };
 
   const handleProposeGiveup = () => {
-    if (window.confirm("정말로 게임을 포기하시겠습니까? (배우자의 동의가 필요합니다)")) {
-      socket.emit("propose_bath_giveup", { childId: childIdRef.current, petName: myPetName });
-      alert("배우자에게 포기 동의 요청을 보냈습니다. 기다려 주세요! ⏳");
-    }
+    setConfirmModal({
+      title: "게임 기권",
+      desc: "정말로 게임을 포기하시겠습니까?\n(배우자의 동의가 필요합니다)",
+      onConfirm: () => {
+        socket.emit("propose_bath_giveup", {
+          childId: childIdRef.current,
+          petName: myPetName,
+        });
+        setConfirmModal(null);
+        setInfoModal({
+          title: "요청 전송 완료",
+          desc: "배우자에게 포기 동의 요청을 보냈습니다. 기다려 주세요! ⏳",
+        });
+      },
+    });
   };
 
   const handleRespondGiveup = (approved) => {
@@ -283,8 +315,8 @@ const ChildCleanPage = () => {
     ];
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+        <div className="bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl p-8 w-full max-w-sm flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300 border border-slate-100 dark:border-slate-800">
           <div className="text-center">
             <div
               className={`w-20 h-20 ${result.isSuccess ? "bg-sky-100 dark:bg-sky-900/30" : "bg-slate-100 dark:bg-slate-800"} rounded-full flex items-center justify-center mx-auto mb-4`}
@@ -623,7 +655,7 @@ const ChildCleanPage = () => {
 
       {/* ── 포기 동의 모달 ── */}
       {giveupProposer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
               <FiHeart className="text-4xl text-slate-400 animate-pulse" />
@@ -648,6 +680,54 @@ const ChildCleanPage = () => {
                 포기 승인
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 선택 확인 모달 ── */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-sky-100 dark:border-slate-800 w-full max-w-sm text-center transform animate-in zoom-in-95 duration-300">
+            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-4">
+              {confirmModal.title}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-bold whitespace-pre-wrap">
+              {confirmModal.desc}
+            </p>
+            <div className="flex w-full gap-3">
+              <button
+                onClick={() => setConfirmModal(null)}
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-100 dark:bg-slate-800 text-slate-500"
+              >
+                취소
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-sky-500 text-slate-950 shadow-md active:scale-95 transition-all"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 일반 안내 모달 ── */}
+      {infoModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform animate-in zoom-in-95 duration-300">
+            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-4">
+              {infoModal.title}
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-bold">
+              {infoModal.desc}
+            </p>
+            <button
+              onClick={() => setInfoModal(null)}
+              className="w-full py-4 rounded-2xl font-black text-sm bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-md active:scale-95 transition-all"
+            >
+              확인
+            </button>
           </div>
         </div>
       )}
