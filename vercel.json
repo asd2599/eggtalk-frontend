@@ -7,6 +7,10 @@
     {
       "source": "/api/bus/:path*",
       "destination": "http://ws.bus.go.kr/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
