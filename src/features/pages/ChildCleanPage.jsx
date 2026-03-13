@@ -12,6 +12,7 @@ import { api } from "../../utils/config";
 import socket from "../../utils/socket";
 import Pet from "../pets/pet";
 
+//test
 const ChildCleanPage = () => {
   const navigate = useNavigate();
   const [childPet, setChildPet] = useState(null);
@@ -83,7 +84,13 @@ const ChildCleanPage = () => {
       setGiveupProposer(null);
       setExtraHintProposer(null);
     };
-    const handleStarted = ({ category, hint, extraHint, extraHintRevealed, currentTurnPetId }) => {
+    const handleStarted = ({
+      category,
+      hint,
+      extraHint,
+      extraHintRevealed,
+      currentTurnPetId,
+    }) => {
       setGameMode(true);
       setCategory(category);
       setHint(hint);
@@ -226,26 +233,46 @@ const ChildCleanPage = () => {
 
   const handleRequestHint = () => {
     if (extraHintRevealed) return;
-    if (window.confirm("추가 힌트를 요청하시겠습니까? (배우자 동의 필요, 보상이 50% 줄어듭니다!)")) {
-      socket.emit("propose_bath_extra_hint", { childId: childIdRef.current, petName: myPetName });
+    if (
+      window.confirm(
+        "추가 힌트를 요청하시겠습니까? (배우자 동의 필요, 보상이 50% 줄어듭니다!)",
+      )
+    ) {
+      socket.emit("propose_bath_extra_hint", {
+        childId: childIdRef.current,
+        petName: myPetName,
+      });
       alert("배우자에게 추가 힌트 동의 요청을 보냈습니다. ⏳");
     }
   };
 
   const handleRespondExtraHint = (approved) => {
-    socket.emit("respond_bath_extra_hint", { childId: childIdRef.current, approved });
+    socket.emit("respond_bath_extra_hint", {
+      childId: childIdRef.current,
+      approved,
+    });
     setExtraHintProposer(null);
   };
 
   const handleProposeGiveup = () => {
-    if (window.confirm("정말로 게임을 포기하시겠습니까? (배우자의 동의가 필요합니다)")) {
-      socket.emit("propose_bath_giveup", { childId: childIdRef.current, petName: myPetName });
+    if (
+      window.confirm(
+        "정말로 게임을 포기하시겠습니까? (배우자의 동의가 필요합니다)",
+      )
+    ) {
+      socket.emit("propose_bath_giveup", {
+        childId: childIdRef.current,
+        petName: myPetName,
+      });
       alert("배우자에게 포기 동의 요청을 보냈습니다. 기다려 주세요! ⏳");
     }
   };
 
   const handleRespondGiveup = (approved) => {
-    socket.emit("respond_bath_giveup", { childId: childIdRef.current, approved });
+    socket.emit("respond_bath_giveup", {
+      childId: childIdRef.current,
+      approved,
+    });
     setGiveupProposer(null);
   };
 
@@ -298,7 +325,7 @@ const ChildCleanPage = () => {
             <p
               className={`text-2xl font-black ${result.isSuccess ? "text-sky-500" : "text-slate-500"}`}
             >
-              {result.isGiveup 
+              {result.isGiveup
                 ? `🏳️ 기권 (정답: ${result.word})`
                 : result.isSuccess
                   ? `🎉 정답: ${result.word}!`
@@ -308,7 +335,9 @@ const ChildCleanPage = () => {
               {result.isGiveup
                 ? "서로 합의하에 육아실로 복귀합니다."
                 : result.isSuccess
-                  ? (extraHintRevealed ? "추가 힌트 도움으로 성공!" : "스스로의 힘으로 성공!")
+                  ? extraHintRevealed
+                    ? "추가 힌트 도움으로 성공!"
+                    : "스스로의 힘으로 성공!"
                   : "10번 안에 맞추지 못했어요."}
             </p>
           </div>
@@ -414,7 +443,7 @@ const ChildCleanPage = () => {
                 {questions.filter((q) => q.type !== "system").length}/10
               </span>
             </div>
-            
+
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 min-w-0">
                 <FiHelpCircle className="text-sky-500 shrink-0" size={16} />
@@ -422,7 +451,7 @@ const ChildCleanPage = () => {
                   "{hint}"
                 </p>
               </div>
-              
+
               {extraHintRevealed ? (
                 <div className="flex items-center gap-2 min-w-0 bg-amber-50 dark:bg-amber-900/10 p-2 rounded-xl border border-amber-100 dark:border-amber-900/30 animate-in fade-in slide-in-from-top-1">
                   <FiStar className="text-amber-500 shrink-0" size={14} />
@@ -598,10 +627,16 @@ const ChildCleanPage = () => {
               <FiStar className="text-4xl text-sky-500 animate-bounce" />
             </div>
             <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-              <span className="text-sky-500">{extraHintProposer}</span>님의 힌트 요청
+              <span className="text-sky-500">{extraHintProposer}</span>님의 힌트
+              요청
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
-              너무 어렵나요? <span className="text-sky-500 font-bold">보상이 50% 줄어들지만</span><br />추가 힌트를 보시겠습니까?
+              너무 어렵나요?{" "}
+              <span className="text-sky-500 font-bold">
+                보상이 50% 줄어들지만
+              </span>
+              <br />
+              추가 힌트를 보시겠습니까?
             </p>
             <div className="flex w-full gap-3">
               <button
@@ -629,10 +664,13 @@ const ChildCleanPage = () => {
               <FiHeart className="text-4xl text-sky-500 animate-pulse" />
             </div>
             <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-              <span className="text-sky-500">{giveupProposer}</span>님의 기권 신청
+              <span className="text-sky-500">{giveupProposer}</span>님의 기권
+              신청
             </h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
-              너무 어렵나요? 정답을 확인하고<br />게임을 종료하시겠습니까?
+              너무 어렵나요? 정답을 확인하고
+              <br />
+              게임을 종료하시겠습니까?
             </p>
             <div className="flex w-full gap-3">
               <button
