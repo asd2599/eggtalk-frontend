@@ -351,7 +351,7 @@ const ChildPlayPage = () => {
             {scenario?.title || (waiting ? "배우자 입장 대기 중..." : "상황극")}
           </h1>
           <p className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">
-            Role-Play Game
+            Role-Play Game (역할극 게임)
           </p>
         </div>
         <div className="flex items-center gap-1 bg-rose-100 dark:bg-rose-900/30 px-3 py-1 rounded-full font-black text-rose-600 dark:text-rose-300 text-sm">
