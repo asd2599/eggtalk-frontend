@@ -2,12 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import odsayService from '../utils/odsayService';
 import { api } from '../../../utils/config';
 
-/**
- * [SubwaySearch.jsx]
- * 역할: 출발지와 도착지를 검색하고 탐색을 시작하는 대중교통 검색바 컴포넌트입니다.
- * //* [White Theme] 실시간 ON/OFF 버튼과 동일한 톤앤매너 및 로즈 컬러 제거 버전
- */
-
 const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
   const [startQuery, setStartQuery] = useState('');
   const [endQuery, setEndQuery] = useState('');
@@ -174,7 +168,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
       ref={searchRef}
       className="w-full bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.1)] p-7 flex flex-col gap-6 border-[2px] border-slate-200 pointer-events-auto"
     >
-      {/* 🧭 헤더 - 실시간 버튼의 화이트 테마 적용 */}
+      {/* 헤더 */}
       <div className="flex justify-between items-center px-1">
         <div className="flex flex-col">
           <h3 className="text-sm font-black text-slate-800 flex items-center gap-2 tracking-tight">
@@ -194,7 +188,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
       </div>
 
       <div className="flex flex-col gap-5">
-        {/* 📍 출발지 (Origin) - 로즈 컬러를 스카이 블루로 통일 */}
+        {/* 출발지 */}
         <div className="flex flex-col gap-2 relative">
           <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest flex items-center gap-2">
             <i className="ri-map-pin-user-line text-xs text-sky-500"></i>
@@ -236,7 +230,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
           )}
         </div>
 
-        {/* 🏁 도착지 (Destination) - 로즈 컬러 대신 딥 네이비 포인트 */}
+        {/* 도착지 */}
         <div className="flex flex-col gap-2 relative">
           <label className="text-[9px] font-black text-slate-400 ml-2 uppercase tracking-widest flex items-center gap-2">
             <i className="ri-flag-line text-xs text-slate-800"></i>
@@ -279,7 +273,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
         </div>
       </div>
 
-      {/* ⚙️ 옵션 영역 - 화이트 테마에 어울리는 파스텔톤과 그레이 조합 */}
+      {/* 옵션 영역 */}
       {(hasSearched || isLoading) && (
         <div className="flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-2 duration-500 border-t border-slate-100 pt-5">
           <div className="flex flex-col gap-2.5">
@@ -333,7 +327,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
         </div>
       )}
 
-      {/* 🚀 실행 버튼 - 우리 컬러 중 가장 메인인 스카이블루 활용 */}
+      {/* 실행 버튼 */}
       <button
         onClick={handleSearch}
         disabled={isLoading}

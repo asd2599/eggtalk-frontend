@@ -116,7 +116,7 @@ const DatingPage = () => {
     }
   }, [roomId, navigate]);
 
-  // 1️⃣ 초기 방 정보 및 소켓 연결 로직 (중복 제거 및 통합)
+  // 초기 방 정보 및 소켓 연결 로직
   useEffect(() => {
     if (!petData?.name || !roomId) return;
 
@@ -134,7 +134,7 @@ const DatingPage = () => {
     };
   }, [petData, roomId, fetchRoomInfo]);
 
-  // 2️⃣ 테마 및 펫 데이터 로드
+  // 테마 및 펫 데이터 로드
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark =
@@ -169,7 +169,7 @@ const DatingPage = () => {
     fetchPetData();
   }, [navigate]);
 
-  // 3️⃣ AI 자동 답변 로직 (HB 브랜치 유지)
+  // AI 자동 답변 로직
   const silenceTimerRef = useRef(null);
   const isAutoCommenting = useRef(false);
 
@@ -243,7 +243,7 @@ const DatingPage = () => {
     };
   }, [resetSilenceTimer]);
 
-  // 4️⃣ 소켓 리스너 (교배/친구 통합)
+  // 소켓 리스너 (교배/친구 통합)
   useEffect(() => {
     if (!petData?.name) return;
 
@@ -350,7 +350,7 @@ const DatingPage = () => {
     };
   }, [petData, roomId, navigate]);
 
-  // 5️⃣ 핸들러 함수들 (Develop의 예외처리 + HB의 기능)
+  // 핸들러 함수들
   const handleGiftSuccess = (
     giftName,
     targetName,
@@ -585,7 +585,7 @@ const DatingPage = () => {
             <FiGift /> 교감
           </button>
 
-          {/* 교배 버튼 (HB 기능 반영) */}
+          {/* 교배 버튼 */}
           <button
             onClick={handleSendBreedingRequest}
             disabled={
@@ -594,7 +594,7 @@ const DatingPage = () => {
               petData?.spouseId ||
               otherPet?.petInstance?.spouseId
             }
-            className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-xl text-[11px] font-black italic border border-rose-100 dark:border-rose-800"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-900/30 text-sky-500 rounded-xl text-[11px] font-black italic border border-sky-100 dark:border-sky-800"
           >
             <FiHeart /> 교배
           </button>

@@ -194,40 +194,40 @@ const ChildCleanPage = () => {
         key: "affection",
         label: "애정",
         icon: "🥰",
-        color: "text-rose-500",
-        bg: "bg-rose-50 dark:bg-rose-900/20",
+        color: "text-sky-500", // rose -> sky
+        bg: "bg-sky-50 dark:bg-sky-900/20",
       },
       {
         key: "cleanliness",
         label: "청결",
         icon: "🛁",
-        color: "text-sky-500",
-        bg: "bg-sky-50 dark:bg-sky-900/20",
+        color: "text-indigo-500", // sky -> indigo
+        bg: "bg-indigo-50 dark:bg-indigo-900/20",
       },
       {
         key: "knowledge",
         label: "지식",
         icon: "🧠",
-        color: "text-indigo-500",
-        bg: "bg-indigo-50 dark:bg-indigo-900/20",
+        color: "text-emerald-500", // indigo -> emerald
+        bg: "bg-emerald-50 dark:bg-emerald-900/20",
       },
     ];
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-w-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
           <div className="text-center">
             <div
-              className={`w-20 h-20 ${result.isSuccess ? "bg-sky-100 dark:bg-sky-900/30" : "bg-red-100 dark:bg-red-900/30"} rounded-full flex items-center justify-center mx-auto mb-4`}
+              className={`w-20 h-20 ${result.isSuccess ? "bg-sky-100 dark:bg-sky-900/30" : "bg-slate-100 dark:bg-slate-800"} rounded-full flex items-center justify-center mx-auto mb-4`}
             >
               {result.isSuccess ? (
                 <FiCheckCircle className="text-4xl text-sky-500" />
               ) : (
-                <FiHeart className="text-4xl text-red-400" />
+                <FiStar className="text-4xl text-slate-400" />
               )}
             </div>
             <p
-              className={`text-2xl font-black ${result.isSuccess ? "text-sky-500" : "text-red-400"}`}
+              className={`text-2xl font-black ${result.isSuccess ? "text-sky-500" : "text-slate-500"}`}
             >
               {result.isSuccess
                 ? `🎉 정답: ${result.word}!`
@@ -241,11 +241,11 @@ const ChildCleanPage = () => {
           </div>
 
           <div
-            className={`flex items-center justify-center gap-2 ${result.isSuccess ? "bg-gradient-to-r from-sky-400 to-indigo-400" : "bg-gradient-to-r from-red-400 to-orange-400"} text-white font-black text-xl rounded-2xl px-8 py-3 shadow-lg`}
+            className={`flex items-center justify-center gap-2 ${result.isSuccess ? "bg-gradient-to-r from-sky-400 to-indigo-400" : "bg-gradient-to-r from-slate-400 to-slate-500"} text-white font-black text-xl rounded-2xl px-8 py-3 shadow-lg`}
           >
             <FiStar className="fill-white" size={20} />
             {result.isSuccess
-              ? `${20 - questions.length}턴 만에 성공!`
+              ? `${20 - questions.filter((q) => q.type !== "system").length}턴 만에 성공!`
               : "20턴 초과"}
           </div>
 
@@ -265,7 +265,7 @@ const ChildCleanPage = () => {
                     {icon} {label}
                   </span>
                   <span
-                    className={`font-black text-base ${value < 0 ? "text-red-500" : color}`}
+                    className={`font-black text-base ${value < 0 ? "text-rose-500" : color}`}
                   >
                     {value >= 0 ? `+${value}` : value}
                   </span>
@@ -294,7 +294,7 @@ const ChildCleanPage = () => {
   if (loading)
     return (
       <div className="h-screen bg-sky-50 dark:bg-[#0f172a] flex items-center justify-center">
-        <div className="text-slate-500 font-bold animate-pulse">로딩 중...</div>
+        <div className="text-sky-500 font-bold animate-pulse">로딩 중...</div>
       </div>
     );
 
@@ -339,7 +339,7 @@ const ChildCleanPage = () => {
         {!gameMode && !gameResult && (
           <div className="flex-1 flex items-center justify-center min-h-full">
             <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-10 rounded-[40px] shadow-xl border border-white dark:border-slate-700 text-center max-w-sm w-full">
-              <div className="w-14 h-14 border-4 border-emerald-400 border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-14 h-14 border-4 border-sky-400 border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <h2 className="text-lg font-black text-slate-800 dark:text-white mb-2">
                 게임 준비 중...
               </h2>
@@ -420,7 +420,7 @@ const ChildCleanPage = () => {
               <div className="flex justify-start">
                 <div className="bg-sky-500 text-white px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-md max-w-[80%]">
                   <p className="text-[10px] font-bold text-sky-100 mb-0.5">
-                    AI 몽글이
+                    AI 몽글이가 답변해줬어요
                   </p>
                   <p className="font-black text-lg">A: {q.answer}</p>
                 </div>
