@@ -96,9 +96,8 @@ const MS = () => {
   const [currentMapLevel, setCurrentMapLevel] = useState(3);
   const mapBoundsRef = useRef(null);
 
-  const [isSubwayApiDisabled] = useState(false);
-  // ✅ HB의 기능이지만 요청대로 기본값은 false로 설정!
-  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false); 
+  const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false);
+  const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false);
 
   const handleRouteSearch = async (start, end, time, searchType = 0, pathType = 0) => {
     try {
@@ -169,24 +168,32 @@ const MS = () => {
   });
 
   const [subways, setSubways] = useState([]);
+
+  // 지하철 실시간 위치 데이터를 가져오는 함수
   const fetchSubwayPositions = async (currentBounds = null, currentLevel = null) => {
     try {
+      // API 중단 상태이거나 스위치가 꺼져있으면 데이터를 비우고 종료
       if (isSubwayApiDisabled || !isSubwayRealtimeOn || (currentLevel !== null && currentLevel > 3)) {
         if (subways.length > 0) setSubways([]);
         return;
       }
-      const lines = ["1호선", "2호선", "3호선", "4호선", "5호선", "6호선", "7호선", "8호선", "9호선", "신분당선", "수인분당선"];
+      const lines = ['1호선', '2호선', '3호선', '4호선', '5호선', '6호선', '7호선', '8호선', '9호선', '신분당선', '수인분당선'];
       const promises = lines.map(async (lineName) => {
         try {
           const res = await api.get(`/api/subway/positions?line=${encodeURIComponent(lineName)}`);
           // 백엔드는 처리된 객체 배열을 직접 반환 (lat, lng, angle, isExpress 포함)
           const list = Array.isArray(res.data) ? res.data : [];
-          return list.filter(item => item.lat && item.lng);
-        } catch (e) { return []; }
+          return list.filter((item) => item.lat && item.lng);
+        } catch (e) {
+          return [];
+        }
       });
+
       const results = await Promise.all(promises);
       setSubways(results.flat());
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error('Subway tracking error:', err); 
+    }
   };
 
   useEffect(() => {
@@ -205,6 +212,8 @@ const MS = () => {
       <main className="flex-1 relative overflow-hidden">
         {/* develop 스타일의 상단 버튼 영역 */}
         <div className="absolute top-6 left-8 md:left-10 z-50 flex flex-col items-start gap-4 pointer-events-none transition-all duration-300">
+          
+          {/* 1. 상단 고정 버튼 트랙 */}
           <div className="flex flex-row items-center gap-3 pointer-events-auto">
             <button
               onClick={() => { setShowSearch(!showSearch); if (isRouteListOpen) setIsRouteListOpen(false); }}
@@ -234,11 +243,14 @@ const MS = () => {
           </div>
 
           <div className="flex flex-row items-start gap-4 w-full">
-            {showSearch && (
+             {/* 검색창 */}
+             {showSearch && (
               <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
                 <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} />
               </div>
             )}
+
+            {/* 결과 목록 */}
             {isRouteListOpen && (
               <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[80vh] overflow-y-auto animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white">
                 <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
@@ -250,23 +262,62 @@ const MS = () => {
         <div className="absolute inset-0 w-full h-full z-0">
           {!error && !loading && (
             <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
+              
+              {/* GPS 실시간 내 위치 버튼 */}
+              <div className="absolute bottom-[220px] right-[2px] z-10">
+                <button
+                  onClick={handleCurrentLocation}
+                  className="w-9 h-9 bg-white rounded-md shadow-md flex items-center justify-center border border-slate-200 hover:bg-sky-50 active:scale-95 transition-all group"
+                  title="현재 내 위치"
+                >
+                  <i className="ri-focus-3-line text-xl text-slate-400 group-hover:text-sky-500"></i>
+                </button>
+              </div>
+
               <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
+
               {routeSegments.map((seg, i) => (
-                <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === "dash" ? 4 : 7} strokeColor={seg.strokeStyle === "dash" ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
+                <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
               ))}
-              {currentMapLevel <= 3 && subways.map((sub) => (
-                <CustomOverlayMap key={sub.id} position={{ lat: sub.lat, lng: sub.lng }} yAnchor={0.5} zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}>
-                  <div className="relative group cursor-pointer">
-                    <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || "#10b981"} isExpress={sub.isExpress} />
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 pointer-events-none">
-                      <div className="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded shadow-lg whitespace-nowrap border border-gray-200">
-                        {sub.trainName}
+
+              {currentMapLevel <= 3 &&
+                subways.map((sub) => (
+                  <CustomOverlayMap
+                    key={sub.id}
+                    position={{ lat: sub.lat, lng: sub.lng }}
+                    yAnchor={0.5}
+                    zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}
+                  >
+                    <div className="relative group cursor-pointer">
+                      <SubwayIcon
+                        direction="up"
+                        angle={sub.angle}
+                        width={28}
+                        arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'}
+                        isExpress={sub.isExpress}
+                      />
+                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-50 pointer-events-none">
+                        <div className="bg-white text-gray-800 text-xs font-semibold px-2 py-1 rounded shadow-lg whitespace-nowrap border border-gray-200">
+                          {sub.trainName}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CustomOverlayMap>
+                  </CustomOverlayMap>
               ))}
-              {/* 펫 렌더링 생략(기존 동일) */}
+              {/* PET 얼굴 & 경험치 보더 */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+                <div 
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
+                  style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
+                >
+                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+                    {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
+                  </div>
+                </div>
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white shadow-md">
+                  LV.{level}
+                </div>
+              </div>
             </Map>
           )}
           {routeResult && (
