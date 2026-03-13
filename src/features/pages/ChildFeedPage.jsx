@@ -2,14 +2,10 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
-  FiEdit3,
   FiCheckCircle,
   FiLoader,
-  FiHeart,
   FiZap,
   FiBookOpen,
-  FiSmile,
-  FiClock,
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
