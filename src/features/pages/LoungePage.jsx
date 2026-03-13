@@ -150,7 +150,7 @@ const LoungePage = () => {
         {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
       </button>
 
-      <CommonSide activeMenu="라운지" />
+      <CommonSide activeMenu="모임" />
 
       <main className="flex-1 h-full overflow-y-auto custom-scrollbar px-6 py-12 lg:px-12 lg:py-16 bg-white dark:bg-[#0b0f1a] transition-all scroll-smooth pb-40 relative z-10">
         <div className="max-w-[1000px] mx-auto">

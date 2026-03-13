@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiLogOut,
@@ -16,6 +16,20 @@ import {
 
 const CommonSide = ({ activeMenu }) => {
   const navigate = useNavigate();
+  // ✅ 모바일 스크롤 제어를 위한 Ref 추가
+  const scrollContainerRef = useRef(null);
+  const activeBtnRef = useRef(null);
+
+  // ✅ 메뉴 변경 시 활성화된 버튼을 중앙으로 스크롤하는 효과
+  useEffect(() => {
+    if (activeBtnRef.current && scrollContainerRef.current) {
+      activeBtnRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center", // 모바일 가로 모드에서 중앙으로 정렬
+      });
+    }
+  }, [activeMenu]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -40,14 +54,20 @@ const CommonSide = ({ activeMenu }) => {
       </h2>
 
       {/* 2. 메인 네비게이션 트랙 */}
-      <nav className="flex-1 flex lg:flex-col items-center justify-center lg:items-center lg:p-10 overflow-hidden">
-        <div className="flex-1 flex lg:flex-col items-center justify-center lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-6 lg:px-0 gap-1 lg:gap-3 w-full">
+      <nav className="flex-1 flex lg:flex-col items-center lg:items-center lg:p-10 overflow-hidden">
+        {/* ✅ scrollContainerRef 연결 및 정렬 최적화 */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 flex lg:flex-col items-center justify-start lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-4 lg:px-0 gap-1 lg:gap-3 w-full"
+        >
           {/* 전체 메뉴 반복 출력 */}
           {menuItems.map((item) => (
             <button
               key={item.label}
+              // ✅ 현재 활성화된 메뉴 버튼에만 Ref 할당
+              ref={activeMenu === item.label ? activeBtnRef : null}
               onClick={() => navigate(item.path)}
-              className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-4 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[60px] lg:h-auto min-w-[75px] lg:min-w-0 lg:w-full flex-shrink-0 ${
+              className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-3 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[65px] lg:h-auto min-w-[70px] lg:min-w-0 lg:w-full flex-shrink-0 ${
                 activeMenu === item.label
                   ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg font-bold"
                   : "text-slate-400 hover:text-slate-900 dark:hover:text-sky-400"
@@ -63,7 +83,7 @@ const CommonSide = ({ activeMenu }) => {
           {/* [모바일 전용] 로그아웃 버튼 */}
           <button
             onClick={handleLogout}
-            className="flex lg:hidden flex-col items-center justify-center gap-1 px-4 py-2 rounded-2xl transition-all h-[60px] min-w-[75px] flex-shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            className="flex lg:hidden flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition-all h-[65px] min-w-[70px] flex-shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
           >
             <FiLogOut className="text-xl shrink-0" />
             <span className="text-[9px] font-black whitespace-nowrap uppercase">
@@ -73,6 +93,7 @@ const CommonSide = ({ activeMenu }) => {
         </div>
       </nav>
 
+      {/* 데스크탑 전용 하단 로그아웃 */}
       <div className="hidden lg:flex p-10 border-t border-slate-50 dark:border-slate-800 justify-center">
         <button
           onClick={handleLogout}
