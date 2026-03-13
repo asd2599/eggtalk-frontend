@@ -152,6 +152,11 @@ const MS = () => {
     fetchPetParams();
   }, []);
 
+   // //* [Modified Code] 컴포넌트 마운트 시 사용자의 현재 위치를 자동으로 가져오도록 useEffect 추가
+  useEffect(() => {
+    handleCurrentLocation();
+  }, []);
+
   const handleCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -276,8 +281,31 @@ const MS = () => {
 
               <ZoomControl position={window.kakao?.maps.ControlPosition.BOTTOMRIGHT} />
 
+              {/* //* [Modified Code] 내 위치로 이동하는 전용 버튼 추가 (ZoomControl 위쪽 배치) */}
+              <div 
+                className="absolute bottom-28 right-2 z-10 flex flex-col gap-2"
+                style={{ marginRight: '10px', marginBottom: '10px' }}
+              >
+                <button
+                  onClick={handleCurrentLocation}
+                  className="w-10 h-10 bg-white border-2 border-slate-200 rounded-xl shadow-lg flex items-center justify-center text-slate-600 hover:text-sky-500 hover:border-sky-500 transition-all active:scale-95 pointer-events-auto"
+                  title="내 위치로 이동"
+                >
+                  <i className="ri-focus-3-fill text-xl"></i>
+                </button>
+              </div>
+
               {routeSegments.map((seg, i) => (
-                <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
+                <Polyline 
+                  key={i} 
+                  path={seg.path} 
+                  strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} 
+                  strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} 
+                  strokeOpacity={0.8} 
+                  zIndex={10} 
+                  /* 도보(dash) 점선 */
+                  strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'}
+                />
               ))}
 
               {currentMapLevel <= 3 &&
