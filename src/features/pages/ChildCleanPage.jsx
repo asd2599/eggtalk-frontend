@@ -236,7 +236,7 @@ const ChildCleanPage = () => {
             <p className="text-sm text-slate-400 mt-1">
               {result.isSuccess
                 ? "스무고개 성공!"
-                : "20번 안에 맞추지 못했어요."}
+                : "10번 안에 맞추지 못했어요."}
             </p>
           </div>
 
@@ -245,8 +245,8 @@ const ChildCleanPage = () => {
           >
             <FiStar className="fill-white" size={20} />
             {result.isSuccess
-              ? `${20 - questions.length}턴 만에 성공!`
-              : "20턴 초과"}
+              ? `${10 - questions.length}턴 만에 성공!`
+              : "10턴 초과"}
           </div>
 
           <div className="w-full space-y-3">
@@ -325,9 +325,9 @@ const ChildCleanPage = () => {
               </p>
             </div>
             <span
-              className={`shrink-0 ml-3 text-sm font-black px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-900 ${questions.filter((q) => q.type !== "system").length >= 15 ? "text-rose-500" : "text-sky-500"}`}
+              className={`shrink-0 ml-3 text-sm font-black px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-900 ${questions.filter((q) => q.type !== "system").length >= 8 ? "text-rose-500" : "text-sky-500"}`}
             >
-              {questions.filter((q) => q.type !== "system").length}/20
+              {questions.filter((q) => q.type !== "system").length}/10
             </span>
           </div>
         </div>
