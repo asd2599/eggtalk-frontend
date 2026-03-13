@@ -17,7 +17,7 @@ const ChildCleanPage = () => {
   const [childPet, setChildPet] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 🛁 스무고개 협동 게임용 상태
+  // 스무고개 협동 게임용 상태
   const [gameMode, setGameMode] = useState(false);
   const [category, setCategory] = useState("");
   const [hint, setHint] = useState(""); // 기본 시적 힌트 (항상 보임)
@@ -256,47 +256,47 @@ const ChildCleanPage = () => {
         key: "exp",
         label: "경험치",
         icon: "⭐",
-        color: "text-amber-500",
-        bg: "bg-amber-50 dark:bg-amber-900/20",
+        color: "text-sky-500",
+        bg: "bg-sky-50 dark:bg-sky-900/20",
       },
       {
         key: "affection",
         label: "애정",
         icon: "🥰",
-        color: "text-rose-500",
-        bg: "bg-rose-50 dark:bg-rose-900/20",
+        color: "text-sky-600",
+        bg: "bg-sky-50 dark:bg-sky-900/20",
       },
       {
         key: "cleanliness",
         label: "청결",
         icon: "🛁",
-        color: "text-sky-500",
+        color: "text-sky-400",
         bg: "bg-sky-50 dark:bg-sky-900/20",
       },
       {
         key: "knowledge",
         label: "지식",
         icon: "🧠",
-        color: "text-indigo-500",
-        bg: "bg-indigo-50 dark:bg-indigo-900/20",
+        color: "text-slate-600 dark:text-slate-300",
+        bg: "bg-slate-100 dark:bg-slate-800/20",
       },
     ];
 
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-w-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300">
           <div className="text-center">
             <div
-              className={`w-20 h-20 ${result.isSuccess ? "bg-sky-100 dark:bg-sky-900/30" : "bg-red-100 dark:bg-red-900/30"} rounded-full flex items-center justify-center mx-auto mb-4`}
+              className={`w-20 h-20 ${result.isSuccess ? "bg-sky-100 dark:bg-sky-900/30" : "bg-slate-100 dark:bg-slate-800"} rounded-full flex items-center justify-center mx-auto mb-4`}
             >
               {result.isSuccess ? (
                 <FiCheckCircle className="text-4xl text-sky-500" />
               ) : (
-                <FiHeart className="text-4xl text-red-400" />
+                <FiStar className="text-4xl text-slate-400" />
               )}
             </div>
             <p
-              className={`text-2xl font-black ${result.isSuccess ? "text-sky-500" : "text-red-400"}`}
+              className={`text-2xl font-black ${result.isSuccess ? "text-sky-600" : "text-slate-500"}`}
             >
               {result.isGiveup 
                 ? `🏳️ 기권 (정답: ${result.word})`
@@ -309,17 +309,17 @@ const ChildCleanPage = () => {
                 ? "서로 합의하에 육아실로 복귀합니다."
                 : result.isSuccess
                   ? (extraHintRevealed ? "추가 힌트 도움으로 성공!" : "스스로의 힘으로 성공!")
-                  : "10번 안에 맞추지 못했어요."}
+                  : "시도 횟수를 모두 소진했어요."}
             </p>
           </div>
 
           <div
-            className={`flex items-center justify-center gap-2 ${result.isSuccess ? "bg-gradient-to-r from-sky-400 to-indigo-400" : "bg-gradient-to-r from-red-400 to-orange-400"} text-white font-black text-xl rounded-2xl px-8 py-3 shadow-lg`}
+            className={`flex items-center justify-center gap-2 ${result.isSuccess ? "bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950" : "bg-slate-200 text-slate-500"} font-black text-xl rounded-2xl px-8 py-3 shadow-lg`}
           >
-            <FiStar className="fill-white" size={20} />
+            <FiStar className="fill-current" size={20} />
             {result.isSuccess
-              ? `${10 - questions.length}턴 만에 성공!`
-              : "10턴 초과"}
+              ? `${20 - questions.filter((q) => q.type !== "system").length}턴 만에 성공!`
+              : "게임 종료"}
           </div>
 
           <div className="w-full space-y-3">
@@ -338,7 +338,7 @@ const ChildCleanPage = () => {
                     {icon} {label}
                   </span>
                   <span
-                    className={`font-black text-base ${value < 0 ? "text-red-500" : color}`}
+                    className={`font-black text-base ${value < 0 ? "text-sky-700" : color}`}
                   >
                     {value >= 0 ? `+${value}` : value}
                   </span>
@@ -348,14 +348,14 @@ const ChildCleanPage = () => {
           </div>
 
           <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 text-center w-full">
-            <p className="text-slate-600 dark:text-slate-300 font-medium text-sm">
+            <p className="text-slate-600 dark:text-slate-300 font-medium text-sm italic">
               "{result.story}"
             </p>
           </div>
 
           <button
             onClick={onClose}
-            className="w-full py-4 bg-gradient-to-r from-sky-500 to-indigo-500 text-white font-black rounded-2xl shadow-lg hover:opacity-90 transition-all active:scale-95"
+            className="w-full py-4 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 font-black rounded-2xl shadow-lg hover:opacity-90 transition-all active:scale-95"
           >
             확인하고 나가기 🐾
           </button>
@@ -366,18 +366,18 @@ const ChildCleanPage = () => {
 
   if (loading)
     return (
-      <div className="h-screen bg-sky-50 dark:bg-[#0f172a] flex items-center justify-center">
-        <div className="text-slate-500 font-bold animate-pulse">로딩 중...</div>
+      <div className="h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="text-sky-500 font-bold animate-pulse">로딩 중...</div>
       </div>
     );
 
   return (
-    <div className="h-screen bg-sky-50 dark:bg-[#0f172a] flex flex-col overflow-hidden">
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden">
       {/* ── 상단 고정 헤더 ── */}
-      <header className="flex-none px-4 pt-4 pb-2 flex justify-between items-center bg-sky-50/90 dark:bg-[#0f172a]/90 backdrop-blur-md z-20 border-b border-sky-100 dark:border-slate-800">
+      <header className="flex-none px-4 pt-4 pb-2 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-20 border-b border-slate-100 dark:border-slate-800">
         <button
           onClick={() => navigate("/child-room")}
-          className="p-2.5 bg-white dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all text-slate-600 dark:text-slate-300"
+          className="p-2.5 bg-slate-50 dark:bg-slate-800 rounded-2xl shadow-sm hover:shadow-md transition-all text-slate-600 dark:text-slate-300"
         >
           <FiArrowLeft size={20} />
         </button>
@@ -387,7 +387,7 @@ const ChildCleanPage = () => {
         <button
           onClick={handleProposeGiveup}
           disabled={!gameMode || gameResult}
-          className="px-3 py-1.5 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all disabled:opacity-30"
+          className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-sky-50 hover:text-sky-600 transition-all disabled:opacity-30"
         >
           기권하기
         </button>
@@ -403,13 +403,13 @@ const ChildCleanPage = () => {
                   {category || "분류 미정"}
                 </span>
                 {extraHintRevealed && (
-                  <span className="px-2.5 py-0.5 bg-amber-500 text-[10px] font-black text-white rounded-lg uppercase tracking-wider animate-pulse">
-                    힌트 도움 50%
+                  <span className="px-2.5 py-0.5 bg-slate-800 dark:bg-sky-400 text-[10px] font-black text-white dark:text-slate-900 rounded-lg uppercase tracking-wider animate-pulse">
+                    힌트 사용됨
                   </span>
                 )}
               </div>
               <span
-                className={`text-xs font-black px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-900 ${questions.filter((q) => q.type !== "system").length >= 8 ? "text-rose-500" : "text-sky-500"}`}
+                className={`text-xs font-black px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-900 ${questions.filter((q) => q.type !== "system").length >= 8 ? "text-sky-600" : "text-sky-500"}`}
               >
                 {questions.filter((q) => q.type !== "system").length}/10
               </span>
@@ -424,9 +424,9 @@ const ChildCleanPage = () => {
               </div>
               
               {extraHintRevealed ? (
-                <div className="flex items-center gap-2 min-w-0 bg-amber-50 dark:bg-amber-900/10 p-2 rounded-xl border border-amber-100 dark:border-amber-900/30 animate-in fade-in slide-in-from-top-1">
-                  <FiStar className="text-amber-500 shrink-0" size={14} />
-                  <p className="text-sm font-black text-amber-700 dark:text-amber-300 italic leading-snug">
+                <div className="flex items-center gap-2 min-w-0 bg-sky-50 dark:bg-sky-900/20 p-2 rounded-xl border border-sky-100 dark:border-sky-900/30 animate-in fade-in slide-in-from-top-1">
+                  <FiStar className="text-sky-400 shrink-0" size={14} />
+                  <p className="text-sm font-black text-sky-700 dark:text-sky-300 italic leading-snug">
                     "{extraHint}"
                   </p>
                 </div>
@@ -434,7 +434,7 @@ const ChildCleanPage = () => {
                 <div className="flex justify-start">
                   <button
                     onClick={handleRequestHint}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-black rounded-lg hover:bg-sky-50 hover:text-sky-500 transition-all border border-transparent hover:border-sky-100"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-500 text-[10px] font-black rounded-lg hover:bg-sky-50 hover:text-sky-500 transition-all border border-slate-100 dark:border-slate-700 shadow-sm"
                   >
                     <FiStar size={12} /> 추가 힌트 요청하기 (보상 50% 감소)
                   </button>
@@ -450,12 +450,12 @@ const ChildCleanPage = () => {
         {/* 준비 중 */}
         {!gameMode && !gameResult && (
           <div className="flex-1 flex items-center justify-center min-h-full">
-            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-10 rounded-[40px] shadow-xl border border-white dark:border-slate-700 text-center max-w-sm w-full">
-              <div className="w-14 h-14 border-4 border-emerald-400 border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
+            <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-10 rounded-[40px] shadow-xl border border-slate-100 dark:border-slate-700 text-center max-w-sm w-full">
+              <div className="w-14 h-14 border-4 border-sky-400 border-l-transparent rounded-full animate-spin mx-auto mb-4"></div>
               <h2 className="text-lg font-black text-slate-800 dark:text-white mb-2">
                 게임 준비 중...
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm">
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
                 AI 몽글이가 아기의 비밀 단어를
                 <br />
                 정하고 있습니다!
@@ -466,10 +466,10 @@ const ChildCleanPage = () => {
 
         {/* 게임 시작 안내 */}
         {gameMode && questions.length === 0 && (
-          <div className="text-center py-20 text-slate-400 italic text-sm">
+          <div className="text-center py-20 text-slate-400 italic text-sm font-bold tracking-tight">
             비밀 단어에 대해 질문을 던져보세요!
             <br />
-            <span className="text-xs">(예: "음식인가요?", "동물인가요?")</span>
+            <span className="text-xs opacity-70">(예: "음식인가요?", "동물인가요?")</span>
           </div>
         )}
 
@@ -479,7 +479,7 @@ const ChildCleanPage = () => {
           if (q.type === "system") {
             return (
               <div key={i} className="flex justify-center animate-in fade-in">
-                <div className="bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 px-4 py-2 rounded-full text-amber-700 dark:text-amber-300 text-xs font-bold">
+                <div className="bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 px-4 py-2 rounded-full text-slate-600 dark:text-slate-300 text-[10px] font-black uppercase tracking-widest">
                   {q.question}
                 </div>
               </div>
@@ -494,15 +494,15 @@ const ChildCleanPage = () => {
               >
                 <div className="flex justify-end">
                   <div
-                    className={`px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-sm border max-w-[80%] ${q.isCorrect ? "bg-emerald-50 border-emerald-300 dark:bg-emerald-900/20 dark:border-emerald-700" : "bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800"}`}
+                    className={`px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-sm border ${q.isCorrect ? "bg-sky-50 border-sky-300 dark:bg-sky-900/30 dark:border-sky-700" : "bg-slate-900 border-slate-800 text-white"}`}
                   >
                     <p
-                      className={`text-[10px] font-bold mb-0.5 ${q.isCorrect ? "text-emerald-400" : "text-rose-400"}`}
+                      className={`text-[10px] font-black mb-0.5 opacity-60 uppercase`}
                     >
                       {q.petName}
                     </p>
                     <p
-                      className={`text-sm font-bold ${q.isCorrect ? "text-emerald-700 dark:text-emerald-300" : "text-rose-700 dark:text-rose-300"}`}
+                      className={`text-sm font-black ${q.isCorrect ? "text-sky-700 dark:text-sky-300" : "text-white"}`}
                     >
                       🎯 정답 시도: {q.question} {q.isCorrect ? "✅" : "❌"}
                     </p>
@@ -519,11 +519,11 @@ const ChildCleanPage = () => {
             >
               {/* 질문 - 오른쪽 */}
               <div className="flex justify-end">
-                <div className="bg-white dark:bg-slate-800 px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-sm border border-slate-100 dark:border-slate-700 max-w-[80%]">
-                  <p className="text-[10px] font-bold text-sky-400 mb-0.5">
+                <div className="bg-white dark:bg-slate-800 px-4 py-2.5 rounded-2xl rounded-tr-sm shadow-sm border border-slate-100 dark:border-slate-800 max-w-[80%]">
+                  <p className="text-[10px] font-black text-sky-500 mb-0.5">
                     {q.petName}
                   </p>
-                  <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                  <p className="text-sm font-bold text-slate-700 dark:text-slate-200 tracking-tight">
                     Q: {q.question}
                   </p>
                 </div>
@@ -531,10 +531,10 @@ const ChildCleanPage = () => {
               {/* 답변 - 왼쪽 */}
               <div className="flex justify-start">
                 <div className="bg-sky-500 text-white px-4 py-2.5 rounded-2xl rounded-tl-sm shadow-md max-w-[80%]">
-                  <p className="text-[10px] font-bold text-sky-100 mb-0.5">
-                    AI 몽글이
+                  <p className="text-[10px] font-bold text-sky-100 mb-0.5 uppercase tracking-wider">
+                    AI Mongle
                   </p>
-                  <p className="font-black text-lg">A: {q.answer}</p>
+                  <p className="font-black text-lg leading-tight">A: {q.answer}</p>
                 </div>
               </div>
             </div>
@@ -547,34 +547,34 @@ const ChildCleanPage = () => {
 
       {/* ── 하단 고정 입력창 (게임 중에만) ── */}
       {gameMode && (
-        <div className="flex-none px-4 pb-6 pt-3 bg-sky-50/90 dark:bg-[#0f172a]/90 backdrop-blur-md border-t border-sky-100 dark:border-slate-800 z-20">
+        <div className="flex-none px-4 pb-6 pt-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 z-20">
           {wrongGuess && (
-            <div className="mb-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 px-4 py-2 rounded-2xl text-rose-600 text-sm font-bold text-center">
+            <div className="mb-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-800 px-4 py-2 rounded-2xl text-sky-600 dark:text-sky-300 text-xs font-black text-center animate-bounce-slight">
               ❌ {wrongGuess.petName}: "{wrongGuess.guess}" (틀렸습니다!)
             </div>
           )}
           <div className="flex flex-col gap-3">
-            <form onSubmit={handleSendQuestion} className="relative">
+            <form onSubmit={handleSendQuestion} className="relative group">
               <input
                 type="text"
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
                 placeholder="질문하기 (예: 동물인가요?)"
-                className="w-full bg-white dark:bg-slate-800 border-2 border-sky-300 dark:border-sky-600 rounded-[28px] py-3.5 pl-5 pr-14 transition-all font-medium focus:outline-none focus:border-sky-500 text-sm"
+                className="w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-[28px] py-3.5 pl-5 pr-14 transition-all font-bold focus:outline-none focus:border-sky-400 text-sm"
               />
-              <button className="absolute right-2 top-1.5 w-11 h-11 rounded-2xl flex items-center justify-center text-white bg-sky-500 hover:bg-sky-600 shadow-lg shadow-sky-200 active:scale-95">
+              <button className="absolute right-2 top-1.5 w-11 h-11 rounded-2xl flex items-center justify-center text-white bg-slate-900 dark:bg-sky-500 shadow-lg active:scale-95 transition-all hover:opacity-90">
                 <FiSend size={18} />
               </button>
             </form>
-            <form onSubmit={handleSendGuess} className="relative">
+            <form onSubmit={handleSendGuess} className="relative group">
               <input
                 type="text"
                 value={inputGuess}
                 onChange={(e) => setInputGuess(e.target.value)}
                 placeholder="정답 맞히기!"
-                className="w-full bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-200 dark:border-emerald-800/30 rounded-[28px] py-3.5 pl-5 pr-14 focus:outline-none focus:border-emerald-400 transition-all font-black text-emerald-700 dark:text-emerald-300 text-sm"
+                className="w-full bg-sky-50/30 dark:bg-sky-900/10 border-2 border-sky-100 dark:border-sky-800/30 rounded-[28px] py-3.5 pl-5 pr-14 focus:outline-none focus:border-sky-400 transition-all font-black text-sky-700 dark:text-sky-300 text-sm"
               />
-              <button className="absolute right-2 top-1.5 w-11 h-11 bg-emerald-500 hover:bg-emerald-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-emerald-200 transition-all active:scale-95">
+              <button className="absolute right-2 top-1.5 w-11 h-11 bg-sky-500 hover:bg-sky-600 rounded-2xl flex items-center justify-center text-white shadow-lg active:scale-95 transition-all">
                 <FiCheckCircle size={18} />
               </button>
             </form>
@@ -592,27 +592,27 @@ const ChildCleanPage = () => {
 
       {/* ── 추가 힌트 동의 모달 ── */}
       {extraHintProposer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-sky-100 dark:border-sky-900/30 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-sky-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
             <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
               <FiStar className="text-4xl text-sky-500 animate-bounce" />
             </div>
             <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
               <span className="text-sky-500">{extraHintProposer}</span>님의 힌트 요청
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
-              너무 어렵나요? <span className="text-amber-500 font-bold">보상이 50% 줄어들지만</span><br />추가 힌트를 보시겠습니까?
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-bold tracking-tight">
+              너무 어렵나요? <span className="text-sky-600">보상이 50% 줄어들지만</span><br />추가 힌트를 보시겠습니까?
             </p>
             <div className="flex w-full gap-3">
               <button
                 onClick={() => handleRespondExtraHint(false)}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors"
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 transition-colors"
               >
                 직접 풀기
               </button>
               <button
                 onClick={() => handleRespondExtraHint(true)}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-sky-500 text-white shadow-md hover:bg-sky-600 transform transition"
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-md active:scale-95 transition-all"
               >
                 힌트 사용
               </button>
@@ -623,27 +623,27 @@ const ChildCleanPage = () => {
 
       {/* ── 포기 동의 모달 ── */}
       {giveupProposer && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-rose-100 dark:border-rose-900/30 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
-            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FiHeart className="text-4xl text-rose-500 animate-pulse" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiHeart className="text-4xl text-slate-400 animate-pulse" />
             </div>
-            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-              <span className="text-rose-500">{giveupProposer}</span>님의 기권 신청
+            <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tighter">
+              <span className="text-sky-500">{giveupProposer}</span>님의 기권 신청
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed">
-              너무 어렵나요? 정답을 확인하고<br />게임을 종료하시겠습니까?
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 leading-relaxed font-bold tracking-tight">
+              이번 게임을 포기하고<br />육아방으로 돌아가시겠습니까?
             </p>
             <div className="flex w-full gap-3">
               <button
                 onClick={() => handleRespondGiveup(false)}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 transition-colors"
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 transition-colors"
               >
                 계속하기
               </button>
               <button
                 onClick={() => handleRespondGiveup(true)}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-rose-500 text-white shadow-md hover:bg-rose-600 transform transition"
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-md active:scale-95 transition-all"
               >
                 포기 승인
               </button>
@@ -651,6 +651,11 @@ const ChildCleanPage = () => {
           </div>
         </div>
       )}
+      
+      <style>{`
+        .animate-bounce-slight { animation: bounceSlight 0.5s ease-in-out; }
+        @keyframes bounceSlight { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+      `}</style>
     </div>
   );
 };
