@@ -2,11 +2,11 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import odsayService from '../utils/odsayService';
 import { api } from '../../../utils/config';
 
-const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
-  const [startQuery, setStartQuery] = useState('');
-  const [endQuery, setEndQuery] = useState('');
-  const [startPOI, setStartPOI] = useState(null);
-  const [endPOI, setEndPOI] = useState(null);
+const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { query: '', poi: null }, initialEnd = { query: '', poi: null }, onSaveSearch }) => {
+  const [startQuery, setStartQuery] = useState(initialStart.query);
+  const [endQuery, setEndQuery] = useState(initialEnd.query);
+  const [startPOI, setStartPOI] = useState(initialStart.poi);
+  const [endPOI, setEndPOI] = useState(initialEnd.poi);
   const [hasSearched, setHasSearched] = useState(false);
 
   const [startTime, setStartTime] = useState(
@@ -42,6 +42,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
 
   const handleSearch = () => {
     if (startQuery && endQuery) {
+      onSaveSearch?.({ query: startQuery, poi: startPOI }, { query: endQuery, poi: endPOI });
       onSearch(
         startPOI || startQuery,
         endPOI || endQuery,
@@ -211,7 +212,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
             />
           </div>
           {activeInput === 'start' && suggestions.length > 0 && (
-            <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-y-auto max-h-60 z-50 animate-in fade-in zoom-in-95">
               {suggestions.map((s, idx) => (
                 <div
                   key={`${s.name}-${idx}`}
@@ -253,7 +254,7 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false }) => {
             />
           </div>
           {activeInput === 'end' && suggestions.length > 0 && (
-            <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95">
+            <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-y-auto max-h-60 z-50 animate-in fade-in zoom-in-95">
               {suggestions.map((s, idx) => (
                 <div
                   key={`${s.name}-${idx}`}
