@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiArrowLeft,
@@ -107,6 +107,7 @@ const ChildFeedPage = () => {
   const [waiting, setWaiting] = useState(true);
 
   const [inputVal, setInputVal] = useState({}); // { category: "사용자 입력" }
+  const childIdRef = useRef(null);
 
   const petId = localStorage.getItem("petId");
   const petName = localStorage.getItem("petName");
@@ -121,6 +122,7 @@ const ChildFeedPage = () => {
         if (res.data.childPet) {
           const petObj = new Pet(res.data.childPet);
           setChildPet(petObj);
+          childIdRef.current = petObj.id;
 
           socket.emit("join_feed_room", {
             childId: petObj.id,
@@ -174,6 +176,13 @@ const ChildFeedPage = () => {
       socket.off("feed_game_result");
       socket.off("feed_game_error");
       socket.off("feed_partner_left");
+
+      if (childIdRef.current) {
+        socket.emit("leave_feed_room", {
+          childId: childIdRef.current,
+          petName,
+        });
+      }
     };
   }, [petId, petName, navigate]);
 
