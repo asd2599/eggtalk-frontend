@@ -152,12 +152,21 @@ const MS = () => {
     fetchPetParams();
   }, []);
 
+// //* [Modified Code] 컴포넌트 마운트 시 사용자의 현재 위치를 자동으로 가져오도록 useEffect 추가
+  useEffect(() => {
+    handleCurrentLocation();
+  }, []);
+
   const handleCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => setPetPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        (pos) =>
+          setPetPosition({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          }),
         (err) => console.error(err),
-        { enableHighAccuracy: true }
+        { enableHighAccuracy: true },
       );
     }
   };
@@ -271,6 +280,20 @@ const MS = () => {
                   title="현재 내 위치"
                 >
                   <i className="ri-focus-3-line text-xl text-slate-400 group-hover:text-sky-500"></i>
+                </button>
+              </div>
+
+              {/* 내 위치로 이동하는 전용 버튼 */}
+              <div 
+                className="absolute bottom-28 right-2 z-10 flex flex-col gap-2"
+                style={{ marginRight: '10px', marginBottom: '10px' }}
+              >
+                <button
+                  onClick={handleCurrentLocation}
+                  className="w-10 h-10 bg-white border-2 border-slate-200 rounded-xl shadow-lg flex items-center justify-center text-slate-600 hover:text-sky-500 hover:border-sky-500 transition-all active:scale-95 pointer-events-auto"
+                  title="내 위치로 이동"
+                >
+                  <i className="ri-focus-3-fill text-xl"></i>
                 </button>
               </div>
 

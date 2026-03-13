@@ -136,7 +136,7 @@ const LoungePage = () => {
   if (loading)
     return (
       <div className="flex justify-center items-center min-h-screen bg-white dark:bg-[#0b0f1a]">
-        <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-900 dark:border-t-white rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-slate-100 border-t-sky-500 dark:border-slate-800 dark:border-t-sky-400 rounded-full animate-spin" />
       </div>
     );
 
@@ -155,7 +155,7 @@ const LoungePage = () => {
       <main className="flex-1 h-full overflow-y-auto custom-scrollbar px-6 py-12 lg:px-12 lg:py-16 bg-white dark:bg-[#0b0f1a] transition-all scroll-smooth pb-40 relative z-10">
         <div className="max-w-[1000px] mx-auto">
           
-          <header className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-12 border-b border-slate-50 dark:border-slate-900 pb-8">
+          <header className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-12 border-b border-slate-100 dark:border-slate-900 pb-8">
             <div className="text-center lg:text-left">
               <h1 className="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight italic uppercase leading-none">
                 Lounge Area <span className="text-sky-400 dark:text-sky-400 font-sans not-italic">.</span>
@@ -175,19 +175,19 @@ const LoungePage = () => {
 
           {Object.keys(rooms).length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-slate-300 dark:text-slate-700 space-y-4 py-20 animate-fade-in">
-              <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center border border-slate-50 dark:border-slate-800">
-                <FiUsers className="text-3xl opacity-20 dark:opacity-40 text-slate-400 dark:text-sky-400" />
+              <div className="w-16 h-16 bg-slate-50 dark:bg-slate-900 rounded-full flex items-center justify-center border border-slate-50 dark:border-slate-800 shadow-inner">
+                <FiUsers className="text-3xl text-slate-300 dark:text-slate-700" />
               </div>
-              <p className="text-[10px] font-black tracking-[0.3em] uppercase opacity-50 dark:opacity-80 dark:text-slate-400">현재 활성화된 방이 없습니다</p>
+              <p className="text-[10px] font-black tracking-[0.3em] uppercase opacity-50 dark:opacity-80 dark:text-slate-500">현재 활성화된 방이 없습니다</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in-up">
               {Object.entries(rooms).map(([roomId, room]) => {
                 const isFull = room.users.length >= 2;
                 return (
-                  <div key={roomId} className="flex flex-col justify-between p-7 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] transition-all hover:border-sky-300 dark:hover:border-sky-700 group shadow-sm hover:shadow-2xl hover:shadow-sky-500/5 dark:hover:shadow-none relative overflow-hidden">
+                  <div key={roomId} className="flex flex-col justify-between p-7 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] transition-all hover:border-sky-400 dark:hover:border-sky-500 group shadow-sm hover:shadow-2xl hover:shadow-sky-500/5 dark:hover:shadow-none relative overflow-hidden">
                     {/* 활성 상태 표시 도트 포인트 */}
-                    {!isFull && <div className="absolute top-4 right-4 w-1.5 h-1.5 bg-sky-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(125,211,252,0.8)]" />}
+                    {!isFull && <div className="absolute top-5 right-5 w-1.5 h-1.5 bg-sky-400 rounded-full animate-pulse shadow-[0_0_8px_rgba(125,211,252,0.8)]" />}
                     
                     <div>
                       <div className="flex justify-between items-start mb-6">
@@ -198,19 +198,19 @@ const LoungePage = () => {
                       </div>
                       <div className="space-y-2">
                         {room.users.map((u, i) => (
-                          <div key={i} className="text-[11px] font-bold flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/50 py-2.5 px-3 rounded-xl border border-slate-50 dark:border-slate-800 transition-colors">
+                          <div key={i} className="text-[11px] font-bold flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/50 py-2.5 px-3 rounded-xl border border-slate-100 dark:border-slate-800 transition-colors">
                             <FiSmile className="text-sky-400" /> <span className="text-slate-700 dark:text-slate-200 truncate">{u.petName}</span>
                           </div>
                         ))}
                         {room.users.length === 1 && (
-                          <div className="text-[10px] font-black text-slate-300 dark:text-slate-600 px-3 py-1 uppercase tracking-widest italic animate-pulse">Waiting for guest...</div>
+                          <div className="text-[10px] font-black text-slate-300 dark:text-slate-700 px-3 py-1 uppercase tracking-widest italic animate-pulse">Waiting for guest...</div>
                         )}
                       </div>
                     </div>
                     <button
                       onClick={() => handleJoinRoom(roomId)}
                       disabled={isFull}
-                      className={`mt-8 w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-lg ${isFull ? "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed" : "bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 hover:scale-[1.02] active:scale-95 group-hover:shadow-sky-500/20"}`}
+                      className={`mt-8 w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all shadow-lg ${isFull ? "bg-slate-50 dark:bg-slate-800 text-slate-300 dark:text-slate-600 cursor-not-allowed" : "bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 hover:scale-[1.02] active:scale-95 group-hover:shadow-sky-500/10"}`}
                     >
                       {isFull ? "방이 꽉 찼어요" : "방에 입장하기"}
                     </button>
@@ -224,9 +224,9 @@ const LoungePage = () => {
 
       {/* 방 만들기 모달 디자인 */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in font-sans">
           <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-md rounded-[3rem] p-10 shadow-2xl border border-slate-100 dark:border-slate-800 relative animate-scale-in">
-            <div className="w-14 h-14 bg-slate-900 dark:bg-sky-400 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl">
+            <div className="w-14 h-14 bg-slate-900 dark:bg-sky-400 rounded-[1.5rem] flex items-center justify-center mb-6 shadow-xl shadow-sky-500/10">
                <FiPlus className="text-2xl text-sky-400 dark:text-slate-950" />
             </div>
             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter uppercase italic leading-none">Create Channel <span className="text-sky-400 font-sans not-italic">.</span></h2>
@@ -237,14 +237,14 @@ const LoungePage = () => {
                   type="text"
                   value={newRoomName}
                   onChange={(e) => setNewRoomName(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800 rounded-2xl px-6 py-5 focus:outline-none focus:ring-1 focus:ring-sky-300 dark:focus:ring-sky-400 dark:text-white font-bold text-[13px] shadow-inner transition-all placeholder:dark:text-slate-700"
+                  className="w-full bg-slate-50 dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800 rounded-2xl px-6 py-5 focus:outline-none focus:ring-2 focus:ring-sky-400/20 focus:border-sky-400 dark:text-white font-bold text-[13px] shadow-inner transition-all placeholder:text-slate-300 dark:placeholder:text-slate-700"
                   placeholder="방 이름을 입력하세요"
                   autoFocus
                 />
               </div>
               <div className="flex gap-4">
                 <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-4 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:text-slate-900 dark:hover:text-slate-200">취소</button>
-                <button type="submit" disabled={!newRoomName.trim()} className="flex-1 py-4 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] shadow-xl transition-all">방 만들기</button>
+                <button type="submit" disabled={!newRoomName.trim()} className="flex-1 py-4 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] shadow-xl shadow-sky-500/10 transition-all">방 만들기</button>
               </div>
             </form>
           </div>
@@ -261,8 +261,8 @@ const LoungePage = () => {
               ${noti.isExiting ? 'animate-toast-out' : 'animate-toast-in'}
             `}
           >
-            <div className={`relative flex items-center justify-center w-10 h-10 rounded-2xl ${noti.type === 'error' ? 'bg-rose-50 dark:bg-rose-950/30' : 'bg-sky-50 dark:bg-sky-900/30'}`}>
-              {noti.type === 'error' ? <FiAlertCircle className="text-rose-500 text-[20px]" /> : <FiZap className="text-sky-400 text-[20px]" />}
+            <div className={`relative flex items-center justify-center w-10 h-10 rounded-2xl ${noti.type === 'error' ? 'bg-slate-900 dark:bg-slate-800' : 'bg-sky-50 dark:bg-sky-400/10'}`}>
+              {noti.type === 'error' ? <FiAlertCircle className="text-slate-100 text-[20px]" /> : <FiZap className="text-sky-500 text-[20px]" />}
             </div>
             <div className="text-[14px] font-black text-slate-700 dark:text-slate-100 tracking-tight">{noti.message}</div>
           </div>

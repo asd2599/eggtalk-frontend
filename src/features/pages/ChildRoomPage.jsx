@@ -429,7 +429,7 @@ const ChildRoomPage = () => {
   return (
     <div className="min-h-screen bg-white dark:bg-[#0b0f1a] p-4 lg:p-10 font-sans flex flex-col transition-colors relative overflow-x-hidden">
       
-      {/* ✅ [추가] 우측 상단 다크모드 전환 아이콘 */}
+      {/* ✅ 우측 상단 다크모드 전환 아이콘 */}
       <button 
         onClick={toggleTheme} 
         className="fixed top-4 right-4 lg:top-10 lg:right-10 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-sky-400 z-[60] shadow-sm transition-all"
@@ -508,7 +508,7 @@ const ChildRoomPage = () => {
               </button>
             )}
           </div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-12 z-10 italic">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-12 z-10 italic text-center">
             사랑으로 보듬어 줄 시간입니다
           </p>
 
@@ -587,9 +587,9 @@ const ChildRoomPage = () => {
             <div className="w-full space-y-12 animate-fade-in">
               <div className="flex flex-wrap items-center justify-center gap-6 lg:gap-12 w-full">
                 {[
-                  { label: "포만감", val: childPet.hunger, color: "bg-slate-400" },
-                  { label: "청결도", val: childPet.cleanliness, color: "bg-slate-400" },
-                  { label: "체력", val: childPet.healthHp, color: "bg-slate-400" },
+                  { label: "포만감", val: childPet.hunger, color: "bg-sky-400" },
+                  { label: "청결도", val: childPet.cleanliness, color: "bg-sky-500" },
+                  { label: "체력", val: childPet.healthHp, color: "bg-slate-700" },
                   { label: "스트레스", val: childPet.stress, color: "bg-slate-400" }
                 ].map((stat, i) => (
                   <div key={i} className="flex flex-col items-center gap-2">
@@ -628,7 +628,7 @@ const ChildRoomPage = () => {
                     { label: "호기심", val: childPet.curiosity },
                   ].map((stat, idx) => (
                     <div key={idx} className="flex flex-col items-center gap-1.5">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">
+                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter text-center">
                         {stat.label}
                       </span>
                       <span className="text-xs font-mono font-black text-slate-900 dark:text-slate-100">
@@ -663,7 +663,7 @@ const ChildRoomPage = () => {
               >
                 <div className="absolute inset-0 bg-sky-400/5 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                 <btn.icon className="text-xl text-slate-400 group-hover:text-sky-400 relative z-10 transition-all group-hover:scale-110" />
-                <span className="text-[10px] font-black text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white relative z-10 uppercase tracking-widest">
+                <span className="text-[10px] font-black text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white relative z-10 uppercase tracking-widest text-center">
                   {btn.label}
                 </span>
               </button>
@@ -678,7 +678,7 @@ const ChildRoomPage = () => {
               disabled={!isSpouseInRoom}
               className={`flex items-center gap-2 px-8 py-3 rounded-2xl text-[9px] font-black uppercase tracking-[0.2em] transition-all ${
                 isSpouseInRoom
-                  ? "bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-slate-950 dark:hover:text-white border border-slate-100 dark:border-slate-800 hover:shadow-lg active:scale-95 cursor-pointer"
+                  ? "bg-slate-50 dark:bg-slate-900 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 border border-slate-100 dark:border-slate-800 hover:shadow-lg active:scale-95 cursor-pointer"
                   : "bg-transparent text-slate-300 border border-dashed border-slate-200 dark:border-slate-800 cursor-not-allowed opacity-40"
               }`}
             >
@@ -689,17 +689,17 @@ const ChildRoomPage = () => {
         )}
       </div>
 
-      {/* --- 제안 대기 모달 (내가 제안하고 답변을 기다릴 때) --- */}
+      {/* --- 제안 대기 모달 --- */}
       {waitingAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-700 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center">
-            <div className="w-16 h-16 border-4 border-rose-400 border-t-transparent rounded-full animate-spin mb-6"></div>
+          <div className="bg-white dark:bg-[#0b0f1a] p-8 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300 flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-sky-400 border-t-transparent rounded-full animate-spin mb-6"></div>
             <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
               배우자를 기다리는 중...
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-bold leading-relaxed">
               아이에게{" "}
-              <b className="text-rose-500">
+              <b className="text-sky-600 dark:text-sky-400">
                 {waitingAction === "FEED"
                   ? "창의력 이야기"
                   : waitingAction === "CLEAN"
@@ -714,31 +714,31 @@ const ChildRoomPage = () => {
         </div>
       )}
 
-      {/* --- 제안 수락 모달 (배우자로부터 제안을 받았을 때) --- */}
+      {/* --- 제안 수락 모달 --- */}
       {proposedAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white dark:bg-slate-800 p-8 rounded-[40px] shadow-2xl border border-rose-100 dark:border-rose-900/30 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
-            <div className="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="bg-white dark:bg-[#0b0f1a] p-8 rounded-[3rem] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-sky-100 dark:border-sky-900/30">
               {proposedAction.actionType === "FEED" && (
-                <FiCoffee className="text-4xl text-rose-500 animate-bounce" />
+                <FiCoffee className="text-4xl text-sky-500 animate-bounce" />
               )}
               {proposedAction.actionType === "CLEAN" && (
                 <FiSettings className="text-4xl text-sky-500 animate-bounce" />
               )}
               {proposedAction.actionType === "PLAY" && (
-                <FiSmile className="text-4xl text-amber-500 animate-bounce" />
+                <FiSmile className="text-4xl text-sky-500 animate-bounce" />
               )}
             </div>
 
             <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
-              <span className="text-rose-500">
+              <span className="text-sky-600 dark:text-sky-400">
                 {proposedAction.requesterName}
               </span>
               님의 제안!
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 mx-auto leading-relaxed">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 mx-auto leading-relaxed font-bold">
               자식 펫에게{" "}
-              <b>
+              <b className="text-sky-600 dark:text-sky-400">
                 {proposedAction.actionType === "FEED"
                   ? "창의력 이야기"
                   : proposedAction.actionType === "CLEAN"
@@ -758,7 +758,7 @@ const ChildRoomPage = () => {
                   });
                   setProposedAction(null);
                 }}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-100 dark:bg-slate-800 text-slate-400 hover:bg-slate-200 transition-colors"
               >
                 나중에
               </button>
@@ -769,11 +769,10 @@ const ChildRoomPage = () => {
                     approved: true,
                     actionType: proposedAction.actionType,
                   });
-                  // 성공 메시지나 로딩 등은 sync 이벤트에 의해 navigate되므로 State만 정리
                   setProposedAction(null);
-                  setWaitingAction(proposedAction.actionType); // 내가 수락했으므로 상대의 싱크를 기다리는 모드 돌입
+                  setWaitingAction(proposedAction.actionType);
                 }}
-                className="flex-1 py-3.5 rounded-2xl font-bold text-sm bg-linear-to-r from-rose-500 to-orange-500 text-white shadow-md hover:shadow-lg transform transition hover:-translate-y-0.5"
+                className="flex-1 py-4 rounded-2xl font-black text-sm bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-md active:scale-95 transition-all"
               >
                 좋아요! 💕
               </button>
