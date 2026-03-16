@@ -8,7 +8,14 @@ const CATEGORIES = [
   { key: 'minDistance', label: '최소거리',  icon: 'ri-ruler-2-line',    color: 'text-emerald-500', bg: 'bg-emerald-50' },
 ];
 
-const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
+const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => {
+  const calcArrival = (totalTime) => {
+    if (!startTime) return null;
+    const [h, m] = startTime.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m + totalTime, 0);
+    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-4 bg-white rounded-[2rem]">
@@ -108,6 +115,12 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
                     </span>
                     <span className="text-sm font-bold text-slate-400 ml-1">분</span>
                   </div>
+                  {calcArrival(route.totalTime) && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <i className="ri-time-line text-sky-400 text-xs"></i>
+                      <span className="text-[11px] font-black text-sky-500">도착 {calcArrival(route.totalTime)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[11px] text-slate-500 font-bold flex items-center gap-1">
                       <i className="ri-repeat-2-line text-sky-400 text-xs"></i>
