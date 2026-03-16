@@ -132,7 +132,7 @@ const MainPage = () => {
       {/* 메인 콘텐츠 영역 */}
       <main className="flex-1 h-full overflow-y-auto pt-10 pb-24 lg:pb-10 px-4 lg:px-8 custom-scrollbar relative z-10 scroll-smooth">
         <div className="flex flex-col items-center w-full min-h-full">
-           <PetStatusPage petData={petData} />
+           <PetStatusPage petData={petData} setPetData={setPetData} />
         </div>
       </main>
 
