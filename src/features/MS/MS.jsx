@@ -93,6 +93,8 @@ const MS = () => {
   const [isRouteListOpen, setIsRouteListOpen] = useState(false);
   const [petPosition, setPetPosition] = useState({ lat: 37.498095, lng: 127.02761 });
   const [mapLevel, setMapLevel] = useState(3);
+  const [savedStart, setSavedStart] = useState({ query: '', poi: null });
+  const [savedEnd, setSavedEnd] = useState({ query: '', poi: null });
   const [currentMapLevel, setCurrentMapLevel] = useState(3);
   const [savedStart, setSavedStart] = useState({ query: '', poi: null });
   const [savedEnd, setSavedEnd] = useState({ query: '', poi: null });
@@ -142,14 +144,10 @@ const MS = () => {
     } catch (error) { console.error(error); } finally { setRouteLoading(false); }
   };
 
-  // ✅ [강력 방어] 상세 결과에서 뒤로 가기 시 목록이 절대 죽지 않도록 하는 리셋 핸들러
   const handleRouteResultBack = () => {
-    // 1. 목록 바텀시트를 먼저 확실하게 켭니다.
-    setIsRouteListOpen(true);
-    // 2. 상세 결과 데이터만 비웁니다.
     setRouteResult(null);
-    // 3. 모바일에서는 검색 입력창은 닫힌 상태를 유지합니다.
-    if (window.innerWidth < 768) setShowSearch(false);
+    setIsRouteListOpen(false);
+    setShowSearch(true);
   };
 
   useEffect(() => {
@@ -264,7 +262,7 @@ const MS = () => {
                 <h2 className="text-xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter">경로 찾기</h2>
                 <button onClick={() => setShowSearch(false)} className="text-slate-400 text-2xl"><i className="ri-close-line"></i></button>
               </div>
-              <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} />
+              <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
             </div>
           </div>
         )}
@@ -276,11 +274,24 @@ const MS = () => {
               
               <div className="relative bg-white dark:bg-slate-950 rounded-t-[3rem] shadow-2xl p-6 pb-10 max-h-[75vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-full duration-300">
                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6"></div>
-                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
+                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => { setIsRouteListOpen(false); setShowSearch(true); }} />
               </div>
             </div>
           )}
 
+
+          {routeResult && (
+            <div className="fixed inset-0 z-[150] bg-white dark:bg-slate-950 md:absolute md:inset-0 md:bg-transparent pointer-events-auto overflow-y-auto no-scrollbar">
+               <div className="min-h-full">
+                  <RouteResult
+                    result={routeResult}
+                    startTime={routeStartTime}
+                    onClose={handleRouteResultBack}
+                    onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })}
+                  />
+               </div>
+            </div>
+          )}
 
         {/* [PC] 레이아웃 영역 */}
 <div className={`hidden md:flex absolute top-6 left-10 z-50 flex-col items-start gap-4 pointer-events-none transition-all duration-300 ${routeResult ? 'invisible' : ''}`}>
@@ -314,33 +325,20 @@ const MS = () => {
     </button>
   </div>
 
-  {/* 검색창 + 결과를 가로로 나란히 */}
-  <div className="flex flex-row items-start gap-4">
-    {showSearch && (
-      <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
-        <SubwaySearch
-          onSearch={handleRouteSearch}
-          onClose={() => setShowSearch(false)}
-          isLoading={routeLoading}
-          initialStart={savedStart}
-          initialEnd={savedEnd}
-          onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }}
-        />
-      </div>
-    )}
 
-    {isRouteListOpen && (
-      <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-        <RouteList
-          routes={routeList}
-          isLoading={routeLoading}
-          onSelect={handleSelectRoute}
-          onClose={() => setIsRouteListOpen(false)}
-        />
-      </div>
-    )}
-  </div>
-</div>
+          <div className="flex flex-col items-start gap-4 w-full h-full">
+             {showSearch && (
+              <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
+                <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
+              </div>
+            )}
+            {isRouteListOpen && (
+              <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* 지도 영역 */}
         <div className="absolute inset-0 w-full h-full z-0">
@@ -372,15 +370,31 @@ const MS = () => {
   </button>
 </div>
 
+              {/* //* [Modified Code] 내 위치로 이동하는 전용 버튼 추가 (ZoomControl 위쪽 배치) */}
+              <div 
+                className="absolute bottom-28 right-2 z-10 flex flex-col gap-2"
+                style={{ marginRight: '10px', marginBottom: '10px' }}
+              >
+                <button
+                  onClick={handleCurrentLocation}
+                  className="w-10 h-10 bg-white border-2 border-slate-200 rounded-xl shadow-lg flex items-center justify-center text-slate-600 hover:text-sky-500 hover:border-sky-500 transition-all active:scale-95 pointer-events-auto"
+                  title="내 위치로 이동"
+                >
+                  <i className="ri-focus-3-fill text-xl"></i>
+                </button>
+              </div>
+
               {routeSegments.map((seg, i) => (
                 <Polyline 
-                key={i} 
-                path={seg.path} 
-                strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} 
-                strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} 
-                strokeOpacity={0.8} 
-                zIndex={10}
-                strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'} />
+                  key={i} 
+                  path={seg.path} 
+                  strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} 
+                  strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} 
+                  strokeOpacity={0.8} 
+                  zIndex={10} 
+                  /* 도보(dash) 점선 */
+                  strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'}
+                />
               ))}
 
               {currentMapLevel <= 3 &&
@@ -390,15 +404,14 @@ const MS = () => {
                   </CustomOverlayMap>
                 ))}
 
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                <div className="relative w-16 h-16 sm:w-20 sm:h-20">
-                  <div
-                    className="w-full h-full rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
-                    style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
-                  >
-                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
-                      {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
-                    </div>
+
+              <div className="absolute top-1/2 left-1/2 z-10 pointer-events-none animate-bounce-slight">
+                <div
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl"
+                  style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
+                >
+                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+                    {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
                   </div>
                 </div>
 

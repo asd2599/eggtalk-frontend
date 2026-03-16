@@ -65,7 +65,7 @@ const RouteList = ({ routes, onSelect, onClose, isLoading }) => {
           </button>
 
           <h3 className="text-slate-800 font-black text-base flex items-center gap-2 tracking-tight">
-            최적 경로
+            경로 선택
           </h3>
         </div>
 
