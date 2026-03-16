@@ -1,10 +1,12 @@
 import React from 'react';
 import { SUBWAY_LINE_COLORS } from '../MS';
+import { useRef } from 'react';
 
 const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
   if (!result) return null;
 
   const fareStr = result.totalFare.toLocaleString('ko-KR');
+  const scrollRef = useRef(null);
 
   // 도착 시간 계산
   const [h, m] = startTime.split(':').map(Number);
@@ -17,9 +19,7 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
   });
 
   return (
-    /* ✅ 핵심 수정: fixed를 버리고 absolute inset-0과 고수준 z-index를 사용합니다. 
-       이렇게 해야 부모(MS.jsx)의 상태 업데이트와 레이어가 꼬이지 않고 목록으로 잘 돌아갑니다. */
-    <div className="absolute inset-0 md:top-24 md:left-10 md:inset-auto z-[200] w-full md:w-96 bg-white dark:bg-slate-950 flex flex-col gap-5 pointer-events-auto animate-in slide-in-from-right-full md:slide-in-from-left-4 duration-300 overflow-y-auto no-scrollbar pb-20 md:pb-6 md:rounded-[2.5rem] md:border-[2px] md:border-slate-100 shadow-2xl">
+    <div className="relative w-full flex flex-col gap-5 pointer-events-auto bg-white dark:bg-slate-950 pb-6">
       
       {/* 헤더 섹션 - 상단 여백 보정 */}
       <div className="flex justify-between items-center px-6 pt-10 md:pt-6 md:px-1">
@@ -82,7 +82,7 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
       </div>
 
       {/* 타임라인 섹션 - 모바일 터치 편의성 강화 */}
-      <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar px-6 md:px-0">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pr-2 custom-scrollbar px-6 md:px-0">
         <div className="flex flex-col relative py-2 gap-4 md:gap-2">
           {result.timeline.map((step, index) => {
             const isSubway = step.type === 'SUBWAY';
@@ -109,7 +109,10 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
               <div
                 key={index}
                 className="flex gap-5 md:gap-4 relative group cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-900 p-4 md:p-3 rounded-[2rem] md:rounded-2xl transition-all border border-transparent hover:border-slate-100"
-                onClick={() => onSegmentClick && onSegmentClick(step)}
+                onClick={() => {
+                  onSegmentClick && onSegmentClick(step);
+                  scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
               >
                 {/* 수직 라인 지표 */}
                 {index < result.timeline.length - 1 && (
