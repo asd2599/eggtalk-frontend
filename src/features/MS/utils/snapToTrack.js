@@ -207,7 +207,7 @@ export const calibratePolyline = (polyline, stationCoordsMap) => {
       }
     }
 
-    if (bestIdx !== -1 && minD2 < 0.005 * 0.005) {
+    if (bestIdx !== -1 && minD2 < 0.008 * 0.008) {
       anchors.push({
         idx: bestIdx,
         dist: dists[bestIdx],

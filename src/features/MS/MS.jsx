@@ -84,6 +84,7 @@ const MS = () => {
   const [level, setLevel] = useState(1);
   const [expPercent, setExpPercent] = useState(0);
   const [selectedTrainId, setSelectedTrainId] = useState(null);
+  const [hoveredTrainId, setHoveredTrainId] = useState(null);
   const [routeResult, setRouteResult] = useState(null);
   const [routeStartTime, setRouteStartTime] = useState("");
   const [routeSegments, setRouteSegments] = useState([]);
@@ -101,8 +102,15 @@ const MS = () => {
   const dragStartY = useRef(0);
   
   const [isSheetCollapsed, setIsSheetCollapsed] = useState(false);
+  const [searchKey, setSearchKey] = useState(0);
+  const [hasEverSearched, setHasEverSearched] = useState(false);
   const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false);
   const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false);
+
+  const animationRef = useRef(null);
+  const [isAnimatingRoute, setIsAnimatingRoute] = useState(false);
+  const [routePathPoints, setRoutePathPoints] = useState([]);
+  const [animIndex, setAnimIndex] = useState(0);
 
   const handleRouteSearch = async (start, end, time, searchType = 0, pathType = 0) => {
     try {
@@ -114,6 +122,7 @@ const MS = () => {
       if (result && result.length > 0) {
         setRouteList(result);
         setIsRouteListOpen(true);
+        setHasEverSearched(true);
         // 모바일 UI 최적화: 검색 후 검색창은 닫아줌
         if (window.innerWidth < 768) setShowSearch(false);
       } else { alert("입력하신 경로를 찾을 수 없습니다."); }
@@ -138,14 +147,58 @@ const MS = () => {
       }
       setIsRouteListOpen(false);
       setShowSearch(false);
-      if (detail.segments?.[0]?.path?.[0]) setPetPosition(detail.segments[0].path[0]);
+      if (detail.segments) {
+        const allPoints = detail.segments.flatMap(seg => seg.path || []);
+        setRoutePathPoints(allPoints);
+        if (allPoints.length > 0) {
+          setPetPosition(allPoints[0]);
+          startRouteAnimation(allPoints);
+        }
+      }
     } catch (error) { console.error(error); } finally { setRouteLoading(false); }
   };
 
+  const startRouteAnimation = (points) => {
+    if (animationRef.current) clearInterval(animationRef.current);
+    if (!points || points.length === 0) return;
+    let idx = 0;
+    setAnimIndex(0);
+    setIsAnimatingRoute(true);
+    animationRef.current = setInterval(() => {
+      if (idx >= points.length) {
+        clearInterval(animationRef.current);
+        animationRef.current = null;
+        setIsAnimatingRoute(false);
+        return;
+      }
+      setPetPosition(points[idx]);
+      setAnimIndex(idx);
+      idx++;
+    }, 150);
+  };
+
+  const pauseRouteAnimation = () => {
+    if (animationRef.current) {
+      clearInterval(animationRef.current);
+      animationRef.current = null;
+      setIsAnimatingRoute(false);
+    }
+  };
+
+  const replayRouteAnimation = () => {
+    startRouteAnimation(routePathPoints);
+  };
+
   const handleRouteResultBack = () => {
+    if (animationRef.current) clearInterval(animationRef.current);
+    animationRef.current = null;
+    setIsAnimatingRoute(false);
+    setRoutePathPoints([]);
+    setAnimIndex(0);
     setRouteResult(null);
     setIsRouteListOpen(false);
     setShowSearch(true);
+    setSearchKey(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -260,7 +313,7 @@ const MS = () => {
                 <h2 className="text-xl font-black text-slate-900 dark:text-white italic uppercase tracking-tighter">경로 찾기</h2>
                 <button onClick={() => setShowSearch(false)} className="text-slate-400 text-2xl"><i className="ri-close-line"></i></button>
               </div>
-              <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
+              <SubwaySearch key={searchKey} initialShowFilters={hasEverSearched} onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
             </div>
           </div>
         )}
@@ -272,7 +325,7 @@ const MS = () => {
               
               <div className="relative bg-white dark:bg-slate-950 rounded-t-[3rem] shadow-2xl p-6 pb-10 max-h-[75vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-full duration-300">
                 <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6"></div>
-                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => { setIsRouteListOpen(false); setShowSearch(true); }} />
+                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => { setIsRouteListOpen(false); setShowSearch(true); setSearchKey(prev => prev + 1); }} startTime={routeStartTime} />
               </div>
             </div>
           )}
@@ -314,12 +367,12 @@ const MS = () => {
           <div className="flex flex-col items-start gap-4 w-full h-full">
              {showSearch && (
               <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
-                <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
+                <SubwaySearch key={searchKey} initialShowFilters={hasEverSearched} onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
               </div>
             )}
             {isRouteListOpen && (
               <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
+                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} startTime={routeStartTime} />
               </div>
             )}
           </div>
@@ -330,7 +383,25 @@ const MS = () => {
           {!error && !loading && (
             <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
         <div className="absolute bottom-24 right-3 md:bottom-10 md:right-5 z-20 pointer-events-auto flex flex-col gap-2">
-          {/* 현재위치 버튼 - 맨 위 */}
+          {/* 경로 애니메이션 제어 버튼 */}
+  {routeResult && routePathPoints.length > 0 && (
+    <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+      <button
+        onClick={isAnimatingRoute ? pauseRouteAnimation : replayRouteAnimation}
+        title={isAnimatingRoute ? '일시정지' : '처음부터'}
+        className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 border-b dark:border-slate-700 transition-all"
+      >
+        <i className={isAnimatingRoute ? 'ri-pause-line text-xl' : 'ri-replay-line text-xl'}></i>
+      </button>
+      <div className="px-2 py-1 text-center">
+        <span className="text-[9px] font-black text-slate-400">
+          {routePathPoints.length > 0 ? Math.round((animIndex / routePathPoints.length) * 100) : 0}%
+        </span>
+      </div>
+    </div>
+  )}
+
+  {/* 현재위치 버튼 - 맨 위 */}
   <button
     onClick={handleCurrentLocation}
     className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
@@ -372,12 +443,45 @@ const MS = () => {
               {currentMapLevel <= 3 &&
                 subways.map((sub) => (
                   <CustomOverlayMap key={sub.id} position={{ lat: sub.lat, lng: sub.lng }} yAnchor={0.5} zIndex={SUBWAY_LINE_ZINDEX[sub.line] || 100}>
-                    <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'} isExpress={sub.isExpress} />
+                    <div
+                      style={{ position: 'relative', cursor: 'pointer' }}
+                      onMouseEnter={() => setHoveredTrainId(sub.id)}
+                      onMouseLeave={() => setHoveredTrainId(null)}
+                      onClick={() => setSelectedTrainId(prev => prev === sub.id ? null : sub.id)}
+                    >
+                      {(hoveredTrainId === sub.id || selectedTrainId === sub.id) && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '110%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          backgroundColor: 'white',
+                          border: `2px solid ${SUBWAY_LINE_COLORS[sub.line] || '#666'}`,
+                          borderRadius: '8px',
+                          padding: '3px 8px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          whiteSpace: 'nowrap',
+                          color: '#1e293b',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+                          pointerEvents: 'none',
+                        }}>
+                          {sub.trainName}
+                        </div>
+                      )}
+                      <SubwayIcon direction="up" angle={sub.angle} width={28} arrowColor={SUBWAY_LINE_COLORS[sub.line] || '#10b981'} isExpress={sub.isExpress} />
+                    </div>
                   </CustomOverlayMap>
                 ))}
 
 
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+            </Map>
+          )}
+
+          {/* 펫 아이콘
+               모바일: fixed → 뷰포트 기준 left-1/2(=50vw), top calc(50vh-40px)
+               데스크탑(lg): absolute → 지도 컨테이너 기준 top-1/2 left-1/2 */}
+          <div className="fixed lg:absolute top-[calc(50%-40px)] lg:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
   <div className="relative w-16 h-16 sm:w-20 sm:h-20 animate-bounce-slight">
     <div
       className="w-full h-full rounded-full flex items-center justify-center p-1 shadow-2xl"
@@ -394,8 +498,6 @@ const MS = () => {
     </div>
   </div>
 </div>
-            </Map>
-          )}
 
           {/* 상세 경로 결과 */}
           {routeResult && (
@@ -464,7 +566,7 @@ const MS = () => {
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
         .animate-bounce-slight { animation: bounceSlight 2s ease-in-out infinite; }
-        @keyframes bounceSlight { 0%, 100% { transform: translate(-50%, -50%); } 50% { transform: translate(-50%, -60%); } }
+        @keyframes bounceSlight { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
       `}</style>
     </div>
   );

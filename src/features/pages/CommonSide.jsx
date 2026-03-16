@@ -1,10 +1,6 @@
-import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FiLogOut,
-  FiBox,
-  FiCloud,
-  FiMonitor,
   FiSmile,
   FiAward,
   FiMessageCircle,
@@ -16,20 +12,6 @@ import {
 
 const CommonSide = ({ activeMenu }) => {
   const navigate = useNavigate();
-  // ✅ 모바일 스크롤 제어를 위한 Ref 추가
-  const scrollContainerRef = useRef(null);
-  const activeBtnRef = useRef(null);
-
-  // ✅ 메뉴 변경 시 활성화된 버튼을 중앙으로 스크롤하는 효과
-  useEffect(() => {
-    if (activeBtnRef.current && scrollContainerRef.current) {
-      activeBtnRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "center", // 모바일 가로 모드에서 중앙으로 정렬
-      });
-    }
-  }, [activeMenu]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -55,17 +37,10 @@ const CommonSide = ({ activeMenu }) => {
 
       {/* 2. 메인 네비게이션 트랙 */}
       <nav className="flex-1 flex lg:flex-col items-center lg:items-center lg:p-10 overflow-hidden">
-        {/* ✅ scrollContainerRef 연결 및 정렬 최적화 */}
-        <div 
-          ref={scrollContainerRef}
-          className="flex-1 flex lg:flex-col items-center justify-start lg:justify-center overflow-x-auto lg:overflow-visible no-scrollbar px-4 lg:px-0 gap-1 lg:gap-3 w-full"
-        >
-          {/* 전체 메뉴 반복 출력 */}
+        <div className="flex-1 flex lg:flex-col items-center justify-center overflow-x-auto lg:overflow-visible no-scrollbar gap-1 lg:gap-3 w-full">
           {menuItems.map((item) => (
             <button
               key={item.label}
-              // ✅ 현재 활성화된 메뉴 버튼에만 Ref 할당
-              ref={activeMenu === item.label ? activeBtnRef : null}
               onClick={() => navigate(item.path)}
               className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-3 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[65px] lg:h-auto min-w-[70px] lg:min-w-0 lg:w-full flex-shrink-0 ${
                 activeMenu === item.label
