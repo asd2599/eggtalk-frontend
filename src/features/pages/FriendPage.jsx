@@ -11,10 +11,13 @@ import {
   FiTrash2,
   FiAlertCircle,
   FiSmile,
+  FiSend,
+  FiMail,
 } from "react-icons/fi";
 import socket from "../../utils/socket";
 import CommonSide from "./CommonSide";
 import Pet from "../pets/pet";
+import MessageSendModal from "./components/MessageSendModal";
 
 const FriendPage = () => {
   const navigate = useNavigate();
@@ -23,10 +26,13 @@ const FriendPage = () => {
   const [activeTab, setActiveTab] = useState("friends");
 
   const [friendsList, setFriendsList] = useState([]);
-  const [receivedRequests, setReceivedRequests] = useState([]);
-  const [sentRequests, setSentRequests] = useState([]);
   const [onlinePets, setOnlinePets] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
+  const [selectedFriend, setSelectedFriend] = useState(null);
+  const [myPetName, setMyPetName] = useState("");
+  const [myPetColor, setMyPetColor] = useState("");
+  const [receivedMessages, setReceivedMessages] = useState([]);
 
   const [alertConfig, setAlertConfig] = useState({
     isOpen: false,
@@ -45,7 +51,17 @@ const FriendPage = () => {
     fetchFriendsData();
     socket.emit("get_online_users", (users) => setOnlinePets(users));
     socket.on("online_users_list", (users) => setOnlinePets(users));
-    return () => { socket.off("online_users_list"); };
+    
+    // 실시간 쪽지 수신 리스너
+    socket.on("receive_direct_message", (data) => {
+      setReceivedMessages(prev => [data, ...prev]);
+      showToast(`${data.sender_pet_name}님으로부터 쪽지가 왔습니다! 💌`);
+    });
+
+    return () => { 
+      socket.off("online_users_list"); 
+      socket.off("receive_direct_message");
+    };
   }, []);
 
   const fetchFriendsData = async () => {
@@ -53,12 +69,21 @@ const FriendPage = () => {
       setLoading(true);
       const token = localStorage.getItem("token");
       if (!token) { navigate("/"); return; }
-      await api.get("/api/pets/my", { headers: { Authorization: `Bearer ${token}` } });
+      const petRes = await api.get("/api/pets/my", { headers: { Authorization: `Bearer ${token}` } });
+      if (petRes.data.pet) {
+        socket.emit("user_login", petRes.data.pet.name);
+        setMyPetName(petRes.data.pet.name);
+        setMyPetColor(petRes.data.pet.color);
+      }
       const res = await api.get("/api/friends", { headers: { Authorization: `Bearer ${token}` } });
       if (res.status === 200) {
-        setFriendsList(res.data.friends || []);
-        setReceivedRequests(res.data.receivedRequests || []);
-        setSentRequests(res.data.sentRequests || []);
+      setFriendsList(res.data.friends || []);
+      }
+      
+      // 쪽지 목록 조회
+      const msgRes = await api.get("/api/messages", { headers: { Authorization: `Bearer ${token}` } });
+      if (msgRes.data.success) {
+        setReceivedMessages(msgRes.data.messages || []);
       }
     } catch (error) {
       console.error(error);
@@ -74,12 +99,16 @@ const FriendPage = () => {
   };
 
   const showToast = (message, type = "success") => {
-    const id = Date.now();
+    const id = `toast-${Date.now()}-${Math.random()}`;
     setNotifications((prev) => [...prev, { id, message, type, isExiting: false }]);
     setTimeout(() => {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isExiting: true } : n)));
       setTimeout(() => { setNotifications((prev) => prev.filter((n) => n.id !== id)); }, 300);
     }, 3000);
+  };
+
+  const dismissToast = (id) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
   };
 
   const handleRejectOrDelete = (requestId, petName, isDelete = false) => {
@@ -103,13 +132,36 @@ const FriendPage = () => {
     });
   };
 
-  const handleAcceptRequest = async (requestId, petName) => {
+
+  const handleMarkAsRead = async (id) => {
+    if (!id || id === "undefined") return;
     try {
       const token = localStorage.getItem("token");
-      await api.put("/api/friends/accept", { request_id: requestId }, { headers: { Authorization: `Bearer ${token}` } });
-      showToast(`${petName}님과 친구가 되었습니다! 🎉`);
-      fetchFriendsData();
-    } catch (err) { showToast("수락 실패", "error"); }
+      await api.put(`/api/messages/${id}/read`, {}, { headers: { Authorization: `Bearer ${token}` } });
+      setReceivedMessages(prev => prev.map(m => m.id === id ? { ...m, is_read: true } : m));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteMessage = async (id) => {
+    if (!id || id === "undefined") return;
+    setAlertConfig({
+      isOpen: true,
+      title: "쪽지 삭제",
+      message: "정말 이 쪽지를 삭제하시겠습니까?",
+      onConfirm: async () => {
+        try {
+          const token = localStorage.getItem("token");
+          await api.delete(`/api/messages/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+          setReceivedMessages(prev => prev.filter(m => m.id !== id));
+          showToast("쪽지가 삭제되었습니다.");
+          setAlertConfig(prev => ({ ...prev, isOpen: false }));
+        } catch (err) {
+          showToast("삭제 실패", "error");
+        }
+      }
+    });
   };
 
   const EmptyState = ({ icon: Icon, text }) => (
@@ -159,7 +211,7 @@ const FriendPage = () => {
           </header>
 
           <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-900/80 border border-slate-100 dark:border-slate-800 rounded-2xl mb-8 overflow-x-auto no-scrollbar flex-shrink-0 shadow-inner">
-            {[{ id: "friends", label: "친구", icon: FiUsers, count: friendsList.length }, { id: "received", label: "받음", icon: FiUserPlus, count: receivedRequests.length }, { id: "sent", label: "보냄", icon: FiClock, count: sentRequests.length }].map((tab) => (
+            {[{ id: "friends", label: "친구", icon: FiUsers, count: friendsList.length }, { id: "messages", label: "쪽지", icon: FiMail, count: receivedMessages.filter(m => !m.is_read).length }].map((tab) => (
               <button 
                 key={tab.id} 
                 onClick={() => setActiveTab(tab.id)} 
@@ -187,30 +239,18 @@ const FriendPage = () => {
                           <div className="mt-1"><StatusBadge petName={friend.pet_name} /></div>
                         </div>
                       </div>
-                      <button onClick={() => handleRejectOrDelete(friend.request_id, friend.pet_name, true)} className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 hover:bg-slate-900 dark:hover:bg-slate-100 text-slate-400 hover:text-white dark:hover:text-slate-900 rounded-2xl transition-all border border-transparent shadow-sm"><FiTrash2 className="text-sm" /></button>
-                    </div>
-                  ))}
-                </div>
-              )
-            )}
-
-            {activeTab === "received" && (
-              receivedRequests.length === 0 ? <EmptyState icon={FiUserPlus} text="받은 요청이 없습니다" /> : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {receivedRequests.map((req) => (
-                    <div key={req.request_id} className="p-6 bg-white dark:bg-slate-900/50 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] flex flex-col justify-between shadow-sm">
-                      <div className="flex items-center gap-4 mb-6">
-                        <div className="w-12 h-12 bg-sky-50 dark:bg-sky-400 rounded-2xl flex items-center justify-center overflow-hidden border border-sky-100/50 dark:border-sky-300 shadow-lg">
-                          {req.pet_color ? new Pet({ color: req.pet_color }).draw("w-8 h-8") : <FiAlertCircle className="text-slate-900 text-xl" />}
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-black text-slate-900 dark:text-white text-[14px] uppercase tracking-tight">{req.pet_name || `User #${req.requester_id}`}</h3>
-                          <p className="text-[9px] mt-1 text-slate-400 dark:text-slate-400 font-bold uppercase tracking-widest">{req.requester_email}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-3">
-                        <button onClick={() => handleRejectOrDelete(req.request_id, req.pet_name)} className="flex-1 py-3.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-400 rounded-2xl font-black text-[10px] uppercase transition-all hover:text-slate-900 dark:hover:text-slate-100">Reject</button>
-                        <button onClick={() => handleAcceptRequest(req.request_id, req.pet_name)} className="flex-1 py-3.5 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl font-black text-[10px] uppercase shadow-lg transition-all">Accept</button>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            setSelectedFriend(friend);
+                            setIsMessageModalOpen(true);
+                          }}
+                          className="w-10 h-10 flex items-center justify-center bg-sky-50 dark:bg-sky-900/40 hover:bg-sky-500 dark:hover:bg-sky-400 text-sky-500 dark:text-sky-300 hover:text-white dark:hover:text-slate-950 rounded-2xl transition-all border border-transparent shadow-sm"
+                          title="쪽지 보내기"
+                        >
+                          <FiSend className="text-sm" />
+                        </button>
+                        <button onClick={() => handleRejectOrDelete(friend.request_id, friend.pet_name, true)} className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 hover:bg-slate-900 dark:hover:bg-slate-100 text-slate-400 hover:text-white dark:hover:text-slate-900 rounded-2xl transition-all border border-transparent shadow-sm"><FiTrash2 className="text-sm" /></button>
                       </div>
                     </div>
                   ))}
@@ -218,16 +258,38 @@ const FriendPage = () => {
               )
             )}
 
-            {activeTab === "sent" && (
-              sentRequests.length === 0 ? <EmptyState icon={FiClock} text="보낸 요청이 없습니다" /> : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {sentRequests.map((req) => (
-                    <div key={req.request_id} className="p-5 bg-white dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800 rounded-[2.5rem] flex items-center justify-between shadow-sm">
-                      <div className="flex flex-col gap-1 items-start text-left pl-2">
-                        <span className="text-[10px] font-black text-sky-500 dark:text-sky-400 uppercase tracking-widest italic animate-pulse">Request Pending</span>
-                        <h3 className="font-black text-slate-900 dark:text-slate-100 text-[14px] uppercase tracking-tight">{req.pet_name || `User #${req.receiver_id}`}</h3>
+            {activeTab === "messages" && (
+              receivedMessages.length === 0 ? <EmptyState icon={FiMail} text="받은 쪽지가 없습니다" /> : (
+                <div className="space-y-4">
+                  {receivedMessages.map((msg) => (
+                    <div 
+                      key={msg.id} 
+                      onClick={() => !msg.is_read && handleMarkAsRead(msg.id)}
+                      className={`p-6 bg-white dark:bg-slate-900/50 border ${msg.is_read ? 'border-slate-100 dark:border-slate-800 opacity-60' : 'border-sky-100 dark:border-sky-900/50 shadow-lg shadow-sky-500/5'} rounded-[2rem] transition-all flex items-start gap-4 text-left cursor-pointer`}
+                    >
+                      <div className={`w-12 h-12 flex-shrink-0 rounded-2xl flex items-center justify-center border ${msg.is_read ? 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700' : 'bg-sky-50 dark:bg-sky-900/40 border-sky-100 dark:border-sky-800'}`}>
+                        {msg.sender_pet_color ? new Pet({ color: msg.sender_pet_color }).draw("w-8 h-8") : <FiMail className="text-sky-400" />}
                       </div>
-                      <button onClick={() => handleRejectOrDelete(req.request_id, req.pet_name)} className="px-5 py-2.5 bg-slate-50 dark:bg-slate-800 text-slate-400 dark:text-slate-500 rounded-2xl font-black text-[9px] uppercase transition-all hover:bg-slate-900 dark:hover:bg-slate-100 hover:text-white dark:hover:text-slate-900 shadow-sm">Cancel</button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex justify-between items-center mb-1">
+                          <h4 className="font-black text-slate-900 dark:text-white text-[13px] uppercase tracking-tighter">
+                            {msg.sender_pet_name}
+                            {!msg.is_read && <span className="ml-2 w-1.5 h-1.5 bg-sky-400 rounded-full inline-block animate-pulse" />}
+                          </h4>
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600">
+                            {new Date(msg.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-[12px] font-bold text-slate-600 dark:text-slate-400 leading-relaxed break-keep line-clamp-2">
+                          {msg.content}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); handleDeleteMessage(msg.id); }}
+                        className="w-8 h-8 flex-shrink-0 flex items-center justify-center text-slate-300 hover:text-rose-500 transition-colors"
+                      >
+                        <FiTrash2 size={14} />
+                      </button>
                     </div>
                   ))}
                 </div>
@@ -236,6 +298,16 @@ const FriendPage = () => {
           </div>
         </div>
       </main>
+
+      <MessageSendModal
+        isOpen={isMessageModalOpen}
+        onClose={() => setIsMessageModalOpen(false)}
+        receiverId={selectedFriend?.user_id}
+        receiverPetName={selectedFriend?.pet_name}
+        senderPetName={myPetName}
+        senderPetColor={myPetColor}
+        onMessageSuccess={(target) => showToast(`${target}님에게 쪽지를 보냈습니다! 💌`)}
+      />
 
       {alertConfig.isOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-md animate-fade-in">
@@ -255,7 +327,11 @@ const FriendPage = () => {
 
       <div className="fixed bottom-24 lg:bottom-10 right-6 lg:right-10 z-[110] flex flex-col gap-3 pointer-events-none">
         {notifications.map((noti) => (
-          <div key={noti.id} className={`bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 pointer-events-auto transition-all ${noti.isExiting ? "animate-toast-out" : "animate-toast-in"}`}>
+          <div 
+            key={noti.id} 
+            onClick={() => dismissToast(noti.id)}
+            className={`bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 pointer-events-auto transition-all cursor-pointer ${noti.isExiting ? "animate-toast-out" : "animate-toast-in"}`}
+          >
             <div className={`w-9 h-9 rounded-2xl flex items-center justify-center ${noti.type === "error" ? "bg-slate-900 dark:bg-slate-800 text-slate-100" : "bg-sky-50 dark:bg-sky-900/30 text-sky-400"}`}><FiCheck className="text-lg" /></div>
             <span className="text-[13px] font-black text-slate-700 dark:text-slate-100 tracking-tight">{noti.message}</span>
           </div>
