@@ -99,7 +99,7 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white dark:bg-[#0b0f1a] rounded-3xl shadow-2xl p-8 w-full max-w-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300 border border-slate-100 dark:border-slate-800">
+      <div className="bg-white dark:bg-[#0b0f1a] rounded-3xl shadow-2xl p-8 w-full max-w-sm mx-4 flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300 border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto custom-scrollbar">
         {/* 등급 */}
         <div className="text-center">
           <p className={`text-2xl font-black ${grade.color}`}>{grade.label}</p>
@@ -167,6 +167,7 @@ const ChildPlayPage = () => {
   // 결과 모달
   const [showResult, setShowResult] = useState(false);
   const [statChanges, setStatChanges] = useState(null);
+  const [showFullDesc, setShowFullDesc] = useState(false);
 
   const scrollRef = useRef(null);
   const childIdRef = useRef(null);
@@ -338,7 +339,7 @@ const ChildPlayPage = () => {
       )}
 
       {/* 헤더 */}
-      <header className="px-5 py-4 bg-white/80 dark:bg-[#0b0f1a]/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 flex justify-between items-center z-10">
+      <header className="px-5 py-3 bg-white/80 dark:bg-[#0b0f1a]/80 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 flex justify-between items-center z-10">
         <button
           onClick={() => navigate("/child-room")}
           className="p-2.5 bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md transition-all text-slate-400 hover:text-sky-500 border border-slate-100 dark:border-slate-800"
@@ -361,11 +362,25 @@ const ChildPlayPage = () => {
 
       {/* 역할 바 */}
       {!waiting && scenario && (
-        <div className="bg-sky-50/50 dark:bg-sky-900/10 px-5 py-2.5 border-b border-sky-100/50 dark:border-sky-900/20 flex items-center gap-3 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-          <FiInfo size={13} className="text-sky-500 shrink-0" />내 역할:{" "}
-          <span className="text-sky-600 dark:text-sky-400 font-black">{myRole}</span>
-          <span className="text-slate-300 dark:text-slate-700">|</span>
-          <span className="truncate max-w-xs opacity-80 italic">
+        <div 
+          onClick={() => setShowFullDesc(!showFullDesc)}
+          className={`bg-sky-50/50 dark:bg-sky-900/10 px-5 py-3 border-b border-sky-100/50 dark:border-sky-900/20 flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 text-[10px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 cursor-pointer transition-all ${
+            showFullDesc ? "bg-sky-100/60 dark:bg-sky-900/30" : "hover:bg-sky-100/40 dark:hover:bg-sky-900/20"
+          }`}
+        >
+          <div className="flex items-center justify-between w-full sm:w-auto overflow-hidden">
+            <div className="flex items-center gap-2 shrink-0">
+              <FiInfo size={13} className="text-sky-500 shrink-0" />
+              <span>내 역할: <span className="text-sky-600 dark:text-sky-400 font-black">{myRole}</span></span>
+            </div>
+            <span className="sm:hidden text-[9px] font-black text-sky-400 uppercase tracking-tighter shrink-0 ml-4 animate-pulse">
+              {showFullDesc ? "닫기" : "펼치기"}
+            </span>
+          </div>
+          <span className="hidden sm:inline text-slate-200 dark:text-slate-700">|</span>
+          <span className={`italic transition-all duration-300 ${
+            showFullDesc ? "opacity-100 text-slate-700 dark:text-slate-200 leading-relaxed bg-white/50 dark:bg-black/20 p-3 rounded-2xl border border-sky-100/50 dark:border-sky-900/30 mt-1" : "truncate opacity-80"
+          }`}>
             {scenario.description}
           </span>
         </div>
@@ -428,7 +443,7 @@ const ChildPlayPage = () => {
                   [{isPet ? "🐾 아기 펫" : msg.role}] {msg.senderName}
                 </span>
                 <div
-                  className={`max-w-[85%] px-5 py-3.5 rounded-[1.5rem] text-[13px] font-bold shadow-md transition-all ${
+                  className={`max-w-[85%] px-5 py-3.5 rounded-3xl text-[13px] font-bold shadow-md transition-all ${
                     isMe
                       ? "bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 rounded-tr-sm"
                       : isPet
@@ -479,7 +494,7 @@ const ChildPlayPage = () => {
                   ? `${myRole} 역할로 대화해보세요...`
                   : "상대방 차례를 기다리는 중..."
               }
-              className={`flex-1 px-6 py-4 rounded-[2rem] outline-none text-sm font-bold transition-all border-2 ${
+              className={`flex-1 px-6 py-4 rounded-4xl outline-none text-sm font-bold transition-all border-2 ${
                 canSpeak
                   ? "bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 focus:border-sky-400 dark:focus:border-sky-500 dark:text-white"
                   : "bg-slate-100 dark:bg-slate-950 border-transparent cursor-not-allowed opacity-50 dark:text-slate-600"

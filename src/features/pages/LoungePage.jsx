@@ -198,12 +198,12 @@ const LoungePage = () => {
                       </div>
                       <div className="space-y-2">
                         {room.users.map((u, i) => (
-                          <div key={i} className="text-[11px] font-bold flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/50 py-2.5 px-3 rounded-xl border border-slate-100 dark:border-slate-800 transition-colors">
+                          <div key={u.petName || i} className="text-[11px] font-bold flex items-center gap-2 bg-slate-50/50 dark:bg-slate-800/50 py-2.5 px-3 rounded-xl border border-slate-100 dark:border-slate-800 transition-colors">
                             <FiSmile className="text-sky-400" /> <span className="text-slate-700 dark:text-slate-200 truncate">{u.petName}</span>
                           </div>
                         ))}
                         {room.users.length === 1 && (
-                          <div className="text-[10px] font-black text-slate-300 dark:text-slate-700 px-3 py-1 uppercase tracking-widest italic animate-pulse">Waiting for guest...</div>
+                          <div key="waiting-msg" className="text-[10px] font-black text-slate-300 dark:text-slate-700 px-3 py-1 uppercase tracking-widest italic animate-pulse">Waiting for guest...</div>
                         )}
                       </div>
                     </div>
