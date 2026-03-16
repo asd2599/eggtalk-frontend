@@ -4,6 +4,14 @@ import { FiMessageSquare, FiX } from "react-icons/fi";
 const GiftReplyModal = ({ isOpen, replyMsg, targetName, stats, onClose }) => {
   const [randomMsg, setRandomMsg] = useState("");
 
+  const statNameMap = {
+    health_hp: "체력", hunger: "포만감", cleanliness: "청결도",
+    stress: "스트레스", affection: "애정도", altruism: "이타심",
+    empathy: "공감능력", knowledge: "지식", logic: "논리력",
+    extroversion: "외향성", humor: "유머감각", openness: "개방성",
+    directness: "솔직함", curiosity: "호기심",
+  };
+
   // ✅ 스탯별 맞춤 문구 데이터베이스
   const customMessages = {
     affection: [
@@ -87,8 +95,24 @@ const GiftReplyModal = ({ isOpen, replyMsg, targetName, stats, onClose }) => {
         </div>
 
         {/* 바디 */}
-        <div className="p-8 text-center bg-white dark:bg-[#0b0f1a]">
-           <div className="bg-slate-50 dark:bg-slate-900 p-5 rounded-3xl mt-2 border border-slate-100 dark:border-slate-800 shadow-inner">
+        <div className="p-8 text-center bg-white dark:bg-[#0b0f1a] space-y-4">
+           {/* 능력치 변화 표시 */}
+           {stats && Object.keys(stats).length > 0 && (
+             <div className="flex flex-wrap justify-center gap-2 mb-2">
+               {Object.entries(stats).map(([key, val]) => (
+                 <div key={key} className="flex flex-col items-center bg-slate-50 dark:bg-slate-900 px-3 py-2 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+                   <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">
+                     {statNameMap[key] || key}
+                   </span>
+                   <span className={`text-[11px] font-black ${val > 0 ? "text-sky-500" : "text-rose-400"}`}>
+                     {val > 0 ? `+${val}` : val}
+                   </span>
+                 </div>
+               ))}
+             </div>
+           )}
+
+           <div className="bg-slate-50 dark:bg-slate-900 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-inner">
              <p className="text-[13px] font-bold text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
                "{randomMsg}"
              </p>

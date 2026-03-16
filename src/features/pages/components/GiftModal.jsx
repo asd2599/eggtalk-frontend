@@ -52,7 +52,8 @@ const GiftModal = ({ isOpen, onClose, targetPetName, onGiftSuccess }) => {
               targetPetName,
               message.trim(),
               response.data.reply,
-              selectedGift.stats
+              selectedGift.stats,
+              response.data.pet
             );
             setMessage("");
             setSelectedGift(null);
