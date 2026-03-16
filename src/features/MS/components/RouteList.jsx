@@ -2,19 +2,53 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const CATEGORIES = [
-  { key: 'optimal',     label: '최적',     icon: 'ri-magic-line',     color: 'text-sky-500',   bg: 'bg-sky-50' },
-  { key: 'minTime',     label: '최소시간',  icon: 'ri-flashlight-line', color: 'text-amber-500', bg: 'bg-amber-50' },
-  { key: 'minTransfer', label: '최소환승',  icon: 'ri-shuffle-line',    color: 'text-indigo-500', bg: 'bg-indigo-50' },
-  { key: 'minDistance', label: '최소거리',  icon: 'ri-ruler-2-line',    color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  {
+    key: 'optimal',
+    label: '최적',
+    icon: 'ri-magic-line',
+    color: 'text-sky-500',
+    bg: 'bg-sky-50',
+  },
+  {
+    key: 'minTime',
+    label: '최소시간',
+    icon: 'ri-flashlight-line',
+    color: 'text-amber-500',
+    bg: 'bg-amber-50',
+  },
+  {
+    key: 'minTransfer',
+    label: '최소환승',
+    icon: 'ri-shuffle-line',
+    color: 'text-indigo-500',
+    bg: 'bg-indigo-50',
+  },
+  {
+    key: 'minDistance',
+    label: '최소거리',
+    icon: 'ri-ruler-2-line',
+    color: 'text-emerald-500',
+    bg: 'bg-emerald-50',
+  },
 ];
 
-const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => {
+const RouteList = ({
+  routes,
+  onSelect,
+  onClose,
+  isLoading,
+  startTime = '',
+}) => {
   const calcArrival = (totalTime) => {
     if (!startTime) return null;
     const [h, m] = startTime.split(':').map(Number);
     const d = new Date();
     d.setHours(h, m + totalTime, 0);
-    return d.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+    return d.toLocaleTimeString('ko-KR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
   };
   if (isLoading) {
     return (
@@ -31,7 +65,9 @@ const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => 
     return (
       <div className="p-10 text-center bg-white rounded-[2rem] border border-slate-200 shadow-xl">
         <i className="ri-map-pin-range-line text-4xl text-slate-300 mb-4 block"></i>
-        <p className="text-slate-600 font-bold mb-2 text-lg">탐색된 경로가 없습니다.</p>
+        <p className="text-slate-600 font-bold mb-2 text-lg">
+          탐색된 경로가 없습니다.
+        </p>
         <p className="text-slate-400 text-xs leading-relaxed font-medium">
           도보 전용 경로는 1.5km 이내일 때 가장 효율적입니다.
           <br />
@@ -43,28 +79,39 @@ const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => 
 
   const isWalkOnly = routes[0]?.isWalkOnly;
 
-  const bestRoutes = isWalkOnly 
+  const bestRoutes = isWalkOnly
     ? { optimal: routes[0] }
     : {
-        optimal:     routes[0],
-        minTime:     [...routes].sort((a, b) => a.totalTime - b.totalTime)[0],
-        minTransfer: [...routes].sort((a, b) => a.transferCount - b.transferCount)[0],
-        minDistance: [...routes].sort((a, b) => a.totalDistance - b.totalDistance)[0],
+        optimal: routes[0],
+        minTime: [...routes].sort((a, b) => a.totalTime - b.totalTime)[0],
+        minTransfer: [...routes].sort(
+          (a, b) => a.transferCount - b.transferCount,
+        )[0],
+        minDistance: [...routes].sort(
+          (a, b) => a.totalDistance - b.totalDistance,
+        )[0],
       };
 
-  const categoriesToRender = isWalkOnly 
-    ? [ { key: 'optimal', label: '도보 여정', icon: 'ri-walk-line', color: 'text-sky-500', bg: 'bg-sky-50' } ]
+  const categoriesToRender = isWalkOnly
+    ? [
+        {
+          key: 'optimal',
+          label: '도보 여정',
+          icon: 'ri-walk-line',
+          color: 'text-sky-500',
+          bg: 'bg-sky-50',
+        },
+      ]
     : CATEGORIES;
 
   return (
     <div className="flex flex-col gap-5 px-4 py-6 mx-5 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto custom-scrollbar border-[2px] border-slate-100">
-      
       {/* 상단 헤더 영역 */}
       <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-3">
           {/* 뒤로 가기 버튼 */}
           <button
-            onClick={onClose} 
+            onClick={onClose}
             className="group flex items-center justify-center w-8 h-8 rounded-xl bg-slate-50 hover:bg-sky-500 text-slate-400 hover:text-white transition-all border border-slate-100 hover:border-sky-400"
             title="검색창으로 돌아가기"
           >
@@ -100,7 +147,9 @@ const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => 
             >
               {/* 카테고리 라벨 배지 */}
               <div className="flex items-center gap-2 mb-4">
-                <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5 ${bg} ${color} uppercase tracking-wider`}>
+                <span
+                  className={`text-[10px] font-black px-2.5 py-1 rounded-lg border border-slate-200 flex items-center gap-1.5 ${bg} ${color} uppercase tracking-wider`}
+                >
                   <i className={`${icon} text-xs`}></i>
                   {label}
                 </span>
@@ -113,12 +162,16 @@ const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => 
                     <span className="text-3xl font-black text-slate-800 group-hover:text-sky-500 transition-colors">
                       {route.totalTime}
                     </span>
-                    <span className="text-sm font-bold text-slate-400 ml-1">분</span>
+                    <span className="text-sm font-bold text-slate-400 ml-1">
+                      분
+                    </span>
                   </div>
                   {calcArrival(route.totalTime) && (
                     <div className="flex items-center gap-1 mt-0.5">
                       <i className="ri-time-line text-sky-400 text-xs"></i>
-                      <span className="text-[11px] font-black text-sky-500">도착 {calcArrival(route.totalTime)}</span>
+                      <span className="text-[11px] font-black text-sky-500">
+                        도착 {calcArrival(route.totalTime)}
+                      </span>
                     </div>
                   )}
                   <div className="flex items-center gap-2 mt-1">
@@ -148,16 +201,26 @@ const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => 
                   ?.filter((p) => p.trafficType !== 3)
                   .map((sub, i) => (
                     <React.Fragment key={i}>
-                      {i > 0 && <i className="ri-arrow-right-s-line text-slate-300 text-xs"></i>}
+                      {i > 0 && (
+                        <i className="ri-arrow-right-s-line text-slate-300 text-xs"></i>
+                      )}
                       <div
                         className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black border"
                         style={{
-                          backgroundColor: sub.trafficType === 1 ? '#00B4FF08' : '#10b98108',
+                          backgroundColor:
+                            sub.trafficType === 1 ? '#00B4FF08' : '#10b98108',
                           color: sub.trafficType === 1 ? '#00B4FF' : '#10b981',
-                          borderColor: sub.trafficType === 1 ? '#00B4FF30' : '#10b98130',
+                          borderColor:
+                            sub.trafficType === 1 ? '#00B4FF30' : '#10b98130',
                         }}
                       >
-                        <i className={sub.trafficType === 1 ? 'ri-subway-line text-xs' : 'ri-bus-2-line text-xs'}></i>
+                        <i
+                          className={
+                            sub.trafficType === 1
+                              ? 'ri-subway-line text-xs'
+                              : 'ri-bus-2-line text-xs'
+                          }
+                        ></i>
                         <span>
                           {sub.trafficType === 1
                             ? sub.lane[0]?.name.replace('지하철 ', '')
@@ -171,9 +234,13 @@ const RouteList = ({ routes, onSelect, onClose, isLoading, startTime = '' }) => 
               {/* 정류장 요약 */}
               <div className="mt-4 flex items-center gap-2 text-[11px] text-slate-400 font-bold border-t border-slate-50 pt-4">
                 <i className="ri-map-pin-2-fill text-sky-400 text-xs"></i>
-                <span className="truncate max-w-[90px]">{route.firstStartStation}</span>
+                <span className="truncate max-w-[90px]">
+                  {route.firstStartStation}
+                </span>
                 <i className="ri-arrow-right-line text-slate-200"></i>
-                <span className="truncate max-w-[90px]">{route.lastEndStation}</span>
+                <span className="truncate max-w-[90px]">
+                  {route.lastEndStation}
+                </span>
               </div>
 
               {/* 우측 하단 선택 화살표 */}
