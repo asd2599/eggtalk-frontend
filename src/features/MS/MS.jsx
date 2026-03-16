@@ -96,8 +96,6 @@ const MS = () => {
   const [savedStart, setSavedStart] = useState({ query: '', poi: null });
   const [savedEnd, setSavedEnd] = useState({ query: '', poi: null });
   const [currentMapLevel, setCurrentMapLevel] = useState(3);
-  const [savedStart, setSavedStart] = useState({ query: '', poi: null });
-  const [savedEnd, setSavedEnd] = useState({ query: '', poi: null });
   const mapBoundsRef = useRef(null);
   const bottomSheetRef = useRef(null);
   const dragStartY = useRef(0);
@@ -280,19 +278,6 @@ const MS = () => {
           )}
 
 
-          {routeResult && (
-            <div className="fixed inset-0 z-[150] bg-white dark:bg-slate-950 md:absolute md:inset-0 md:bg-transparent pointer-events-auto overflow-y-auto no-scrollbar">
-               <div className="min-h-full">
-                  <RouteResult
-                    result={routeResult}
-                    startTime={routeStartTime}
-                    onClose={handleRouteResultBack}
-                    onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })}
-                  />
-               </div>
-            </div>
-          )}
-
         {/* [PC] 레이아웃 영역 */}
 <div className={`hidden md:flex absolute top-6 left-10 z-50 flex-col items-start gap-4 pointer-events-none transition-all duration-300 ${routeResult ? 'invisible' : ''}`}>
   
@@ -345,7 +330,15 @@ const MS = () => {
           {!error && !loading && (
             <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
         <div className="absolute bottom-24 right-3 md:bottom-10 md:right-5 z-20 pointer-events-auto flex flex-col gap-2">
-  {/* 줌 버튼 */}
+          {/* 현재위치 버튼 - 맨 위 */}
+  <button
+    onClick={handleCurrentLocation}
+    className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
+  >
+    <i className="ri-focus-3-line text-2xl md:text-xl"></i>
+  </button>
+
+  {/* 줌 버튼 - 아래 */}
   <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
     <button
       onClick={() => setMapLevel(prev => Math.max(prev - 1, 1))}
@@ -361,28 +354,7 @@ const MS = () => {
     </button>
   </div>
 
-  {/* 현재위치 버튼 */}
-  <button
-    onClick={handleCurrentLocation}
-    className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
-  >
-    <i className="ri-focus-3-line text-2xl md:text-xl"></i>
-  </button>
 </div>
-
-              {/* //* [Modified Code] 내 위치로 이동하는 전용 버튼 추가 (ZoomControl 위쪽 배치) */}
-              <div 
-                className="absolute bottom-28 right-2 z-10 flex flex-col gap-2"
-                style={{ marginRight: '10px', marginBottom: '10px' }}
-              >
-                <button
-                  onClick={handleCurrentLocation}
-                  className="w-10 h-10 bg-white border-2 border-slate-200 rounded-xl shadow-lg flex items-center justify-center text-slate-600 hover:text-sky-500 hover:border-sky-500 transition-all active:scale-95 pointer-events-auto"
-                  title="내 위치로 이동"
-                >
-                  <i className="ri-focus-3-fill text-xl"></i>
-                </button>
-              </div>
 
               {routeSegments.map((seg, i) => (
                 <Polyline 
@@ -405,23 +377,23 @@ const MS = () => {
                 ))}
 
 
-              <div className="absolute top-1/2 left-1/2 z-10 pointer-events-none animate-bounce-slight">
-                <div
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl"
-                  style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
-                >
-                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
-                    {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
-                  </div>
-                </div>
-
-                {/* ✅ relative 안쪽으로 이동 */}
-                <div className="absolute -top-3 left-0 right-0 flex justify-center">
-                  <div className="bg-sky-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white shadow-md whitespace-nowrap">
-                    LV.{level}
-                  </div>
-                </div>
-              </div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+  <div className="relative w-16 h-16 sm:w-20 sm:h-20 animate-bounce-slight">
+    <div
+      className="w-full h-full rounded-full flex items-center justify-center p-1 shadow-2xl"
+      style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
+    >
+      <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+        {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
+      </div>
+    </div>
+    <div className="absolute -top-3 left-0 right-0 flex justify-center">
+      <div className="bg-sky-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white shadow-md whitespace-nowrap">
+        LV.{level}
+      </div>
+    </div>
+  </div>
+</div>
             </Map>
           )}
 
