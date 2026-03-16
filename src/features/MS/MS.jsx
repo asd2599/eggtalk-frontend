@@ -94,8 +94,13 @@ const MS = () => {
   const [petPosition, setPetPosition] = useState({ lat: 37.498095, lng: 127.02761 });
   const [mapLevel, setMapLevel] = useState(3);
   const [currentMapLevel, setCurrentMapLevel] = useState(3);
+  const [savedStart, setSavedStart] = useState({ query: '', poi: null });
+  const [savedEnd, setSavedEnd] = useState({ query: '', poi: null });
   const mapBoundsRef = useRef(null);
-
+  const bottomSheetRef = useRef(null);
+  const dragStartY = useRef(0);
+  
+  const [isSheetCollapsed, setIsSheetCollapsed] = useState(false);
   const [isSubwayApiDisabled, setIsSubwayApiDisabled] = useState(false);
   const [isSubwayRealtimeOn, setIsSubwayRealtimeOn] = useState(false);
 
@@ -118,6 +123,7 @@ const MS = () => {
   const handleSelectRoute = async (selectedRoute) => {
     try {
       setRouteLoading(true);
+      setIsSheetCollapsed(false); // 경로 선택 시 바텀시트 펼치기
       const detail = await odsayService.getPathDetail(selectedRoute);
       setRouteResult(detail);
       setRouteSegments(detail.segments || []);
@@ -275,90 +281,106 @@ const MS = () => {
             </div>
           )}
 
-          {routeResult && (
-            <div className="fixed inset-0 z-[150] bg-white dark:bg-slate-950 md:absolute md:inset-0 md:bg-transparent pointer-events-auto overflow-y-auto no-scrollbar">
-               <div className="min-h-full">
-                  <RouteResult 
-                    result={routeResult} 
-                    startTime={routeStartTime} 
-                    onClose={() => setRouteResult(null)}
-                    onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })} 
-                  />
-               </div>
-            </div>
-          )}
 
         {/* [PC] 레이아웃 영역 */}
-        <div className="hidden md:flex absolute top-6 left-10 z-50 flex-col items-start gap-4 pointer-events-none transition-all duration-300">
-          <div className="flex flex-row items-center gap-3 pointer-events-auto">
-            <button
-              onClick={() => { setShowSearch(!showSearch); if (isRouteListOpen) setIsRouteListOpen(false); }}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
-                showSearch ? 'bg-slate-900 border-sky-400 text-white shadow-sky-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
-              }`}
-            >
-              <i className={`ri-route-line text-lg ${showSearch ? 'text-sky-400' : 'text-sky-500'}`}></i>
-              <div className="flex flex-col items-start overflow-hidden">
-                <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">길 찾기 {showSearch ? '닫기' : ''}</span>
-                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${showSearch ? 'text-sky-200' : 'text-slate-400'}`}>Route Finder</span>
-              </div>
-            </button>
+<div className={`hidden md:flex absolute top-6 left-10 z-50 flex-col items-start gap-4 pointer-events-none transition-all duration-300 ${routeResult ? 'invisible' : ''}`}>
+  
+  {/* 버튼 행 */}
+  <div className="flex flex-row items-center gap-3 pointer-events-auto">
+    <button
+      onClick={() => { setShowSearch(!showSearch); if (isRouteListOpen) setIsRouteListOpen(false); }}
+      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
+        showSearch ? 'bg-slate-900 border-sky-400 text-white shadow-sky-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
+      }`}
+    >
+      <i className={`ri-route-line text-lg ${showSearch ? 'text-sky-400' : 'text-sky-500'}`}></i>
+      <div className="flex flex-col items-start overflow-hidden">
+        <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">길 찾기 {showSearch ? '닫기' : ''}</span>
+        <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${showSearch ? 'text-sky-200' : 'text-slate-400'}`}>여정 떠나기</span>
+      </div>
+    </button>
 
-            <button
-              onClick={() => setIsSubwayRealtimeOn(!isSubwayRealtimeOn)}
-              className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
-                isSubwayRealtimeOn ? 'bg-slate-900 border-sky-400 text-white shadow-sky-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
-              }`}
-            >
-              <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-sky-400' : 'text-slate-400'}`}></i>
-              <div className="flex flex-col items-start overflow-hidden">
-                <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">실시간 {isSubwayRealtimeOn ? 'ON' : 'OFF'}</span>
-                <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${isSubwayRealtimeOn ? 'text-sky-200' : 'text-slate-400'}`}>Realtime</span>
-              </div>
-            </button>
-          </div>
+    <button
+      onClick={() => setIsSubwayRealtimeOn(!isSubwayRealtimeOn)}
+      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-2xl border-[2px] shadow-lg transition-all active:scale-95 w-32 sm:w-36 justify-start ${
+        isSubwayRealtimeOn ? 'bg-slate-900 border-sky-400 text-white shadow-sky-500/20' : 'bg-white/95 dark:bg-slate-800/95 border-slate-200 text-slate-600'
+      }`}
+    >
+      <i className={`ri-broadcast-line text-lg ${isSubwayRealtimeOn ? 'animate-pulse text-sky-400' : 'text-slate-400'}`}></i>
+      <div className="flex flex-col items-start overflow-hidden">
+        <span className="text-[10px] font-black leading-none mb-0.5 whitespace-nowrap">실시간 {isSubwayRealtimeOn ? 'ON' : 'OFF'}</span>
+        <span className={`text-[6px] font-bold uppercase tracking-widest leading-none ${isSubwayRealtimeOn ? 'text-sky-200' : 'text-slate-400'}`}>Realtime</span>
+      </div>
+    </button>
+  </div>
 
-          <div className="flex flex-col items-start gap-4 w-full h-full">
-             {showSearch && (
-              <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
-                <SubwaySearch onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} />
-              </div>
-            )}
-            {isRouteListOpen && (
-              <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
-                <RouteList routes={routeList} isLoading={routeLoading} onSelect={handleSelectRoute} onClose={() => setIsRouteListOpen(false)} />
-              </div>
-            )}
-          </div>
-        </div>
+  {/* 검색창 + 결과를 가로로 나란히 */}
+  <div className="flex flex-row items-start gap-4">
+    {showSearch && (
+      <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
+        <SubwaySearch
+          onSearch={handleRouteSearch}
+          onClose={() => setShowSearch(false)}
+          isLoading={routeLoading}
+          initialStart={savedStart}
+          initialEnd={savedEnd}
+          onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }}
+        />
+      </div>
+    )}
+
+    {isRouteListOpen && (
+      <div className="pointer-events-auto w-[300px] sm:w-[350px] max-h-[60vh] overflow-y-auto no-scrollbar animate-in fade-in slide-in-from-left-2 duration-300 shadow-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+        <RouteList
+          routes={routeList}
+          isLoading={routeLoading}
+          onSelect={handleSelectRoute}
+          onClose={() => setIsRouteListOpen(false)}
+        />
+      </div>
+    )}
+  </div>
+</div>
 
         {/* 지도 영역 */}
         <div className="absolute inset-0 w-full h-full z-0">
           {!error && !loading && (
             <Map center={petPosition} style={{ width: "100%", height: "100%" }} level={mapLevel} onBoundsChanged={(map) => { const lv = map.getLevel(); mapBoundsRef.current = { bounds: map.getBounds(), level: lv }; setCurrentMapLevel(lv); }}>
-              
-              <div className="absolute bottom-24 right-3 md:bottom-28 md:right-5 z-20 pointer-events-auto">
-                <button
-                  onClick={handleCurrentLocation}
-                  className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
-                >
-                  <i className="ri-focus-3-line text-2xl md:text-xl"></i>
-                </button>
-              </div>
+        <div className="absolute bottom-24 right-3 md:bottom-10 md:right-5 z-20 pointer-events-auto flex flex-col gap-2">
+  {/* 줌 버튼 */}
+  <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+    <button
+      onClick={() => setMapLevel(prev => Math.max(prev - 1, 1))}
+      className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 border-b dark:border-slate-700 transition-all"
+    >
+      <i className="ri-add-line text-xl"></i>
+    </button>
+    <button
+      onClick={() => setMapLevel(prev => Math.min(prev + 1, 14))}
+      className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 transition-all"
+    >
+      <i className="ri-subtract-line text-xl"></i>
+    </button>
+  </div>
 
-              <div className="absolute bottom-40 right-3 md:bottom-44 md:right-5 z-20 pointer-events-auto">
-                <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
-                  <button onClick={() => setMapLevel(prev => Math.max(prev - 1, 1))} className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 border-b dark:border-slate-700 transition-all">
-                    <i className="ri-add-line text-xl"></i>
-                  </button>
-                  <button onClick={() => setMapLevel(prev => Math.min(prev + 1, 14))} className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 transition-all">
-                    <i className="ri-subtract-line text-xl"></i>
-                  </button>
-                </div>
-              </div>
+  {/* 현재위치 버튼 */}
+  <button
+    onClick={handleCurrentLocation}
+    className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
+  >
+    <i className="ri-focus-3-line text-2xl md:text-xl"></i>
+  </button>
+</div>
 
               {routeSegments.map((seg, i) => (
-                <Polyline key={i} path={seg.path} strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} strokeOpacity={0.8} zIndex={10} />
+                <Polyline 
+                key={i} 
+                path={seg.path} 
+                strokeWeight={seg.strokeStyle === 'dash' ? 4 : 7} 
+                strokeColor={seg.strokeStyle === 'dash' ? seg.color : adjustBrightness(seg.color, -25)} 
+                strokeOpacity={0.8} 
+                zIndex={10}
+                strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'} />
               ))}
 
               {currentMapLevel <= 3 &&
@@ -369,16 +391,22 @@ const MS = () => {
                 ))}
 
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-                <div 
-                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
-                  style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
-                >
-                  <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
-                    {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20">
+                  <div
+                    className="w-full h-full rounded-full flex items-center justify-center p-1 shadow-2xl animate-bounce-slight"
+                    style={{ background: `conic-gradient(#00B4FF ${expPercent}%, #f1f5f9 0%)` }}
+                  >
+                    <div className="w-full h-full bg-white rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
+                      {petData ? new Pet(petData).draw("w-[135%] h-[135%] object-cover") : <span className="font-black text-sky-400 text-xs">{petName}</span>}
+                    </div>
                   </div>
                 </div>
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-sky-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white shadow-md">
-                  LV.{level}
+
+                {/* ✅ relative 안쪽으로 이동 */}
+                <div className="absolute -top-3 left-0 right-0 flex justify-center">
+                  <div className="bg-sky-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full border border-white shadow-md whitespace-nowrap">
+                    LV.{level}
+                  </div>
                 </div>
               </div>
             </Map>
@@ -386,17 +414,65 @@ const MS = () => {
 
           {/* 상세 경로 결과 */}
           {routeResult && (
-            <div className="fixed inset-0 z-[120] bg-white dark:bg-slate-950 md:absolute md:inset-0 md:bg-transparent pointer-events-auto overflow-y-auto no-scrollbar">
-               <div className="min-h-full">
-                  <RouteResult 
-                    result={routeResult} 
-                    startTime={routeStartTime} 
-                    onClose={handleRouteResultBack} 
-                    onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })} 
-                  />
-               </div>
-            </div>
-          )}
+  <>
+    {/* PC: 지도 위에 좌측 고정 패널 */}
+    <div className="hidden md:block absolute top-6 left-10 z-[200] w-[350px] max-h-[85vh] overflow-y-auto no-scrollbar pointer-events-auto rounded-[2.5rem] border-2 border-slate-100 shadow-2xl bg-white dark:bg-slate-950">
+      <RouteResult
+        result={routeResult}
+        startTime={routeStartTime}
+        onClose={handleRouteResultBack}
+        onSegmentClick={(s) => setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) })}
+      />
+    </div>
+
+    {/* 모바일: 하단 바텀시트 (지도 상단 일부 노출) */}
+    {/* 모바일: 하단 바텀시트 */}
+<div
+  className="md:hidden fixed bottom-0 left-0 right-0 z-[150] max-h-[65vh] overflow-y-auto no-scrollbar rounded-t-[3rem] bg-white dark:bg-slate-950 shadow-2xl pointer-events-auto"
+  style={{
+    transform: isSheetCollapsed ? 'translateY(80%)' : 'translateY(0)',
+    transition: dragStartY.current ? 'none' : 'transform 0.3s ease',
+  }}
+  onTouchStart={(e) => {
+    dragStartY.current = e.touches[0].clientY;
+  }}
+  onTouchMove={(e) => {
+    const delta = e.touches[0].clientY - dragStartY.current;
+    if (!isSheetCollapsed && delta > 0) {
+      // 내려갈 때
+      e.currentTarget.style.transform = `translateY(${delta}px)`;
+    } else if (isSheetCollapsed && delta < 0) {
+      // 올라올 때
+      e.currentTarget.style.transform = `translateY(calc(80% + ${delta}px))`;
+    }
+  }}
+  onTouchEnd={(e) => {
+    const delta = e.changedTouches[0].clientY - dragStartY.current;
+    e.currentTarget.style.transform = ''; // inline style 초기화 → state로 제어
+    dragStartY.current = 0;
+    if (!isSheetCollapsed && delta > 100) {
+      setIsSheetCollapsed(true);  // 100px 이상 내리면 접기
+    } else if (isSheetCollapsed && delta < -100) {
+      setIsSheetCollapsed(false); // 100px 이상 올리면 펼치기
+    }
+  }}
+>
+  <div
+    className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mt-4 mb-2 cursor-grab"
+    onClick={() => setIsSheetCollapsed(prev => !prev)} // 핸들 탭으로도 토글
+  />
+  <RouteResult
+    result={routeResult}
+    startTime={routeStartTime}
+    onClose={handleRouteResultBack}
+    onSegmentClick={(s) => {
+      setPetPosition({ lat: parseFloat(s.startY), lng: parseFloat(s.startX) });
+      setIsSheetCollapsed(true); // 지도 클릭 시 자동으로 접기
+    }}
+  />
+</div>
+  </>
+)}
         </div>
       </main>
       <style>{`
