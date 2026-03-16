@@ -350,7 +350,7 @@ const ChildCleanPage = () => {
           >
             <FiStar className="fill-current" size={20} />
             {result.isSuccess
-              ? `${20 - questions.filter((q) => q.type !== "system").length}턴 만에 성공!`
+              ? `${questions.filter((q) => q.type !== "system").length}턴 만에 성공!`
               : "게임 종료"}
           </div>
 

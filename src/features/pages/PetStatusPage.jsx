@@ -3,8 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { FiGift, FiActivity, FiSmile, FiMapPin } from "react-icons/fi"; 
 import GiftModal from "./components/GiftModal";
 import GiftReplyModal from "./components/GiftReplyModal";
+import Pet from "../pets/pet";
 
-const PetStatusPage = ({ petData }) => {
+const PetStatusPage = ({ petData, setPetData }) => {
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
   const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
@@ -103,10 +104,19 @@ const PetStatusPage = ({ petData }) => {
         </div>
       </div>
 
-      <GiftModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} targetPetName={petData?.name} onGiftSuccess={(giftName, targetName, msg, reply) => {
-          setReplyModalData({ isOpen: true, replyMsg: reply, targetName: targetName });
+      <GiftModal isOpen={isGiftModalOpen} onClose={() => setIsGiftModalOpen(false)} targetPetName={petData?.name} onGiftSuccess={(giftName, targetName, msg, reply, stats, updatedPet) => {
+          if (updatedPet) {
+            setPetData(new Pet(updatedPet));
+          }
+          setReplyModalData({ isOpen: true, replyMsg: reply, targetName: targetName, stats: stats });
         }} />
-      <GiftReplyModal isOpen={replyModalData.isOpen} replyMsg={replyModalData.replyMsg} targetName={replyModalData.targetName} onClose={() => setReplyModalData({ ...replyModalData, isOpen: false })} />
+      <GiftReplyModal 
+        isOpen={replyModalData.isOpen} 
+        replyMsg={replyModalData.replyMsg} 
+        targetName={replyModalData.targetName} 
+        stats={replyModalData.stats}
+        onClose={() => setReplyModalData({ ...replyModalData, isOpen: false })} 
+      />
     </div>
   );
 };

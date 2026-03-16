@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiHeart,
+  FiActivity, FiHeart,
   FiSettings,
   FiStar,
   FiCoffee,
@@ -24,6 +24,7 @@ const ChildRoomPage = () => {
   const [spousePet, setSpousePet] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const [isSpouseOnline, setIsSpouseOnline] = useState(false);
   const [isSpouseInRoom, setIsSpouseInRoom] = useState(false);
   const [hatchProgress, setHatchProgress] = useState(0);
@@ -31,8 +32,9 @@ const ChildRoomPage = () => {
   const [timeLeft, setTimeLeft] = useState(30);
 
   // 대기 및 제안 모달용 State 추가
-  const [waitingAction, setWaitingAction] = useState(null); // 내가 제안 후 대기 중인 액션 (FEED, CLEAN, PLAY)
-  const [proposedAction, setProposedAction] = useState(null); // 배우자가 제안한 액션 객체 { actionType, requesterName }
+  const [waitingAction, setWaitingAction] = useState(null); // FEED, CLEAN, PLAY, ANALYZE
+  const [proposedAction, setProposedAction] = useState(null); 
+  const [analysisResult, setAnalysisResult] = useState(null); // { pet, reason }
 
   const timerRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -183,8 +185,8 @@ const ChildRoomPage = () => {
 
     const handleActionSync = ({ actionType }) => {
       // 두 사람이 모두 동의하여 게임 페이지로 넘어가기 전 모달 닫기
-      setWaitingAction(null);
       setProposedAction(null);
+      setWaitingAction(null);
 
       const pathMap = {
         FEED: "/child-room/feed",
@@ -206,6 +208,35 @@ const ChildRoomPage = () => {
             : "역할극 게임";
       // TODO: 나중에 이 alert도 커스텀 모달로 대체할 수 있으나, 일단 모달이 닫히면서 자연스럽게 알 수 있도록 유지
       alert(`배우자가 [${actionKr}] 활동에 동의하지 않았습니다. 😿`);
+    };
+
+    const handleTendencyProposed = ({ requesterName }) => {
+      setProposedAction({ actionType: "ANALYZE", requesterName });
+    };
+
+    const handleTendencySync = async () => {
+      setWaitingAction(null);
+      setProposedAction(null);
+      setAnalysisLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const response = await api.post("/api/pets/child/analyze-tendency", {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.data.pet) {
+          setChildPet(new Pet(response.data.pet));
+          setAnalysisResult({ pet: response.data.pet, reason: response.data.reason });
+        }
+      } catch (error) {
+        console.error("Tendency analysis sync failed:", error);
+      } finally {
+        setAnalysisLoading(false);
+      }
+    };
+
+    const handleTendencyRejected = () => {
+      setWaitingAction(null);
+      alert("배우자가 성향 분석 동의를 거절했습니다. 😿");
     };
 
     const handleChildRoomStatus = ({
@@ -306,6 +337,9 @@ const ChildRoomPage = () => {
     socket.on("child_action_proposed", handleActionProposed);
     socket.on("child_action_sync", handleActionSync);
     socket.on("child_action_rejected", handleActionRejected);
+    socket.on("child_tendency_analyze_proposed", handleTendencyProposed);
+    socket.on("child_tendency_analyze_sync", handleTendencySync);
+    socket.on("child_tendency_analyze_rejected", handleTendencyRejected);
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
@@ -329,6 +363,9 @@ const ChildRoomPage = () => {
       socket.off("child_action_proposed", handleActionProposed);
       socket.off("child_action_sync", handleActionSync);
       socket.off("child_action_rejected", handleActionRejected);
+      socket.off("child_tendency_analyze_proposed", handleTendencyProposed);
+      socket.off("child_tendency_analyze_sync", handleTendencySync);
+      socket.off("child_tendency_analyze_rejected", handleTendencyRejected);
     };
   }, [childPet?.id, myPet?.name, spousePet?.name, navigate]);
 
@@ -396,6 +433,18 @@ const ChildRoomPage = () => {
       requesterName: myPet.name,
     });
     setWaitingAction(actionType);
+  };
+
+  const handleAnalyzeTendency = () => {
+    if (!isSpouseInRoom) {
+      alert("배우자가 방에 있어야 함께 분석할 수 있습니다. 😿");
+      return;
+    }
+    socket.emit("child_tendency_analyze_request", {
+      childId: childPet.id,
+      requesterName: myPet.name,
+    });
+    setWaitingAction("ANALYZE");
   };
 
   const handleFarewellRequest = () => {
@@ -644,6 +693,16 @@ const ChildRoomPage = () => {
                   ))}
                 </div>
               </div>
+
+              <div className="flex justify-center -mt-4 mb-4">
+                <button
+                  onClick={handleAnalyzeTendency}
+                  disabled={!isSpouseInRoom || analysisLoading}
+                  className="px-8 py-3 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-lg flex items-center gap-2 group disabled:opacity-30"
+                >
+                  {analysisLoading ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <FiActivity className="group-hover:rotate-12 transition-transform" />} AI 성향 분석
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -704,7 +763,9 @@ const ChildRoomPage = () => {
                   ? "창의력 이야기"
                   : waitingAction === "CLEAN"
                     ? "스무고개 퀴즈"
-                    : "역할극 게임"}
+                    : waitingAction === "PLAY"
+                      ? "역할극 게임"
+                      : "AI 성향 분석"}
               </b>
               (을)를 제안했습니다.
               <br />
@@ -728,6 +789,9 @@ const ChildRoomPage = () => {
               {proposedAction.actionType === "PLAY" && (
                 <FiSmile className="text-4xl text-sky-500 animate-bounce" />
               )}
+              {proposedAction.actionType === "ANALYZE" && (
+                <FiActivity className="text-4xl text-sky-500 animate-pulse" />
+              )}
             </div>
 
             <h2 className="text-xl font-black text-slate-800 dark:text-white mb-2">
@@ -743,7 +807,9 @@ const ChildRoomPage = () => {
                   ? "창의력 이야기"
                   : proposedAction.actionType === "CLEAN"
                     ? "스무고개 퀴즈"
-                    : "역할극 게임"}
+                    : proposedAction.actionType === "PLAY"
+                      ? "역할극 게임"
+                      : "AI 성향 분석"}
               </b>{" "}
               활동을 함께 하러 갈까요?
             </p>
@@ -764,11 +830,11 @@ const ChildRoomPage = () => {
               </button>
               <button
                 onClick={() => {
-                  socket.emit("child_action_response", {
-                    childId: childPet.id,
-                    approved: true,
-                    actionType: proposedAction.actionType,
-                  });
+                  if (proposedAction.actionType === "ANALYZE") {
+                    socket.emit("child_tendency_analyze_response", { childId: childPet.id, approved: true });
+                  } else {
+                    socket.emit("child_action_response", { childId: childPet.id, approved: true, actionType: proposedAction.actionType });
+                  }
                   setProposedAction(null);
                   setWaitingAction(proposedAction.actionType);
                 }}
@@ -777,6 +843,40 @@ const ChildRoomPage = () => {
                 좋아요! 💕
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- 성향 분석 결과 모달 --- */}
+      {analysisResult && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500">
+          <div className="bg-white dark:bg-[#0b0f1a] p-10 rounded-[3.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-lg text-center transform scale-100 animate-in zoom-in-95 duration-500 relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-2 bg-sky-400"></div>
+            
+            <div className="w-32 h-32 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-8 border border-slate-100 dark:border-slate-800 shadow-inner group">
+              {analysisResult.pet && new Pet(analysisResult.pet).draw("w-20 h-20 group-hover:scale-110 transition-transform")}
+            </div>
+
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tighter">
+              성장 분석 리포트 <span className="text-sky-400">.</span>
+            </h2>
+            
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-3xl mb-8 text-left border border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-[10px] font-black text-sky-400 uppercase tracking-widest">현재 성향</span>
+                <span className="px-3 py-1 bg-sky-400 text-slate-950 text-xs font-black rounded-full uppercase tracking-tighter shadow-sm">{analysisResult.pet.tendency}</span>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-300 font-bold leading-relaxed italic whitespace-pre-wrap">
+                "{analysisResult.reason}"
+              </p>
+            </div>
+
+            <button
+              onClick={() => setAnalysisResult(null)}
+              className="w-full py-4 rounded-2xl font-black text-sm bg-slate-900 dark:bg-sky-500 text-white dark:text-slate-950 shadow-xl active:scale-95 transition-all uppercase tracking-widest"
+            >
+              확인했습니다! ✨
+            </button>
           </div>
         </div>
       )}
