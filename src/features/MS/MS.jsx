@@ -364,7 +364,7 @@ const MS = () => {
   </div>
 
 
-          <div className="flex flex-col items-start gap-4 w-full h-full">
+          <div className="flex flex-row items-start gap-4">
              {showSearch && (
               <div className="w-[280px] sm:w-[320px] pointer-events-auto animate-in fade-in slide-in-from-top-1 duration-200">
                 <SubwaySearch key={searchKey} initialShowFilters={hasEverSearched} onSearch={handleRouteSearch} onClose={() => setShowSearch(false)} isLoading={routeLoading} initialStart={savedStart} initialEnd={savedEnd} onSaveSearch={(s, e) => { setSavedStart(s); setSavedEnd(e); }} />
