@@ -316,7 +316,7 @@ const ChildCleanPage = () => {
 
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-        <div className="bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl p-8 w-full max-w-sm flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300 border border-slate-100 dark:border-slate-800">
+        <div className="bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl p-8 w-full max-w-sm flex flex-col items-center gap-5 animate-in fade-in zoom-in duration-300 border border-slate-100 dark:border-slate-800 max-h-[90vh] overflow-y-auto custom-scrollbar">
           <div className="text-center">
             <div
               className={`w-20 h-20 ${result.isSuccess ? "bg-sky-100 dark:bg-sky-900/30" : "bg-slate-100 dark:bg-slate-800"} rounded-full flex items-center justify-center mx-auto mb-4`}
@@ -735,6 +735,8 @@ const ChildCleanPage = () => {
       <style>{`
         .animate-bounce-slight { animation: bounceSlight 0.5s ease-in-out; }
         @keyframes bounceSlight { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
       `}</style>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../../utils/config"; 
-import { FiSun, FiMoon, FiZap } from "react-icons/fi";
+import { FiSun, FiMoon, FiZap, FiMail } from "react-icons/fi";
 import Pet from "../pets/pet";
 import PetStatusPage from "./PetStatusPage";
 import CommonSide from "./CommonSide";
@@ -42,12 +42,22 @@ const MainPage = () => {
     // 다른 유저 로그인 알림 
     socket.on("new_user_login", (incomingPetName) => {
       if (petNameRef.current && incomingPetName !== petNameRef.current) {
-        const id = Date.now() + Math.random();
+        const id = `login-${Date.now()}-${Math.random()}`;
         setLoginNotifications((prev) => [...prev, { id, petName: incomingPetName }]);
         setTimeout(() => {
           setLoginNotifications((prev) => prev.filter((n) => n.id !== id));
         }, 3000);
       }
+    });
+
+    // 실시간 쪽지 수신 알림
+    socket.on("receive_direct_message", (data) => {
+      const { sender_pet_name, content } = data;
+      const id = `noti-${Date.now()}-${Math.random()}`;
+      setLoginNotifications((prev) => [...prev, { id, petName: sender_pet_name, isMessage: true, content }]);
+      setTimeout(() => {
+        setLoginNotifications((prev) => prev.filter((n) => n.id !== id));
+      }, 5000); // 쪽지는 조금 더 길게 표시
     });
 
     const fetchPetData = async () => {
@@ -136,20 +146,33 @@ const MainPage = () => {
         </div>
       </main>
 
-      {/* 타인 접속 토스트 알림 */}
+      {/* 타인 접속 및 쪽지 토스트 알림 */}
       <div className="fixed bottom-24 lg:bottom-10 right-6 lg:right-10 z-[100] flex flex-col gap-3 pointer-events-none">
         {loginNotifications.map((noti) => (
           <div 
             key={noti.id} 
             className="bg-white/90 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 animate-fade-in-up pointer-events-auto transition-all"
           >
-            <div className="relative flex items-center justify-center w-9 h-9 rounded-2xl bg-slate-50 dark:bg-slate-800">
-              <FiZap className="text-sky-400 text-[16px] stroke-[2.5]" />
-              <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-sky-300 rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-[0_0_8px_rgba(125,211,252,0.5)]"></span>
+            <div className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.isMessage ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-50 dark:bg-slate-800'}`}>
+              {noti.isMessage ? (
+                <FiMail className="text-amber-500 text-[16px] stroke-[2.5]" />
+              ) : (
+                <FiZap className="text-sky-400 text-[16px] stroke-[2.5]" />
+              )}
+              <span className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${noti.isMessage ? 'bg-amber-400' : 'bg-sky-300'} rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-lg`}></span>
             </div>
             <div className="text-[13px] font-bold text-slate-700 dark:text-slate-100 tracking-tight">
-              <span className="text-slate-900 dark:text-sky-200 font-black mr-1.5">{noti.petName}</span>
-              님이 접속했습니다!
+              {noti.isMessage ? (
+                <>
+                  <span className="text-slate-900 dark:text-amber-200 font-black mr-1.5">{noti.petName}</span>
+                  님이 쪽지를 보냈습니다! 💌
+                </>
+              ) : (
+                <>
+                  <span className="text-slate-900 dark:text-sky-200 font-black mr-1.5">{noti.petName}</span>
+                  님이 접속했습니다!
+                </>
+              )}
             </div>
           </div>
         ))}

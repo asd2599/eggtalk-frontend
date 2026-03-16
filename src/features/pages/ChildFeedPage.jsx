@@ -62,18 +62,18 @@ const CategoryCard = ({ cat, isOwner, word, inputValue, onChange, onSubmit }) =>
       </h3>
 
       {isOwner && !isSubmitted ? (
-        <div className="flex gap-2">
+        <div className="flex gap-1.5 sm:gap-2">
           <input
             type="text"
             placeholder="..."
-            className="flex-1 bg-white/10 border border-white/10 rounded-2xl px-4 py-2 text-white font-bold outline-none focus:border-sky-400 transition-all text-sm"
+            className="w-0 flex-1 bg-white/10 border border-white/10 rounded-2xl px-3 sm:px-4 py-2 text-white font-bold outline-none focus:border-sky-400 transition-all text-sm min-w-0"
             value={inputValue}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onSubmit()}
           />
           <button
             onClick={onSubmit}
-            className="p-3 bg-sky-500 hover:bg-sky-600 text-slate-950 rounded-2xl transition-all shadow-lg"
+            className="shrink-0 p-2.5 sm:p-3 bg-sky-500 hover:bg-sky-600 text-slate-950 rounded-2xl transition-all shadow-lg active:scale-95"
           >
             <FiZap />
           </button>
@@ -210,11 +210,11 @@ const ChildFeedPage = () => {
     );
 
   return (
-    <div className="min-h-screen bg-[#0b0f1a] p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-[#0b0f1a] px-6 pt-2 pb-6 flex flex-col items-center">
       {/* 결과 모달 */}
       {gameResult && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0b0f1a]/90 backdrop-blur-xl">
-          <div className="bg-white/10 border border-white/20 p-8 rounded-[40px] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-white/10 border border-white/20 p-8 rounded-[40px] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div className="w-20 h-20 bg-sky-500/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-sky-400/30">
               <FiBookOpen className="text-4xl text-sky-400" />
             </div>
@@ -267,7 +267,7 @@ const ChildFeedPage = () => {
         </div>
       )}
 
-      <header className="w-full max-w-4xl flex justify-between items-center mb-8">
+      <header className="w-full max-w-4xl flex justify-between items-center mb-1 sm:mb-4">
         <button
           onClick={() => navigate("/child-room")}
           className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-white/50 border border-white/10 transition-all"
@@ -286,7 +286,7 @@ const ChildFeedPage = () => {
       </header>
 
       <main className="w-full max-w-lg flex flex-col items-center flex-1">
-        <div className="relative w-48 h-48 mb-8">
+        <div className="relative w-16 h-16 sm:w-40 sm:h-40 mb-1 sm:mb-6">
           <div className="absolute inset-0 bg-sky-500/10 blur-[60px] rounded-full animate-pulse" />
           <div className="relative z-10 animate-float">
             {childPet && childPet.draw("w-full h-full")}
@@ -320,7 +320,7 @@ const ChildFeedPage = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {Object.keys(CATEGORY_LABELS).map((cat) => (
                 <CategoryCard
                   key={cat}
@@ -347,6 +347,8 @@ const ChildFeedPage = () => {
         .animate-float {
           animation: float 4s ease-in-out infinite;
         }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
       `,
         }}
       />
