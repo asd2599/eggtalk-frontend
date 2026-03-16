@@ -464,7 +464,18 @@ const DatingPage = () => {
         ]);
       }
     } catch (err) {
-      console.error(err);
+      if (err.response && err.response.status === 409) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: `ℹ️ ${err.response.data.message || "이미 친구이거나 친구 요청이 진행 중입니다."}`,
+            isSystem: true,
+          },
+        ]);
+      } else {
+        console.error(err);
+      }
     } finally {
       setIsSendingRequest(false);
     }
