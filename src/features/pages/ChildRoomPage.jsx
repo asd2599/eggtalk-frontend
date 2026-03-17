@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  FiActivity, FiHeart,
+  FiActivity,
+  FiHeart,
   FiSettings,
   FiStar,
   FiCoffee,
@@ -10,8 +11,8 @@ import {
   FiClock,
   FiTrash2,
   FiZap,
-  FiSun,   // ✅ 아이콘 추가
-  FiMoon,  // ✅ 아이콘 추가
+  FiSun, // ✅ 아이콘 추가
+  FiMoon, // ✅ 아이콘 추가
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
@@ -33,7 +34,7 @@ const ChildRoomPage = () => {
 
   // 대기 및 제안 모달용 State 추가
   const [waitingAction, setWaitingAction] = useState(null); // FEED, CLEAN, PLAY, ANALYZE
-  const [proposedAction, setProposedAction] = useState(null); 
+  const [proposedAction, setProposedAction] = useState(null);
   const [analysisResult, setAnalysisResult] = useState(null); // { pet, reason }
 
   const timerRef = useRef(null);
@@ -43,7 +44,10 @@ const ChildRoomPage = () => {
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
-    const isDark = savedTheme === "dark" || (!savedTheme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const isDark =
+      savedTheme === "dark" ||
+      (!savedTheme &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
     if (isDark) {
       document.documentElement.classList.add("dark");
       setIsDarkMode(true);
@@ -120,24 +124,35 @@ const ChildRoomPage = () => {
       petName: myPet.name,
     });
 
+    socket.emit("user_login", myPet.name);
+
     socket.emit("get_online_users", (users) => {
-      setIsSpouseOnline(users.includes(spousePet.name));
+      const isOnline = users.some(
+        (u) => u.toLowerCase().trim() === spousePet.name?.toLowerCase().trim(),
+      );
+      setIsSpouseOnline(isOnline);
     });
 
     const handleOnlineUsers = (users) => {
-      setIsSpouseOnline(users.includes(spousePet.name));
+      const isOnline = users.some(
+        (u) => u.toLowerCase().trim() === spousePet.name?.toLowerCase().trim(),
+      );
+      setIsSpouseOnline(isOnline);
     };
 
     const handleNewLogin = (petName) => {
-      if (petName === spousePet.name) setIsSpouseOnline(true);
+      if (petName.toLowerCase().trim() === spousePet.name?.toLowerCase().trim())
+        setIsSpouseOnline(true);
     };
 
     const handleSpouseEntered = (petName) => {
-      if (petName === spousePet.name) setIsSpouseInRoom(true);
+      if (petName.toLowerCase().trim() === spousePet.name?.toLowerCase().trim())
+        setIsSpouseInRoom(true);
     };
 
     const handleSpouseLeft = (petName) => {
-      if (petName === spousePet.name) setIsSpouseInRoom(false);
+      if (petName.toLowerCase().trim() === spousePet.name?.toLowerCase().trim())
+        setIsSpouseInRoom(false);
     };
 
     const handleFarewellProposed = () => {
@@ -220,12 +235,19 @@ const ChildRoomPage = () => {
       setAnalysisLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const response = await api.post("/api/pets/child/analyze-tendency", {}, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.post(
+          "/api/pets/child/analyze-tendency",
+          {},
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
         if (response.data.pet) {
           setChildPet(new Pet(response.data.pet));
-          setAnalysisResult({ pet: response.data.pet, reason: response.data.reason });
+          setAnalysisResult({
+            pet: response.data.pet,
+            reason: response.data.reason,
+          });
         }
       } catch (error) {
         console.error("Tendency analysis sync failed:", error);
@@ -477,17 +499,20 @@ const ChildRoomPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0b0f1a] p-4 lg:p-10 font-sans flex flex-col transition-colors relative overflow-x-hidden">
-      
       {/* ✅ 우측 상단 다크모드 전환 아이콘 */}
-      <button 
-        onClick={toggleTheme} 
+      <button
+        onClick={toggleTheme}
         className="fixed top-4 right-4 lg:top-10 lg:right-10 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-sky-400 z-[60] shadow-sm transition-all"
       >
-        {isDarkMode ? <FiSun className="text-sm" /> : <FiMoon className="text-sm" />}
+        {isDarkMode ? (
+          <FiSun className="text-sm" />
+        ) : (
+          <FiMoon className="text-sm" />
+        )}
       </button>
 
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-sky-100 dark:bg-sky-400/5 rounded-full blur-[120px] pointer-events-none opacity-60"></div>
-      
+
       <div className="w-full flex justify-between items-center mb-10 z-10 relative max-w-5xl mx-auto">
         <button
           onClick={() => navigate("/main")}
@@ -502,7 +527,6 @@ const ChildRoomPage = () => {
 
       <div className="flex-1 flex flex-col items-center justify-center relative z-10 w-full max-w-4xl mx-auto">
         <div className="w-full bg-white dark:bg-slate-900/40 backdrop-blur-xl border border-slate-100 dark:border-slate-800 rounded-[3.5rem] p-8 lg:p-16 flex flex-col items-center justify-center shadow-sm mb-8 relative">
-          
           <div className="absolute top-6 left-6 lg:top-10 lg:left-10 flex flex-col items-center gap-2 transform transition-transform hover:-translate-y-2 z-20">
             <div className="w-16 h-16 lg:w-24 lg:h-24 bg-slate-50 dark:bg-slate-800 rounded-[1.5rem] flex items-center justify-center border border-slate-100 dark:border-slate-700 shadow-inner relative overflow-hidden">
               {myPet && (
@@ -521,7 +545,9 @@ const ChildRoomPage = () => {
               <div className="w-16 h-16 lg:w-24 lg:h-24 bg-slate-50 dark:bg-slate-800 rounded-[1.5rem] flex items-center justify-center border border-slate-100 dark:border-slate-700 shadow-inner relative overflow-hidden group">
                 {spousePet && (
                   <div className="w-full h-full pointer-events-none relative transition-opacity group-hover:opacity-80">
-                    {spousePet.draw("w-full h-full scale-[1.3] translateY-[5%]")}
+                    {spousePet.draw(
+                      "w-full h-full scale-[1.3] translateY-[5%]",
+                    )}
                   </div>
                 )}
               </div>
@@ -539,14 +565,32 @@ const ChildRoomPage = () => {
                 )}
               </div>
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-white/80 dark:bg-slate-800/80 px-3 py-1 rounded-full shadow-sm border border-slate-100 dark:border-slate-700">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-white/80 dark:bg-slate-800/80 px-3 py-1 rounded-full shadow-sm border border-slate-100 dark:border-slate-800 flex items-center gap-2">
               {spousePet?.name || "배우자"}
+              {isSpouseOnline && !isSpouseInRoom && (
+                <button
+                  onClick={() => {
+                    console.log("[DEBUG-FRONT] Inviting spouse to child room:", spousePet.name);
+                    socket.emit("invite_to_child_room", {
+                      receiverPetName: spousePet.name,
+                      requesterPetName: myPet.name,
+                      childId: childPet.id,
+                      childPetName: childPet.name,
+                    });
+                    alert(`${spousePet.name}님에게 초대장을 보냈습니다! ✉️`);
+                  }}
+                  className="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[7px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-rose-500/20"
+                >
+                  데려오기
+                </button>
+              )}
             </span>
           </div>
 
           <div className="flex items-center gap-3 mb-2 z-10 pt-12 lg:pt-0">
             <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">
-              {childPet.name} <span className="text-sky-400 font-sans not-italic">.</span>
+              {childPet.name}{" "}
+              <span className="text-sky-400 font-sans not-italic">.</span>
             </h1>
             {isSpouseInRoom && childPet.isHatched && (
               <button
@@ -565,7 +609,6 @@ const ChildRoomPage = () => {
             onClick={handleHatchTap}
             className={`w-64 h-64 lg:w-80 lg:h-80 relative flex items-center justify-center mb-12 transform transition hover:scale-105 duration-500 z-10 ${!childPet.isHatched ? "rounded-[3.5rem] bg-slate-50 dark:bg-slate-950 shadow-inner border border-slate-100 dark:border-slate-800" : ""} ${isHatchGameActive ? "cursor-pointer active:scale-95" : ""}`}
           >
-
             {childPet && (
               <div
                 className={`w-full h-full flex items-center justify-center ${childPet.isHatched ? "animate-float" : "animate-wiggle"}`}
@@ -601,7 +644,9 @@ const ChildRoomPage = () => {
                 <div
                   className={`flex items-center gap-2 px-5 py-2 rounded-xl bg-white dark:bg-slate-900 shadow-xl border ${timeLeft <= 5 ? "border-sky-400 text-sky-400 animate-bounce" : "border-slate-100 dark:border-slate-800 text-slate-400"}`}
                 >
-                  <FiClock className={timeLeft <= 5 ? "animate-spin-slow" : ""} />
+                  <FiClock
+                    className={timeLeft <= 5 ? "animate-spin-slow" : ""}
+                  />
                   <span className="text-xs font-black tracking-widest uppercase">
                     남은 시간: {timeLeft}s
                   </span>
@@ -636,10 +681,26 @@ const ChildRoomPage = () => {
             <div className="w-full space-y-12 animate-fade-in">
               <div className="flex flex-wrap items-center justify-center gap-6 lg:gap-12 w-full">
                 {[
-                  { label: "포만감", val: childPet.hunger, color: "bg-sky-400" },
-                  { label: "청결도", val: childPet.cleanliness, color: "bg-sky-500" },
-                  { label: "체력", val: childPet.healthHp, color: "bg-slate-700" },
-                  { label: "스트레스", val: childPet.stress, color: "bg-slate-400" }
+                  {
+                    label: "포만감",
+                    val: childPet.hunger,
+                    color: "bg-sky-400",
+                  },
+                  {
+                    label: "청결도",
+                    val: childPet.cleanliness,
+                    color: "bg-sky-500",
+                  },
+                  {
+                    label: "체력",
+                    val: childPet.healthHp,
+                    color: "bg-slate-700",
+                  },
+                  {
+                    label: "스트레스",
+                    val: childPet.stress,
+                    color: "bg-slate-400",
+                  },
                 ].map((stat, i) => (
                   <div key={i} className="flex flex-col items-center gap-2">
                     <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">
@@ -676,7 +737,10 @@ const ChildRoomPage = () => {
                     { label: "솔직함", val: childPet.directness },
                     { label: "호기심", val: childPet.curiosity },
                   ].map((stat, idx) => (
-                    <div key={idx} className="flex flex-col items-center gap-1.5">
+                    <div
+                      key={idx}
+                      className="flex flex-col items-center gap-1.5"
+                    >
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter text-center">
                         {stat.label}
                       </span>
@@ -700,7 +764,12 @@ const ChildRoomPage = () => {
                   disabled={!isSpouseInRoom || analysisLoading}
                   className="px-8 py-3 bg-slate-900 dark:bg-sky-400 text-white dark:text-slate-950 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] active:scale-95 transition-all shadow-lg flex items-center gap-2 group disabled:opacity-30"
                 >
-                  {analysisLoading ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <FiActivity className="group-hover:rotate-12 transition-transform" />} AI 성향 분석
+                  {analysisLoading ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <FiActivity className="group-hover:rotate-12 transition-transform" />
+                  )}{" "}
+                  AI 성향 분석
                 </button>
               </div>
             </div>
@@ -712,7 +781,7 @@ const ChildRoomPage = () => {
             {[
               { label: "창의력 이야기", icon: FiCoffee, type: "FEED" },
               { label: "스무고개 퀴즈", icon: FiSettings, type: "CLEAN" },
-              { label: "역할극 게임", icon: FiSmile, type: "PLAY" }
+              { label: "역할극 게임", icon: FiSmile, type: "PLAY" },
             ].map((btn, i) => (
               <button
                 key={i}
@@ -831,9 +900,16 @@ const ChildRoomPage = () => {
               <button
                 onClick={() => {
                   if (proposedAction.actionType === "ANALYZE") {
-                    socket.emit("child_tendency_analyze_response", { childId: childPet.id, approved: true });
+                    socket.emit("child_tendency_analyze_response", {
+                      childId: childPet.id,
+                      approved: true,
+                    });
                   } else {
-                    socket.emit("child_action_response", { childId: childPet.id, approved: true, actionType: proposedAction.actionType });
+                    socket.emit("child_action_response", {
+                      childId: childPet.id,
+                      approved: true,
+                      actionType: proposedAction.actionType,
+                    });
                   }
                   setProposedAction(null);
                   setWaitingAction(proposedAction.actionType);
@@ -852,19 +928,26 @@ const ChildRoomPage = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-md animate-in fade-in duration-500">
           <div className="bg-white dark:bg-[#0b0f1a] p-10 rounded-[3.5rem] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-lg text-center transform scale-100 animate-in zoom-in-95 duration-500 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-2 bg-sky-400"></div>
-            
+
             <div className="w-32 h-32 bg-slate-50 dark:bg-slate-900/50 rounded-full flex items-center justify-center mx-auto mb-8 border border-slate-100 dark:border-slate-800 shadow-inner group">
-              {analysisResult.pet && new Pet(analysisResult.pet).draw("w-20 h-20 group-hover:scale-110 transition-transform")}
+              {analysisResult.pet &&
+                new Pet(analysisResult.pet).draw(
+                  "w-20 h-20 group-hover:scale-110 transition-transform",
+                )}
             </div>
 
             <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4 uppercase tracking-tighter">
               성장 분석 리포트 <span className="text-sky-400">.</span>
             </h2>
-            
+
             <div className="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-3xl mb-8 text-left border border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] font-black text-sky-400 uppercase tracking-widest">현재 성향</span>
-                <span className="px-3 py-1 bg-sky-400 text-slate-950 text-xs font-black rounded-full uppercase tracking-tighter shadow-sm">{analysisResult.pet.tendency}</span>
+                <span className="text-[10px] font-black text-sky-400 uppercase tracking-widest">
+                  현재 성향
+                </span>
+                <span className="px-3 py-1 bg-sky-400 text-slate-950 text-xs font-black rounded-full uppercase tracking-tighter shadow-sm">
+                  {analysisResult.pet.tendency}
+                </span>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-300 font-bold leading-relaxed italic whitespace-pre-wrap">
                 "{analysisResult.reason}"
