@@ -46,7 +46,7 @@ const MainPage = () => {
         const id = `login-${Date.now()}-${Math.random()}`;
         setLoginNotifications((prev) => [
           ...prev,
-          { id, petName: incomingPetName },
+          { id, petName: incomingPetName, isMessage: false },
         ]);
         setTimeout(() => {
           setLoginNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -105,6 +105,7 @@ const MainPage = () => {
     return () => {
       socket.off("update_user_count");
       socket.off("new_user_login");
+      socket.off("receive_direct_message");
     };
   }, [navigate]);
 
@@ -169,7 +170,11 @@ const MainPage = () => {
             className="bg-white/90 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 animate-fade-in-up pointer-events-auto transition-all"
           >
             <div
-              className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.isMessage ? "bg-amber-100 dark:bg-amber-900/30" : "bg-slate-50 dark:bg-slate-800"}`}
+              className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${
+                noti.isMessage
+                  ? "bg-amber-100 dark:bg-amber-900/30"
+                  : "bg-slate-50 dark:bg-slate-800"
+              }`}
             >
               {noti.isMessage ? (
                 <FiMail className="text-amber-500 text-[16px] stroke-[2.5]" />
@@ -177,7 +182,9 @@ const MainPage = () => {
                 <FiZap className="text-sky-400 text-[16px] stroke-[2.5]" />
               )}
               <span
-                className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${noti.isMessage ? "bg-amber-400" : "bg-sky-300"} rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-lg`}
+                className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${
+                  noti.isMessage ? "bg-amber-400" : "bg-sky-300"
+                } rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-lg`}
               ></span>
             </div>
             <div className="text-[13px] font-bold text-slate-700 dark:text-slate-100 tracking-tight">

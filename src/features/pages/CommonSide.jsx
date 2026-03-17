@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
 import {
   FiLogOut,
   FiSmile,
@@ -8,24 +8,24 @@ import {
   FiUserCheck,
   FiHeart,
   FiMap,
-} from "react-icons/fi";
+} from 'react-icons/fi';
 
 const CommonSide = ({ activeMenu }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+    localStorage.removeItem('token');
+    navigate('/');
   };
 
   const menuItems = [
-    { icon: FiSmile, label: "내 펫", path: "/main" },
-    { icon: FiHeart, label: "육아", path: "/child-room" },
-    { icon: FiAward, label: "랭킹", path: "/ranking" },
-    { icon: FiMessageCircle, label: "대화", path: "/chat" },
-    { icon: FiUsers, label: "모임", path: "/lounge" },
-    { icon: FiUserCheck, label: "친구", path: "/friends" },
-    { icon: FiMap, label: "길찾기", path: "/ms" },
+    { icon: FiSmile, label: '내 펫', path: '/main' },
+    { icon: FiHeart, label: '육아', path: '/child-room' },
+    { icon: FiAward, label: '랭킹', path: '/ranking' },
+    { icon: FiMessageCircle, label: '대화', path: '/chat' },
+    { icon: FiUsers, label: '모임', path: '/lounge' },
+    { icon: FiUserCheck, label: '친구', path: '/friends' },
+    { icon: FiMap, label: '길찾기', path: '/ms' },
   ];
 
   return (
@@ -44,8 +44,8 @@ const CommonSide = ({ activeMenu }) => {
               onClick={() => navigate(item.path)}
               className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-3 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[65px] lg:h-auto min-w-[70px] lg:min-w-0 lg:w-full flex-shrink-0 ${
                 activeMenu === item.label
-                  ? "bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg font-bold"
-                  : "text-slate-400 hover:text-slate-900 dark:hover:text-sky-400"
+                  ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg font-bold'
+                  : 'text-slate-400 hover:text-slate-900 dark:hover:text-sky-400'
               }`}
             >
               <item.icon className="text-xl lg:text-lg shrink-0" />
