@@ -175,7 +175,14 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
                     ) : (
                       <>
                         <i className="ri-arrow-right-line text-slate-300"></i>
-                        <span className="text-slate-700 dark:text-slate-300 truncate">
+                        <span
+                          className="text-slate-700 dark:text-slate-300 truncate cursor-pointer hover:text-sky-500 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSegmentClick && onSegmentClick({ ...step, startX: step.endX, startY: step.endY });
+                            scrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+                          }}
+                        >
                           {step.endName}
                         </span>
                         <span className="text-sky-500 font-black">
