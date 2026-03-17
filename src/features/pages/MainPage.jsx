@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { api } from '../../utils/config';
-import { FiSun, FiMoon, FiZap } from 'react-icons/fi';
-import Pet from '../pets/pet';
-import PetStatusPage from './PetStatusPage';
-import CommonSide from './CommonSide';
-import socket from '../../utils/socket';
+import React, { useEffect, useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { api } from "../../utils/config";
+import { FiSun, FiMoon, FiZap, FiMail } from "react-icons/fi";
+import Pet from "../pets/pet";
+import PetStatusPage from "./PetStatusPage";
+import CommonSide from "./CommonSide";
+import socket from "../../utils/socket";
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -18,35 +18,35 @@ const MainPage = () => {
 
   // 1. 테마 초기 설정
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme');
+    const savedTheme = localStorage.getItem("theme");
     const isDark =
-      savedTheme === 'dark' ||
+      savedTheme === "dark" ||
       (!savedTheme &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches);
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
     if (isDark) {
-      document.documentElement.classList.add('dark');
+      document.documentElement.classList.add("dark");
       setIsDarkMode(true);
     }
   }, []);
 
   const toggleTheme = () => {
-    const isDark = document.documentElement.classList.toggle('dark');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    const isDark = document.documentElement.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
     setIsDarkMode(isDark);
   };
 
   // 2. 데이터 페칭 및 소켓 이벤트 (알림 기능 통합)
   useEffect(() => {
     // 실시간 접속자 수 업데이트
-    socket.on('update_user_count', (count) => setActiveUserCount(count));
+    socket.on("update_user_count", (count) => setActiveUserCount(count));
 
     // 다른 유저 로그인 알림
-    socket.on('new_user_login', (incomingPetName) => {
+    socket.on("new_user_login", (incomingPetName) => {
       if (petNameRef.current && incomingPetName !== petNameRef.current) {
-        const id = Date.now() + Math.random();
+        const id = `login-${Date.now()}-${Math.random()}`;
         setLoginNotifications((prev) => [
           ...prev,
-          { id, petName: incomingPetName },
+          { id, petName: incomingPetName, isMessage: false },
         ]);
         setTimeout(() => {
           setLoginNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -55,7 +55,7 @@ const MainPage = () => {
     });
 
     // 실시간 쪽지 수신 알림
-    socket.on('receive_direct_message', (data) => {
+    socket.on("receive_direct_message", (data) => {
       const { sender_pet_name, content } = data;
       const id = `noti-${Date.now()}-${Math.random()}`;
       setLoginNotifications((prev) => [
@@ -69,13 +69,13 @@ const MainPage = () => {
 
     const fetchPetData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (!token) {
-          navigate('/');
+          navigate("/");
           return;
         }
 
-        const response = await api.get('/api/pets/my');
+        const response = await api.get("/api/pets/my");
 
         if (response.data.pet) {
           const loadedPet = new Pet(response.data.pet);
@@ -83,18 +83,18 @@ const MainPage = () => {
           petNameRef.current = loadedPet.name;
 
           // 로컬 스토리지에 펫 정보 저장 (소켓 핸들러 및 다른 페이지에서 활용)
-          localStorage.setItem('petId', loadedPet.id);
-          localStorage.setItem('petName', loadedPet.name);
+          localStorage.setItem("petId", loadedPet.id);
+          localStorage.setItem("petName", loadedPet.name);
 
           // 본인 로그인 알림 전송
-          socket.emit('user_login', loadedPet.name);
+          socket.emit("user_login", loadedPet.name);
         } else {
-          navigate('/create-pet');
+          navigate("/create-pet");
         }
       } catch (error) {
-        console.error('Fetch error:', error);
-        localStorage.removeItem('token');
-        navigate('/');
+        console.error("Fetch error:", error);
+        localStorage.removeItem("token");
+        navigate("/");
       } finally {
         setLoading(false);
       }
@@ -103,8 +103,9 @@ const MainPage = () => {
     fetchPetData();
 
     return () => {
-      socket.off('update_user_count');
-      socket.off('new_user_login');
+      socket.off("update_user_count");
+      socket.off("new_user_login");
+      socket.off("receive_direct_message");
     };
   }, [navigate]);
 
@@ -169,7 +170,11 @@ const MainPage = () => {
             className="bg-white/90 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 animate-fade-in-up pointer-events-auto transition-all"
           >
             <div
-              className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${noti.isMessage ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-50 dark:bg-slate-800'}`}
+              className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${
+                noti.isMessage
+                  ? "bg-amber-100 dark:bg-amber-900/30"
+                  : "bg-slate-50 dark:bg-slate-800"
+              }`}
             >
               {noti.isMessage ? (
                 <FiMail className="text-amber-500 text-[16px] stroke-[2.5]" />
@@ -177,14 +182,27 @@ const MainPage = () => {
                 <FiZap className="text-sky-400 text-[16px] stroke-[2.5]" />
               )}
               <span
-                className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${noti.isMessage ? 'bg-amber-400' : 'bg-sky-300'} rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-lg`}
+                className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${
+                  noti.isMessage ? "bg-amber-400" : "bg-sky-300"
+                } rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-lg`}
               ></span>
             </div>
             <div className="text-[13px] font-bold text-slate-700 dark:text-slate-100 tracking-tight">
-              <span className="text-slate-900 dark:text-sky-200 font-black mr-1.5">
-                {noti.petName}
-              </span>
-              님이 접속했습니다!
+              {noti.isMessage ? (
+                <>
+                  <span className="text-slate-900 dark:text-amber-200 font-black mr-1.5">
+                    {noti.petName}
+                  </span>
+                  님이 쪽지를 보냈습니다! 💌
+                </>
+              ) : (
+                <>
+                  <span className="text-slate-900 dark:text-sky-200 font-black mr-1.5">
+                    {noti.petName}
+                  </span>
+                  님이 접속했습니다!
+                </>
+              )}
             </div>
           </div>
         ))}

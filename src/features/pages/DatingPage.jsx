@@ -21,6 +21,8 @@ import socket from "../../utils/socket";
 import GiftModal from "./components/GiftModal";
 import FriendRequestModal from "./components/FriendRequestModal";
 import BreedingRequestModal from "./components/BreedingRequestModal";
+import ConnectedUsersModal from "./components/ConnectedUsersModal";
+import { FiUsers as FiUsersIcon } from "react-icons/fi";
 
 let strictModeLeaveTimer = null;
 
@@ -80,6 +82,10 @@ const DatingPage = () => {
     isSender: false,
   });
 
+  const [isUsersModalOpen, setIsUsersModalOpen] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [roomName, setRoomName] = useState("");
+
   const chatEndRef = useRef(null);
   const roomUsersRef = useRef([]);
 
@@ -100,6 +106,7 @@ const DatingPage = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.success) {
+        setRoomName(res.data.room.name);
         const usersWithInstances = res.data.room.users.map((u) => ({
           ...u,
           petInstance: u.petData ? new Pet(u.petData) : null,
@@ -124,7 +131,9 @@ const DatingPage = () => {
     fetchRoomInfo();
 
     const joinRoom = () => {
-      socket.emit("join_dating_room", { roomId, petName: petData.name });
+      socket.emit("join_dating_room", { roomId, petName: petData.name }, (res) => {
+        if (res?.success) fetchRoomInfo();
+      });
     };
 
     if (socket.connected) joinRoom();
@@ -274,6 +283,8 @@ const DatingPage = () => {
       }
     });
 
+    socket.on("rooms_updated", fetchRoomInfo);
+
     socket.on("receive_friend_request", (data) => {
       if (
         data.receiverPetName?.toLowerCase().trim() ===
@@ -343,7 +354,17 @@ const DatingPage = () => {
       }
     });
 
+    socket.on("online_users_list", (users) => {
+      setOnlineUsers(users);
+    });
+
+    // 온라인 유저 목록 초기 요청
+    socket.emit("get_online_users", (users) => {
+      setOnlineUsers(users);
+    });
+
     return () => {
+      socket.off("rooms_updated", fetchRoomInfo);
       socket.off("receive_dating_message");
       socket.off("receive_friend_request");
       socket.off("receive_breeding_request");
@@ -522,6 +543,30 @@ const DatingPage = () => {
     }
   };
 
+  const handleInviteUser = (user) => {
+    const targetName = typeof user === "object" ? (user.petName || user.name || String(user)) : String(user);
+    
+    const inviteData = {
+      receiverPetName: targetName,
+      requesterPetName: petData.name,
+      roomId: roomId,
+      roomName: roomName || "Dating Room",
+    };
+
+    console.log("[DEBUG-FRONT] Emitting invite_to_dating:", inviteData);
+    socket.emit("invite_to_dating", inviteData);
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        sender: "시스템",
+        message: `✉️ ${targetName}님에게 초대장을 보냈습니다.`,
+        isSystem: true,
+      },
+    ]);
+    setIsUsersModalOpen(false);
+  };
+
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
     localStorage.setItem("theme", isDark ? "dark" : "light");
@@ -583,6 +628,13 @@ const DatingPage = () => {
         </div>
 
         <div className="flex items-center gap-1.5 lg:gap-3 shrink-0 ml-2">
+          <button
+            onClick={() => setIsUsersModalOpen(true)}
+            className="p-2 lg:p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-sky-500 border border-slate-100 dark:border-slate-700 transition-all active:scale-95"
+            title="접속자 목록 및 초대"
+          >
+            <FiUsersIcon size={18} />
+          </button>
           <button
             onClick={handleSendFriendRequest}
             disabled={isWaiting || isSendingRequest}
@@ -733,6 +785,14 @@ const DatingPage = () => {
         requesterPetName={breedingData.requesterPetName}
         receiverPetName={breedingData.receiverPetName}
         isSender={breedingData.isSender}
+      />
+      
+      <ConnectedUsersModal
+        isOpen={isUsersModalOpen}
+        onClose={() => setIsUsersModalOpen(false)}
+        users={onlineUsers}
+        onInvite={handleInviteUser}
+        myPetName={petData?.name}
       />
 
       <style>{`
