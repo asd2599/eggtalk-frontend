@@ -56,7 +56,7 @@ const RankingPage = () => {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans overflow-hidden relative custom-scrollbar pb-16 lg:pb-0">
+    <div className="flex flex-col lg:flex-row h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans overflow-hidden relative custom-scrollbar pb-16 lg:pb-0 overflow-x-hidden">
       
       <button
         onClick={toggleTheme}
@@ -77,7 +77,7 @@ const RankingPage = () => {
             <div className="h-[1px] w-12 bg-slate-100 dark:bg-slate-800 mx-auto mt-4" />
           </header>
 
-          <div className="flex flex-row justify-center items-end gap-4 md:gap-12 mb-32">
+          <div className="flex flex-row justify-center items-end gap-4 md:gap-8 mb-32 px-6">
             
             {/* 2위 */}
             {top3[1] && (
@@ -95,10 +95,10 @@ const RankingPage = () => {
 
             {/* 1위 (Champion) */}
             {top3[0] && (
-              <div className="flex flex-col items-center z-10 scale-110 md:scale-125 mx-2 md:mx-6 animate-fade-in-up delay-75">
+              <div className="flex flex-col items-center z-10 scale-105 md:scale-110 mx-2 md:mx-4 animate-fade-in-up delay-75">
                 <div className="relative mb-8">
                   {/* 포인트 광채 */}
-                  <div className="absolute inset-0 bg-sky-200 dark:bg-sky-400 rounded-full blur-[40px] opacity-20 dark:opacity-30 animate-pulse"></div>
+                  <div className="absolute inset-0 bg-sky-200 dark:bg-sky-400 rounded-full blur-[20px] opacity-20 dark:opacity-30 animate-pulse"></div>
                   
                   <div className="relative w-32 h-32 lg:w-40 lg:h-40 rounded-full border-4 border-white dark:border-slate-800 flex items-center justify-center p-4 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden ring-4 ring-sky-50 dark:ring-sky-900/20">
                     {new Pet({ color: top3[0].color }).draw("w-full h-full object-contain relative z-10 drop-shadow-[0_0_15px_rgba(125,211,252,0.5)]")}

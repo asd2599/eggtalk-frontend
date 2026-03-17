@@ -20,7 +20,7 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
 
   return (
     <div className="relative w-full flex flex-col gap-5 pointer-events-auto bg-white dark:bg-slate-950 pb-6">
-      {/* 헤더 섹션 - 상단 여백 보정 */}
+      {/* 헤더 섹션 */}
       <div className="flex justify-between items-center px-6 pt-10 md:pt-6 md:px-1">
         <div className="flex items-center gap-3">
           {/* 뒤로 가기 버튼 */}
@@ -49,7 +49,7 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
         </button>
       </div>
 
-      {/* 요약 카드 - 패딩 보정 */}
+      {/* 요약 카드 */}
       <div className="px-6 md:px-0">
         <div className="bg-slate-900 rounded-[2.5rem] md:rounded-[2rem] p-7 md:p-6 text-white shadow-xl relative overflow-hidden border border-white/5">
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-sky-500/20 rounded-full blur-2xl" />
@@ -98,7 +98,7 @@ const RouteResult = ({ result, startTime, onClose, onSegmentClick }) => {
         </div>
       </div>
 
-      {/* 타임라인 섹션 - 모바일 터치 편의성 강화 */}
+      {/* 타임라인 섹션 */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto pr-2 custom-scrollbar px-6 md:px-0"
