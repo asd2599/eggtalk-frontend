@@ -540,6 +540,8 @@ const odsayService = {
           // //* [Added Code] 지도 이동을 위해 구간의 시작 좌표를 저장
           startX: stations[0]?.x,
           startY: stations[0]?.y,
+          endX: stations[stations.length - 1]?.x,
+          endY: stations[stations.length - 1]?.y,
           stationCount: sub.stationCount,
           time: sub.sectionTime,
           distance: sub.distance,
@@ -567,6 +569,8 @@ const odsayService = {
           // //* [Added Code] 지도 이동을 위해 구간의 시작 좌표를 저장
           startX: stations[0]?.x,
           startY: stations[0]?.y,
+          endX: stations[stations.length - 1]?.x,
+          endY: stations[stations.length - 1]?.y,
           stationCount: sub.stationCount,
           time: sub.sectionTime,
           distance: sub.distance,
