@@ -105,7 +105,7 @@ const RouteList = ({
     : CATEGORIES;
 
   return (
-    <div className="flex flex-col gap-5 px-4 py-6 mx-5 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto custom-scrollbar border-[2px] border-slate-100">
+    <div className="flex flex-col gap-5 px-4 py-6 mx-5 bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-hidden custom-scrollbar border-[2px] border-slate-100">
       {/* 상단 헤더 영역 */}
       <div className="flex justify-between items-center px-1">
         <div className="flex items-center gap-3">
