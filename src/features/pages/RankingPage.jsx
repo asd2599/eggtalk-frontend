@@ -19,7 +19,7 @@ const RankingPage = () => {
       setIsDarkMode(true);
     }
   }, []);
-
+//테스트주석
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
     localStorage.setItem("theme", isDark ? "dark" : "light");

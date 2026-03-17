@@ -42,7 +42,7 @@ const CommonSide = ({ activeMenu }) => {
     }
   };
 
-  // 페이지 진입 시 activeMenu 중앙 정렬
+  // 페이지 진입 시 activeMenu 중앙 정렬 //test
   useEffect(() => {
     scrollToCenter(activeMenu);
   }, [activeMenu]);

@@ -148,7 +148,6 @@ const MS = () => {
         setRouteList(result);
         setIsRouteListOpen(true);
         setHasEverSearched(true);
-        // 모바일 UI 최적화: 검색 후 검색창은 닫아줌
         if (window.innerWidth < 768) setShowSearch(false);
       } else {
         alert('입력하신 경로를 찾을 수 없습니다.');
@@ -163,7 +162,7 @@ const MS = () => {
   const handleSelectRoute = async (selectedRoute) => {
     try {
       setRouteLoading(true);
-      setIsSheetCollapsed(false); // 경로 선택 시 바텀시트 펼치기
+      setIsSheetCollapsed(false);
       const detail = await odsayService.getPathDetail(selectedRoute);
       setRouteResult(detail);
       setRouteSegments(detail.segments || []);
@@ -374,7 +373,7 @@ const MS = () => {
           </div>
         </div>
 
-        {/* [Mobile] 검색 입력 바텀 시트 */}
+        {/* 모바일 전용 검색 입력 바텀 시트 */}
         {showSearch && (
           <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto md:hidden">
             <div
@@ -411,7 +410,7 @@ const MS = () => {
           </div>
         )}
 
-        {/* [Mobile] 경로 목록 바텀 시트 */}
+        {/* 모바일 전용 경로 목록 바텀 시트 */}
         {isRouteListOpen && (
           <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto md:hidden">
             {!routeResult && (
@@ -422,7 +421,7 @@ const MS = () => {
             )}
 
             <div className="relative bg-white dark:bg-slate-950 rounded-t-[3rem] shadow-2xl p-6 pb-10 max-h-[75vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom-full duration-300">
-              <div className="w-12 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full mx-auto mb-6"></div>
+              <div className="w-12 h-1.5 bg-slate-400 dark:bg-slate-500 rounded-full mx-auto mb-6"></div>
               <RouteList
                 routes={routeList}
                 isLoading={routeLoading}
@@ -438,7 +437,7 @@ const MS = () => {
           </div>
         )}
 
-        {/* [PC] 레이아웃 영역 */}
+        {/* PC 레이아웃 영역 */}
         <div
           className={`hidden md:flex absolute top-6 left-10 z-50 flex-col items-start gap-4 pointer-events-none transition-all duration-300 ${routeResult ? 'invisible' : ''}`}
         >
@@ -551,7 +550,7 @@ const MS = () => {
                       }
                       className="relative p-3 md:p-2 flex items-center justify-center overflow-hidden"
                     >
-                      {/* 물이 차오르는 배경 */}
+                      {/* 재생 버튼 */}
                       <div
                         className="absolute bottom-0 left-0 right-0 bg-sky-400 transition-all duration-150"
                         style={{
@@ -573,7 +572,7 @@ const MS = () => {
                   </div>
                 )}
 
-                {/* 현재위치 버튼 - 맨 위 */}
+                {/* 현재위치 버튼 */}
                 <button
                   onClick={handleCurrentLocation}
                   className="w-12 h-12 md:w-10 md:h-10 bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl flex items-center justify-center text-slate-400 hover:text-sky-500 transition-all active:scale-90"
@@ -581,7 +580,7 @@ const MS = () => {
                   <i className="ri-focus-3-line text-2xl md:text-xl"></i>
                 </button>
 
-                {/* 줌 버튼 - 아래 */}
+                {/* 줌 버튼 */}
                 <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
                   <button
                     onClick={() => setMapLevel((prev) => Math.max(prev - 1, 1))}
@@ -612,7 +611,7 @@ const MS = () => {
                   }
                   strokeOpacity={0.8}
                   zIndex={10}
-                  /* 도보(dash) 점선 */
+                  /* 도보 점선 */
                   strokeStyle={seg.strokeStyle === 'dash' ? 'dash' : 'solid'}
                 />
               ))}
@@ -718,7 +717,6 @@ const MS = () => {
                 />
               </div>
 
-              {/* 모바일: 하단 바텀시트 (지도 상단 일부 노출) */}
               {/* 모바일: 하단 바텀시트 */}
               <div
                 className="md:hidden fixed bottom-0 left-0 right-0 z-[150] max-h-[65vh] overflow-y-auto no-scrollbar rounded-t-[3rem] bg-white dark:bg-slate-950 shadow-2xl pointer-events-auto"
