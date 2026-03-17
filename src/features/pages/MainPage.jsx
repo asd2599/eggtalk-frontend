@@ -16,7 +16,7 @@ const MainPage = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const petNameRef = useRef(null);
 
-  // 1. 테마 초기 설정
+  // 테마 초기 설정
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark =
@@ -35,7 +35,7 @@ const MainPage = () => {
     setIsDarkMode(isDark);
   };
 
-  // 2. 데이터 페칭 및 소켓 이벤트 (알림 기능 통합)
+  // 데이터 페칭 및 소켓 이벤트 (알림 기능 통합)
   useEffect(() => {
     // 실시간 접속자 수 업데이트
     socket.on("update_user_count", (count) => setActiveUserCount(count));
@@ -82,7 +82,7 @@ const MainPage = () => {
           setPetData(loadedPet);
           petNameRef.current = loadedPet.name;
 
-          // 로컬 스토리지에 펫 정보 저장 (소켓 핸들러 및 다른 페이지에서 활용)
+          // 로컬 스토리지에 펫 정보 저장
           localStorage.setItem("petId", loadedPet.id);
           localStorage.setItem("petName", loadedPet.name);
 
@@ -167,30 +167,31 @@ const MainPage = () => {
         {loginNotifications.map((noti) => (
           <div
             key={noti.id}
-            className="bg-white/90 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 animate-fade-in-up pointer-events-auto transition-all"
+            className="bg-white/95 dark:bg-[#0b0f1a]/95 backdrop-blur-xl border border-slate-100 dark:border-slate-800 shadow-2xl rounded-[1.8rem] py-4 px-6 flex items-center gap-4 animate-fade-in-up pointer-events-auto transition-all"
           >
             <div
               className={`relative flex items-center justify-center w-9 h-9 rounded-2xl ${
                 noti.isMessage
-                  ? "bg-amber-100 dark:bg-amber-900/30"
-                  : "bg-slate-50 dark:bg-slate-800"
+                  ? "bg-sky-100 dark:bg-sky-900/30" 
+                  : "bg-slate-50 dark:bg-slate-800" 
               }`}
             >
               {noti.isMessage ? (
-                <FiMail className="text-amber-500 text-[16px] stroke-[2.5]" />
+                <FiMail className="text-sky-500 text-[16px] stroke-[2.5]" />
               ) : (
                 <FiZap className="text-sky-400 text-[16px] stroke-[2.5]" />
               )}
+              {/* 알림 도트 */}
               <span
                 className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 ${
-                  noti.isMessage ? "bg-amber-400" : "bg-sky-300"
+                  noti.isMessage ? "bg-sky-400" : "bg-sky-300"
                 } rounded-full border-2 border-white dark:border-[#0b0f1a] shadow-lg`}
               ></span>
             </div>
             <div className="text-[13px] font-bold text-slate-700 dark:text-slate-100 tracking-tight">
               {noti.isMessage ? (
                 <>
-                  <span className="text-slate-900 dark:text-amber-200 font-black mr-1.5">
+                  <span className="text-sky-600 dark:text-sky-300 font-black mr-1.5">
                     {noti.petName}
                   </span>
                   님이 쪽지를 보냈습니다! 💌
