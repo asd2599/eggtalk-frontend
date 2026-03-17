@@ -18,6 +18,7 @@ import ChildFeedPage from "./features/pages/ChildFeedPage";
 import ChildCleanPage from "./features/pages/ChildCleanPage";
 import ChildPlayPage from "./features/pages/ChildPlayPage";
 import { GiftProvider } from "./contexts/GiftContext";
+import GlobalNotificationHandler from "./components/GlobalNotificationHandler";
 
 function App() {
   // test
@@ -25,6 +26,7 @@ function App() {
   return (
     <GiftProvider>
       <BrowserRouter>
+        <GlobalNotificationHandler />
         <Routes>
           <Route path="/" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />

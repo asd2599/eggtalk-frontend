@@ -2,7 +2,59 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import odsayService from '../utils/odsayService';
 import { api } from '../../../utils/config';
 
-const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { query: '', poi: null }, initialEnd = { query: '', poi: null }, onSaveSearch, initialShowFilters = false }) => {
+const COORD_TOLERANCE = 0.0001; // ~11m
+
+const isDuplicateCoord = (a, b) =>
+  Math.abs(parseFloat(a.x) - parseFloat(b.x)) < COORD_TOLERANCE &&
+  Math.abs(parseFloat(a.y) - parseFloat(b.y)) < COORD_TOLERANCE;
+
+const geocoderAddressSearch = (query) =>
+  new Promise((resolve) => {
+    if (!window.kakao?.maps?.services?.Geocoder) return resolve([]);
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    geocoder.addressSearch(query, (result, status) => {
+      if (status !== window.kakao.maps.services.Status.OK) return resolve([]);
+      resolve(
+        result.slice(0, 5).map((r) => ({
+          name: r.road_address?.address_name || r.address?.address_name || query,
+          address: r.address?.address_name || r.road_address?.address_name || '',
+          x: r.x,
+          y: r.y,
+          isStation: false,
+          source: 'kakao',
+        })),
+      );
+    });
+  });
+
+const placesKeywordSearch = (query) =>
+  new Promise((resolve) => {
+    if (!window.kakao?.maps?.services?.Places) return resolve([]);
+    const ps = new window.kakao.maps.services.Places();
+    ps.keywordSearch(query, (result, status) => {
+      if (status !== window.kakao.maps.services.Status.OK) return resolve([]);
+      resolve(
+        result.slice(0, 10).map((p) => ({
+          name: p.place_name,
+          address: p.road_address_name || p.address_name,
+          x: p.x,
+          y: p.y,
+          isStation: p.category_group_code === 'SW8',
+          source: 'kakao',
+        })),
+      );
+    });
+  });
+
+const SubwaySearch = ({
+  onSearch,
+  onClose,
+  isLoading = false,
+  initialStart = { query: '', poi: null },
+  initialEnd = { query: '', poi: null },
+  onSaveSearch,
+  initialShowFilters = false,
+}) => {
   const [startQuery, setStartQuery] = useState(initialStart.query);
   const [endQuery, setEndQuery] = useState(initialEnd.query);
   const [startPOI, setStartPOI] = useState(initialStart.poi);
@@ -54,36 +106,76 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
       (pos) => {
         const lat = pos.coords.latitude;
         const lng = pos.coords.longitude;
-        const poi = { name: '현재 위치', x: String(lng), y: String(lat), source: 'current' };
+        const poi = {
+          name: '현재 위치',
+          x: String(lng),
+          y: String(lat),
+          source: 'current',
+        };
         if (window.kakao?.maps?.services?.Geocoder) {
           const geocoder = new window.kakao.maps.services.Geocoder();
           geocoder.coord2Address(lng, lat, (result, status) => {
             setIsGettingLocation(null);
-            const label = status === window.kakao.maps.services.Status.OK
-              ? (result[0]?.road_address?.address_name || result[0]?.address?.address_name || '현재 위치')
-              : '현재 위치';
-            const displayText = label !== '현재 위치' ? `현재 위치: ${label}` : '현재 위치';
+            const label =
+              status === window.kakao.maps.services.Status.OK
+                ? result[0]?.road_address?.address_name ||
+                  result[0]?.address?.address_name ||
+                  '현재 위치'
+                : '현재 위치';
+            const displayText =
+              label !== '현재 위치' ? `현재 위치: ${label}` : '현재 위치';
             const namedPoi = { ...poi, name: '현재 위치', address: label };
-            if (target === 'start') { setStartQuery(displayText); setStartPOI(namedPoi); }
-            else { setEndQuery(displayText); setEndPOI(namedPoi); }
+            if (target === 'start') {
+              setStartQuery(displayText);
+              setStartPOI(namedPoi);
+            } else {
+              setEndQuery(displayText);
+              setEndPOI(namedPoi);
+            }
           });
         } else {
           setIsGettingLocation(null);
-          if (target === 'start') { setStartQuery('현재 위치'); setStartPOI(poi); }
-          else { setEndQuery('현재 위치'); setEndPOI(poi); }
+          if (target === 'start') {
+            setStartQuery('현재 위치');
+            setStartPOI(poi);
+          } else {
+            setEndQuery('현재 위치');
+            setEndPOI(poi);
+          }
         }
       },
-      () => { setIsGettingLocation(null); alert('위치 정보를 가져올 수 없습니다.'); },
-      { enableHighAccuracy: true }
+      () => {
+        setIsGettingLocation(null);
+        alert('위치 정보를 가져올 수 없습니다.');
+      },
+      { enableHighAccuracy: true },
     );
   };
 
-  const handleSearch = () => {
+  // POI 없을 때 Geocoder → Places 순서로 좌표 확보
+  const resolveQuery = async (query) => {
+    const geoResults = await geocoderAddressSearch(query);
+    if (geoResults.length > 0) return geoResults[0];
+    const placeResults = await placesKeywordSearch(query);
+    if (placeResults.length > 0) return placeResults[0];
+    return null;
+  };
+
+  const handleSearch = async () => {
     if (startQuery && endQuery) {
-      onSaveSearch?.({ query: startQuery, poi: startPOI }, { query: endQuery, poi: endPOI });
+      let resolvedStart = startPOI;
+      let resolvedEnd = endPOI;
+
+      if (!resolvedStart) resolvedStart = await resolveQuery(startQuery);
+      if (!resolvedEnd) resolvedEnd = await resolveQuery(endQuery);
+
+      onSaveSearch?.(
+        { query: startQuery, poi: resolvedStart },
+        { query: endQuery, poi: resolvedEnd },
+      );
       onSearch(
-        startPOI || startQuery,
-        endPOI || endQuery,
+        resolvedStart || startQuery,
+        resolvedEnd || endQuery,
         startTime,
         searchType,
         pathType,
@@ -112,14 +204,17 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
           });
           const stations = res.data?.result?.station;
           if (Array.isArray(stations) && stations.length > 0 && stations[0]) {
-            const formatted = stations.filter(Boolean).slice(0, 10).map((s) => ({
-              name: s.stationName || s.poiName,
-              address: s.stationGroupName || '',
-              x: String(s.x),
-              y: String(s.y),
-              isStation: true,
-              source: 'odsay',
-            }));
+            const formatted = stations
+              .filter(Boolean)
+              .slice(0, 10)
+              .map((s) => ({
+                name: s.stationName || s.poiName,
+                address: s.stationGroupName || '',
+                x: String(s.x),
+                y: String(s.y),
+                isStation: true,
+                source: 'odsay',
+              }));
             setSuggestions(formatted);
             setSelectedIndex(-1);
             return;
@@ -129,30 +224,36 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
         }
       }
 
-      if (window.kakao?.maps?.services?.Places) {
-        const ps = new window.kakao.maps.services.Places();
-        ps.keywordSearch(query, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            const formatted = result.slice(0, 10).map((p) => ({
-              name: p.place_name,
-              address: p.road_address_name || p.address_name,
-              x: p.x,
-              y: p.y,
-              isStation: p.category_group_code === 'SW8',
-              source: 'kakao',
-            }));
-            setSuggestions(formatted);
-          } else {
-            setSuggestions([]);
-          }
-          setSelectedIndex(-1);
-        });
+      const [placesResult, geocoderResult] = await Promise.allSettled([
+        placesKeywordSearch(query),
+        geocoderAddressSearch(query),
+      ]);
+
+      const placesItems =
+        placesResult.status === 'fulfilled' ? placesResult.value : [];
+      const geocoderItems =
+        geocoderResult.status === 'fulfilled' ? geocoderResult.value : [];
+
+      // Geocoder 결과(주소 그 자체)를 맨 앞에, Places 결과(건물/가게명)를 뒤에
+      const merged = [...geocoderItems];
+      for (const placeItem of placesItems) {
+        if (!merged.some((g) => isDuplicateCoord(g, placeItem))) {
+          merged.push(placeItem);
+        }
       }
+
+      setSuggestions(merged.slice(0, 10));
+      setSelectedIndex(-1);
     }, 300);
   }, []);
 
   const selectSuggestion = (suggestion) => {
-    const poi = { name: suggestion.name, x: suggestion.x, y: suggestion.y, source: suggestion.source || 'kakao' };
+    const poi = {
+      name: suggestion.name,
+      x: suggestion.x,
+      y: suggestion.y,
+      source: suggestion.source || 'kakao',
+    };
     if (activeInput === 'start') {
       setStartQuery(suggestion.name);
       setStartPOI(poi);
@@ -168,7 +269,9 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
     if (suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((prev) => prev < suggestions.length - 1 ? prev + 1 : prev);
+        setSelectedIndex((prev) =>
+          prev < suggestions.length - 1 ? prev + 1 : prev,
+        );
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : -1));
@@ -214,7 +317,9 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
             <i className="ri-compass-3-line text-sky-500 text-lg"></i>
             NAVIGATION
           </h3>
-          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] ml-7">EggTalk Mobility System</span>
+          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-[0.3em] ml-7">
+            EggTalk Mobility System
+          </span>
         </div>
         {onClose && (
           <button
@@ -243,7 +348,10 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
                 setActiveInput('start');
                 updateSuggestions(e.target.value);
               }}
-              onFocus={() => { setActiveInput('start'); updateSuggestions(startQuery); }}
+              onFocus={() => {
+                setActiveInput('start');
+                updateSuggestions(startQuery);
+              }}
               onKeyDown={handleKeyDown}
               placeholder="출발지를 입력하세요"
               className="w-full h-12 pl-5 pr-12 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-sky-500/30 focus:bg-white outline-none text-sm transition-all text-slate-800 placeholder:text-slate-300 font-bold shadow-inner"
@@ -254,28 +362,36 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
               title="현재 위치 사용"
               className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-xl text-slate-400 hover:text-sky-500 hover:bg-sky-50 transition-all"
             >
-              {isGettingLocation === 'start'
-                ? <div className="w-4 h-4 border-2 border-slate-300 border-t-sky-500 rounded-full animate-spin" />
-                : <i className="ri-crosshair-2-line text-base"></i>
-              }
+              {isGettingLocation === 'start' ? (
+                <div className="w-4 h-4 border-2 border-slate-300 border-t-sky-500 rounded-full animate-spin" />
+              ) : (
+                <i className="ri-crosshair-2-line text-base"></i>
+              )}
             </button>
           </div>
           {activeInput === 'start' && (
             <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-y-auto max-h-60 z-50 animate-in fade-in zoom-in-95">
               {/* 현재 위치 고정 항목 - 입력값 없을 때만 표시 */}
-              {!startQuery && <div
-                onClick={() => getCurrentLocation('start')}
-                className="px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-100 flex flex-col gap-0.5 hover:bg-sky-50"
-              >
-                <div className="flex items-center gap-2">
-                  {isGettingLocation === 'start'
-                    ? <div className="w-3 h-3 border-2 border-slate-300 border-t-sky-500 rounded-full animate-spin" />
-                    : <i className="ri-crosshair-2-line text-sky-500 text-sm"></i>
-                  }
-                  <span className="text-sm font-bold text-sky-600">현재 위치</span>
+              {!startQuery && (
+                <div
+                  onClick={() => getCurrentLocation('start')}
+                  className="px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-100 flex flex-col gap-0.5 hover:bg-sky-50"
+                >
+                  <div className="flex items-center gap-2">
+                    {isGettingLocation === 'start' ? (
+                      <div className="w-3 h-3 border-2 border-slate-300 border-t-sky-500 rounded-full animate-spin" />
+                    ) : (
+                      <i className="ri-crosshair-2-line text-sky-500 text-sm"></i>
+                    )}
+                    <span className="text-sm font-bold text-sky-600">
+                      현재 위치
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium ml-5">
+                    GPS로 내 위치 자동 입력
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium ml-5">GPS로 내 위치 자동 입력</span>
-              </div>}
+              )}
               {suggestions.map((s, idx) => (
                 <div
                   key={`${s.name}-${idx}`}
@@ -284,10 +400,16 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
                   className={`px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-50 last:border-none flex flex-col gap-0.5 ${selectedIndex === idx ? 'bg-sky-50' : 'hover:bg-sky-50'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <i className={`${s.isStation ? 'ri-subway-line' : 'ri-map-pin-2-line'} text-sky-500 text-xs`}></i>
-                    <span className="text-sm font-bold text-slate-700">{s.name}</span>
+                    <i
+                      className={`${s.isStation ? 'ri-subway-line' : 'ri-map-pin-2-line'} text-sky-500 text-xs`}
+                    ></i>
+                    <span className="text-sm font-bold text-slate-700">
+                      {s.name}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium truncate ml-5">{s.address}</span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate ml-5">
+                    {s.address}
+                  </span>
                 </div>
               ))}
             </div>
@@ -310,7 +432,10 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
                 setActiveInput('end');
                 updateSuggestions(e.target.value);
               }}
-              onFocus={() => { setActiveInput('end'); updateSuggestions(endQuery); }}
+              onFocus={() => {
+                setActiveInput('end');
+                updateSuggestions(endQuery);
+              }}
               onKeyDown={handleKeyDown}
               placeholder="목적지를 입력하세요"
               className="w-full h-12 pl-5 pr-12 bg-slate-50 rounded-2xl border-2 border-transparent focus:border-slate-800/30 focus:bg-white outline-none text-sm transition-all text-slate-800 placeholder:text-slate-300 font-bold shadow-inner"
@@ -321,28 +446,36 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
               title="현재 위치 사용"
               className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
             >
-              {isGettingLocation === 'end'
-                ? <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                : <i className="ri-crosshair-2-line text-base"></i>
-              }
+              {isGettingLocation === 'end' ? (
+                <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+              ) : (
+                <i className="ri-crosshair-2-line text-base"></i>
+              )}
             </button>
           </div>
           {activeInput === 'end' && (
             <div className="absolute top-[84px] left-0 w-full bg-white border border-slate-100 rounded-2xl shadow-2xl overflow-y-auto max-h-60 z-50 animate-in fade-in zoom-in-95">
               {/* 현재 위치 고정 항목 - 입력값 없을 때만 표시 */}
-              {!endQuery && <div
-                onClick={() => getCurrentLocation('end')}
-                className="px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-100 flex flex-col gap-0.5 hover:bg-slate-50"
-              >
-                <div className="flex items-center gap-2">
-                  {isGettingLocation === 'end'
-                    ? <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
-                    : <i className="ri-crosshair-2-line text-slate-600 text-sm"></i>
-                  }
-                  <span className="text-sm font-bold text-slate-700">현재 위치</span>
+              {!endQuery && (
+                <div
+                  onClick={() => getCurrentLocation('end')}
+                  className="px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-100 flex flex-col gap-0.5 hover:bg-slate-50"
+                >
+                  <div className="flex items-center gap-2">
+                    {isGettingLocation === 'end' ? (
+                      <div className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                    ) : (
+                      <i className="ri-crosshair-2-line text-slate-600 text-sm"></i>
+                    )}
+                    <span className="text-sm font-bold text-slate-700">
+                      현재 위치
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-medium ml-5">
+                    GPS로 내 위치 자동 입력
+                  </span>
                 </div>
-                <span className="text-[10px] text-slate-400 font-medium ml-5">GPS로 내 위치 자동 입력</span>
-              </div>}
+              )}
               {suggestions.map((s, idx) => (
                 <div
                   key={`${s.name}-${idx}`}
@@ -351,10 +484,16 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
                   className={`px-5 py-3.5 cursor-pointer transition-colors border-b border-slate-50 last:border-none flex flex-col gap-0.5 ${selectedIndex === idx ? 'bg-slate-100' : 'hover:bg-slate-100'}`}
                 >
                   <div className="flex items-center gap-2">
-                    <i className={`${s.isStation ? 'ri-subway-line' : 'ri-map-pin-2-line'} text-slate-600 text-xs`}></i>
-                    <span className="text-sm font-bold text-slate-700">{s.name}</span>
+                    <i
+                      className={`${s.isStation ? 'ri-subway-line' : 'ri-map-pin-2-line'} text-slate-600 text-xs`}
+                    ></i>
+                    <span className="text-sm font-bold text-slate-700">
+                      {s.name}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-slate-400 font-medium truncate ml-5">{s.address}</span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate ml-5">
+                    {s.address}
+                  </span>
                 </div>
               ))}
             </div>
@@ -403,8 +542,10 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
 
           <div className="flex flex-col gap-2 px-1">
             <div className="flex items-center gap-2">
-               <i className="ri-time-line text-slate-400 text-xs"></i>
-               <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">출발 시간</label>
+              <i className="ri-time-line text-slate-400 text-xs"></i>
+              <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                출발 시간
+              </label>
             </div>
             <input
               type="time"
@@ -439,13 +580,21 @@ const SubwaySearch = ({ onSearch, onClose, isLoading = false, initialStart = { q
         {isLoading ? (
           <>
             <div className="w-5 h-5 border-[3px] border-slate-300 border-t-sky-500 rounded-full animate-spin" />
-            <span className="text-sm tracking-tight text-slate-500">경로 검색 중...</span>
+            <span className="text-sm tracking-tight text-slate-500">
+              경로 검색 중...
+            </span>
           </>
         ) : (
           <>
-            <i className={`${showFilters && !hasSearched ? 'ri-search-line' : 'ri-rocket-fill'} text-lg`}></i>
+            <i
+              className={`${showFilters && !hasSearched ? 'ri-search-line' : 'ri-rocket-fill'} text-lg`}
+            ></i>
             <span className="text-sm font-black uppercase tracking-widest">
-              {hasSearched ? '검색하기' : showFilters ? '경로 검색하기' : '여정 떠나기'}
+              {hasSearched
+                ? '검색하기'
+                : showFilters
+                  ? '경로 검색하기'
+                  : '여정 떠나기'}
             </span>
           </>
         )}

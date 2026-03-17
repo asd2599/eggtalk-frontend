@@ -15,6 +15,37 @@ import { calibratePolyline } from './snapToTrack';
 // //* [Added Code] v11.0: API 호출 오남용 방지를 위한 요청 캐시 (과금 방지용)
 const requestCache = new Map();
 
+// 주소 문자열 → 좌표 (Kakao Geocoder → Places 순서로 폴백)
+const resolveAddressCoords = (query) =>
+  new Promise((resolve) => {
+    if (!window.kakao?.maps?.services) return resolve(null);
+
+    // 1차: Geocoder (도로명/지번 주소 변환)
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    geocoder.addressSearch(query, (geoResult, geoStatus) => {
+      if (geoStatus === window.kakao.maps.services.Status.OK && geoResult[0]) {
+        return resolve({ x: geoResult[0].x, y: geoResult[0].y, name: query });
+      }
+
+      // 2차: Places 키워드 검색 (부분 주소·건물명 포함 케이스)
+      if (!window.kakao.maps.services.Places) return resolve(null);
+      const ps = new window.kakao.maps.services.Places();
+      ps.keywordSearch(query, (placeResult, placeStatus) => {
+        if (
+          placeStatus === window.kakao.maps.services.Status.OK &&
+          placeResult[0]
+        ) {
+          return resolve({
+            x: placeResult[0].x,
+            y: placeResult[0].y,
+            name: query,
+          });
+        }
+        resolve(null);
+      });
+    });
+  });
+
 // //* [Added Code] 버스 노선 타입별 색상 및 명칭 정의 (시각적 일관성 확보)
 const BUS_TYPE_INFO = {
   1: { name: '일반', color: '#33CC99' },
@@ -335,7 +366,9 @@ const odsayService = {
       SY = start.y;
       startName = start.name || start.poiName || start.stationName;
     } else {
-      const startStation = await this.searchStation(start);
+      const startStation =
+        (await this.searchStation(start)) ||
+        (await resolveAddressCoords(start));
       if (!startStation)
         throw new Error(`출발지를 찾을 수 없습니다: "${start}"`);
       SX = startStation.x;
@@ -348,7 +381,9 @@ const odsayService = {
       EY = end.y;
       endName = end.name || end.poiName || end.stationName;
     } else {
-      const endStation = await this.searchStation(end);
+      const endStation =
+        (await this.searchStation(end)) ||
+        (await resolveAddressCoords(end));
       if (!endStation) throw new Error(`도착지를 찾을 수 없습니다: "${end}"`);
       EX = endStation.x;
       EY = endStation.y;
@@ -487,6 +522,8 @@ const odsayService = {
     const subPaths = selectedPath.raw.subPath || [];
     const formattedTimeline = [];
     let totalWalkTime = 0;
+    // //* [Fixed] 도보 구간 클릭 시 지도 이동을 위해 이전 대중교통 구간 끝 좌표를 추적
+    let timelineLastPoint = selectedPath.queryOrigin || null; // {lat, lng}
 
     for (const sub of subPaths) {
       const type = sub.trafficType; // 1:지하철, 2:버스, 3:도보
@@ -503,11 +540,18 @@ const odsayService = {
           // //* [Added Code] 지도 이동을 위해 구간의 시작 좌표를 저장
           startX: stations[0]?.x,
           startY: stations[0]?.y,
+          endX: stations[stations.length - 1]?.x,
+          endY: stations[stations.length - 1]?.y,
           stationCount: sub.stationCount,
           time: sub.sectionTime,
           distance: sub.distance,
           stops: stations.map((s) => s.stationName),
         });
+        // //* [Fixed] 이 구간의 마지막 정거장 좌표를 다음 도보 구간의 시작점으로 추적
+        const lastStation = stations[stations.length - 1];
+        if (lastStation?.x && lastStation?.y) {
+          timelineLastPoint = { lat: parseFloat(lastStation.y), lng: parseFloat(lastStation.x) };
+        }
       } else if (type === 2) {
         const lane = sub.lane?.[0] || {};
         const stations = sub.passStopList?.stations || [];
@@ -525,21 +569,31 @@ const odsayService = {
           // //* [Added Code] 지도 이동을 위해 구간의 시작 좌표를 저장
           startX: stations[0]?.x,
           startY: stations[0]?.y,
+          endX: stations[stations.length - 1]?.x,
+          endY: stations[stations.length - 1]?.y,
           stationCount: sub.stationCount,
           time: sub.sectionTime,
           distance: sub.distance,
           stops: stations.map((s) => s.stationName),
         });
+        // //* [Fixed] 이 구간의 마지막 정거장 좌표를 다음 도보 구간의 시작점으로 추적
+        const lastStation = stations[stations.length - 1];
+        if (lastStation?.x && lastStation?.y) {
+          timelineLastPoint = { lat: parseFloat(lastStation.y), lng: parseFloat(lastStation.x) };
+        }
       } else if (type === 3) {
         totalWalkTime += sub.sectionTime;
         if (sub.distance > 0) {
+          // //* [Fixed] sub.startX/startY가 ODsay 응답에 없거나 0인 경우 이전 구간 끝 좌표로 폴백
+          const rawLng = parseFloat(sub.startX);
+          const rawLat = parseFloat(sub.startY);
+          const hasValidCoords = !isNaN(rawLng) && !isNaN(rawLat) && rawLng !== 0 && rawLat !== 0;
           formattedTimeline.push({
             type: 'WALK',
             time: sub.sectionTime,
             distance: sub.distance,
-            // //* [Added Code] 지도 이동을 위해 도보 구간의 시작 좌표를 저장
-            startX: sub.startX,
-            startY: sub.startY,
+            startX: hasValidCoords ? rawLng : timelineLastPoint?.lng,
+            startY: hasValidCoords ? rawLat : timelineLastPoint?.lat,
           });
         }
       }
@@ -680,7 +734,16 @@ const odsayService = {
 
           if (matchedLane && matchedLane.points.length > 1) {
             // loadLane 궤적 사용 + 보정
-            const calibLaneName = LANE_TYPE_NAME[matchedLane.type] || segName;
+            let calibLaneName = LANE_TYPE_NAME[matchedLane.type] || segName;
+            // 2호선 분기선 감지: passStopList 역명으로 신정지선/성수지선 구분
+            if (calibLaneName === '2호선') {
+              const stNames = stations.map((s) => s.stationName);
+              if (stNames.some((s) => ['도림천', '양천구청', '신정네거리', '까치산'].includes(s))) {
+                calibLaneName = '2호선(신정지선)';
+              } else if (stNames.some((s) => ['용답', '신답', '용두'].includes(s))) {
+                calibLaneName = '2호선(성수지선)';
+              }
+            }
             const stationCoords = SUBWAY_STATION_COORDS_V2[calibLaneName] || {};
             segPath = calibratePolyline(matchedLane.points, stationCoords);
           }
