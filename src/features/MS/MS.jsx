@@ -184,7 +184,6 @@ const MS = () => {
         setRoutePathPoints(allPoints);
         if (allPoints.length > 0) {
           setPetPosition(allPoints[0]);
-          startRouteAnimation(allPoints);
         }
       }
     } catch (error) {
@@ -543,34 +542,34 @@ const MS = () => {
               <div className="absolute bottom-24 right-3 md:bottom-10 md:right-5 z-20 pointer-events-auto flex flex-col gap-2">
                 {/* 경로 애니메이션 제어 버튼 */}
                 {routeResult && routePathPoints.length > 0 && (
-                  <div className="flex flex-col bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
+                  <div className="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden">
                     <button
                       onClick={
                         isAnimatingRoute
                           ? pauseRouteAnimation
                           : replayRouteAnimation
                       }
-                      title={isAnimatingRoute ? '일시정지' : '처음부터'}
-                      className="p-3 md:p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-sky-500 border-b dark:border-slate-700 transition-all"
+                      className="relative p-3 md:p-2 flex items-center justify-center overflow-hidden"
                     >
+                      {/* 물이 차오르는 배경 */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 bg-sky-400 transition-all duration-150"
+                        style={{
+                          height: `${
+                            routePathPoints.length > 0
+                              ? Math.round(
+                                  (animIndex / routePathPoints.length) * 100,
+                                )
+                              : 0
+                          }%`,
+                        }}
+                      />
                       <i
-                        className={
-                          isAnimatingRoute
-                            ? 'ri-pause-line text-xl'
-                            : 'ri-replay-line text-xl'
-                        }
+                        className={`relative z-10 text-xl transition-colors duration-150 text-slate-400 ${
+                          isAnimatingRoute ? 'ri-pause-fill' : 'ri-play-fill'
+                        }`}
                       ></i>
                     </button>
-                    <div className="px-2 py-1 text-center">
-                      <span className="text-[9px] font-black text-slate-400">
-                        {routePathPoints.length > 0
-                          ? Math.round(
-                              (animIndex / routePathPoints.length) * 100,
-                            )
-                          : 0}
-                        %
-                      </span>
-                    </div>
                   </div>
                 )}
 

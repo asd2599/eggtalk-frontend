@@ -2,6 +2,50 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import odsayService from '../utils/odsayService';
 import { api } from '../../../utils/config';
 
+const COORD_TOLERANCE = 0.0001; // ~11m
+
+const isDuplicateCoord = (a, b) =>
+  Math.abs(parseFloat(a.x) - parseFloat(b.x)) < COORD_TOLERANCE &&
+  Math.abs(parseFloat(a.y) - parseFloat(b.y)) < COORD_TOLERANCE;
+
+const geocoderAddressSearch = (query) =>
+  new Promise((resolve) => {
+    if (!window.kakao?.maps?.services?.Geocoder) return resolve([]);
+    const geocoder = new window.kakao.maps.services.Geocoder();
+    geocoder.addressSearch(query, (result, status) => {
+      if (status !== window.kakao.maps.services.Status.OK) return resolve([]);
+      resolve(
+        result.slice(0, 5).map((r) => ({
+          name: r.road_address?.address_name || r.address?.address_name || query,
+          address: r.address?.address_name || r.road_address?.address_name || '',
+          x: r.x,
+          y: r.y,
+          isStation: false,
+          source: 'kakao',
+        })),
+      );
+    });
+  });
+
+const placesKeywordSearch = (query) =>
+  new Promise((resolve) => {
+    if (!window.kakao?.maps?.services?.Places) return resolve([]);
+    const ps = new window.kakao.maps.services.Places();
+    ps.keywordSearch(query, (result, status) => {
+      if (status !== window.kakao.maps.services.Status.OK) return resolve([]);
+      resolve(
+        result.slice(0, 10).map((p) => ({
+          name: p.place_name,
+          address: p.road_address_name || p.address_name,
+          x: p.x,
+          y: p.y,
+          isStation: p.category_group_code === 'SW8',
+          source: 'kakao',
+        })),
+      );
+    });
+  });
+
 const SubwaySearch = ({
   onSearch,
   onClose,
@@ -108,15 +152,30 @@ const SubwaySearch = ({
     );
   };
 
-  const handleSearch = () => {
+  // POI 없을 때 Geocoder → Places 순서로 좌표 확보
+  const resolveQuery = async (query) => {
+    const geoResults = await geocoderAddressSearch(query);
+    if (geoResults.length > 0) return geoResults[0];
+    const placeResults = await placesKeywordSearch(query);
+    if (placeResults.length > 0) return placeResults[0];
+    return null;
+  };
+
+  const handleSearch = async () => {
     if (startQuery && endQuery) {
+      let resolvedStart = startPOI;
+      let resolvedEnd = endPOI;
+
+      if (!resolvedStart) resolvedStart = await resolveQuery(startQuery);
+      if (!resolvedEnd) resolvedEnd = await resolveQuery(endQuery);
+
       onSaveSearch?.(
-        { query: startQuery, poi: startPOI },
-        { query: endQuery, poi: endPOI },
+        { query: startQuery, poi: resolvedStart },
+        { query: endQuery, poi: resolvedEnd },
       );
       onSearch(
-        startPOI || startQuery,
-        endPOI || endQuery,
+        resolvedStart || startQuery,
+        resolvedEnd || endQuery,
         startTime,
         searchType,
         pathType,
@@ -165,25 +224,26 @@ const SubwaySearch = ({
         }
       }
 
-      if (window.kakao?.maps?.services?.Places) {
-        const ps = new window.kakao.maps.services.Places();
-        ps.keywordSearch(query, (result, status) => {
-          if (status === window.kakao.maps.services.Status.OK) {
-            const formatted = result.slice(0, 10).map((p) => ({
-              name: p.place_name,
-              address: p.road_address_name || p.address_name,
-              x: p.x,
-              y: p.y,
-              isStation: p.category_group_code === 'SW8',
-              source: 'kakao',
-            }));
-            setSuggestions(formatted);
-          } else {
-            setSuggestions([]);
-          }
-          setSelectedIndex(-1);
-        });
+      const [placesResult, geocoderResult] = await Promise.allSettled([
+        placesKeywordSearch(query),
+        geocoderAddressSearch(query),
+      ]);
+
+      const placesItems =
+        placesResult.status === 'fulfilled' ? placesResult.value : [];
+      const geocoderItems =
+        geocoderResult.status === 'fulfilled' ? geocoderResult.value : [];
+
+      // Geocoder 결과(주소 그 자체)를 맨 앞에, Places 결과(건물/가게명)를 뒤에
+      const merged = [...geocoderItems];
+      for (const placeItem of placesItems) {
+        if (!merged.some((g) => isDuplicateCoord(g, placeItem))) {
+          merged.push(placeItem);
+        }
       }
+
+      setSuggestions(merged.slice(0, 10));
+      setSelectedIndex(-1);
     }, 300);
   }, []);
 
