@@ -11,7 +11,6 @@ const MainPage = () => {
   const navigate = useNavigate();
   const [petData, setPetData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeUserCount, setActiveUserCount] = useState(1);
   const [loginNotifications, setLoginNotifications] = useState([]);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const petNameRef = useRef(null);
@@ -37,9 +36,6 @@ const MainPage = () => {
 
   // 데이터 페칭 및 소켓 이벤트 (알림 기능 통합)
   useEffect(() => {
-    // 실시간 접속자 수 업데이트
-    socket.on("update_user_count", (count) => setActiveUserCount(count));
-
     // 다른 유저 로그인 알림
     socket.on("new_user_login", (incomingPetName) => {
       if (petNameRef.current && incomingPetName !== petNameRef.current) {
@@ -103,7 +99,6 @@ const MainPage = () => {
     fetchPetData();
 
     return () => {
-      socket.off("update_user_count");
       socket.off("new_user_login");
       socket.off("receive_direct_message");
     };
@@ -118,27 +113,8 @@ const MainPage = () => {
 
   return (
     <div className="flex flex-col lg:flex-row w-full h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans relative overflow-hidden custom-scrollbar">
-      {/* 실시간 접속자 수 표시 */}
-      <div className="fixed top-4 left-4 lg:top-8 lg:left-[calc(16rem+2rem)] p-3 px-5 rounded-2xl bg-white/80 dark:bg-[#0b0f1a]/80 backdrop-blur-md border border-slate-100 dark:border-slate-800 z-[60] shadow-sm flex items-center gap-3 transition-all hover:scale-105 group cursor-default">
-        {/* 상태 표시등 */}
-        <div className="relative flex h-4 w-4 items-center justify-center">
-          <span className="animate-ping absolute h-full w-full rounded-full bg-sky-400 opacity-20"></span>
-          <span className="relative h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(125,211,252,0.7)]"></span>
-        </div>
-
-        {/* 유저 수 텍스트 */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] italic group-hover:text-sky-400 transition-colors">
-            Live
-          </span>
-          <span className="text-[14px] font-black text-slate-900 dark:text-white font-mono">
-            {activeUserCount}
-            <span className="ml-1 text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-              Users
-            </span>
-          </span>
-        </div>
-      </div>
+      {/* 실시간 접속자 수 표시 (최적화된 별도 컴포넌트) */}
+      <LiveUserCounter />
 
       {/* 테마 버튼 */}
       <button
@@ -211,5 +187,39 @@ const MainPage = () => {
     </div>
   );
 };
+
+/**
+ * 실시간 접속자 수 카운터 컴포넌트
+ * 소켓 이벤트를 독립적으로 수신하여 부모(MainPage)의 리렌더링을 방지합니다.
+ */
+const LiveUserCounter = React.memo(() => {
+  const [count, setCount] = useState(1);
+
+  useEffect(() => {
+    const handleUpdate = (newCount) => setCount(newCount);
+    socket.on("update_user_count", handleUpdate);
+    return () => socket.off("update_user_count", handleUpdate);
+  }, []);
+
+  return (
+    <div className="fixed top-4 left-4 lg:top-8 lg:left-[calc(16rem+2rem)] p-3 px-5 rounded-2xl bg-white/80 dark:bg-[#0b0f1a]/80 backdrop-blur-md border border-slate-100 dark:border-slate-800 z-[60] shadow-sm flex items-center gap-3 transition-all hover:scale-105 group cursor-default">
+      <div className="relative flex h-4 w-4 items-center justify-center">
+        <span className="animate-ping absolute h-full w-full rounded-full bg-sky-400 opacity-20"></span>
+        <span className="relative h-1.5 w-1.5 rounded-full bg-sky-400 shadow-[0_0_10px_rgba(125,211,252,0.7)]"></span>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[10px] font-black text-slate-300 dark:text-slate-500 uppercase tracking-[0.2em] italic group-hover:text-sky-400 transition-colors">
+          Live
+        </span>
+        <span className="text-[14px] font-black text-slate-900 dark:text-white font-mono">
+          {count}
+          <span className="ml-1 text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+            Users
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+});
 
 export default MainPage;
