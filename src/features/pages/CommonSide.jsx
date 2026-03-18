@@ -4,6 +4,7 @@ import {
   FiLogOut, FiSmile, FiAward, FiMessageCircle,
   FiUsers, FiUserCheck, FiHeart, FiMap,
 } from 'react-icons/fi';
+import socket from '../../utils/socket'; // 소켓 임포트 추가
 
 const CommonSide = ({ activeMenu }) => {
   const navigate = useNavigate();
@@ -11,7 +12,16 @@ const CommonSide = ({ activeMenu }) => {
   const buttonRefs = useRef({});
 
   const handleLogout = () => {
+    // 1. 소켓 연결 해제 신호 전송 (온라인 리스트 제거용)
+    const petName = localStorage.getItem('petName');
+    if (petName) {
+      socket.emit("user_logout", petName);
+    }
+    
+    // 2. 스토리지 비우기 및 라우팅
     localStorage.removeItem('token');
+    localStorage.removeItem('petName');
+    localStorage.removeItem('petId');
     navigate('/');
   };
 
@@ -70,7 +80,7 @@ const CommonSide = ({ activeMenu }) => {
               key={item.label}
               ref={(el) => (buttonRefs.current[item.label] = el)}
               onClick={() => handleMenuClick(item)}
-              className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-3 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[65px] lg:h-auto min-w-[70px] lg:min-w-0 lg:w-full flex-shrink-0 ${
+              className={`flex flex-col lg:flex-row items-center justify-center gap-1 lg:gap-4 px-3 py-2 lg:px-5 lg:py-3.5 rounded-2xl transition-all h-[65px] lg:h-auto min-w-[70px] lg:min-w-0 lg:w-full shrink-0 ${
                 activeMenu === item.label
                   ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-lg font-bold'
                   : 'text-slate-400 hover:text-slate-900 dark:hover:text-sky-400'
@@ -85,7 +95,7 @@ const CommonSide = ({ activeMenu }) => {
 
           <button
             onClick={handleLogout}
-            className="flex lg:hidden flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition-all h-[65px] min-w-[70px] flex-shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            className="flex lg:hidden flex-col items-center justify-center gap-1 px-3 py-2 rounded-2xl transition-all h-[65px] min-w-[70px] shrink-0 text-slate-400 hover:text-slate-900 dark:hover:text-white"
           >
             <FiLogOut className="text-xl shrink-0" />
             <span className="text-[9px] font-black whitespace-nowrap uppercase">Out</span>

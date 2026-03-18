@@ -535,10 +535,10 @@ const DatingPage = () => {
         { petName: petData.name },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-      // 퇴장 후 로비의 목록 갱신을 독려하기 위해 소켓 업데이트 이벤트를 백엔드도 보내지만 프론트에서도 즉각 반영하도록 이동
-      navigate("/lounge");
     } catch (err) {
-      console.error("방 퇴장 오류:", err);
+      // 404 Not Found 에러(방이 이미 터졌거나 가상 소켓 룸인 경우)는 무시하고 진행
+      console.warn("방 퇴장 처리 중 알림(정상 무시): API 응답을 기다리지 않고 로비로 돌아갑니다.", err.message);
+    } finally {
       navigate("/lounge");
     }
   };
