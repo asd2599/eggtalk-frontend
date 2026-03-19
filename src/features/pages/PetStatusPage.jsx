@@ -18,11 +18,17 @@ const PetStatusPage = ({ petData, setPetData }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setProgress(
-        Math.min(Math.max(((petData?.exp || 0) / 100) * 100, 0), 100),
+        Math.min(
+          Math.max(
+            ((petData?.exp || 0) / ((petData?.level || 1) * 100)) * 100,
+            0
+          ),
+          100
+        ),
       );
     }, 100);
     return () => clearTimeout(timer);
-  }, [petData?.exp]);
+  }, [petData?.exp, petData?.level]);
 
   return (
     <div className="w-full max-w-[950px] mx-auto transition-all duration-500 font-sans">
