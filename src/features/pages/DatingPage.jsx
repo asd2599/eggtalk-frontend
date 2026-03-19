@@ -354,6 +354,34 @@ const DatingPage = () => {
       }
     });
 
+    socket.on("friend_request_accepted", (data) => {
+      if (data.requesterPetName?.toLowerCase().trim() === petData?.name?.toLowerCase().trim()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: `🎉 ${data.receiverPetName}님이 친구 요청을 수락했습니다!`,
+            timestamp: new Date(),
+            isSystem: true,
+          },
+        ]);
+      }
+    });
+
+    socket.on("friend_request_rejected", (data) => {
+      if (data.requesterPetName?.toLowerCase().trim() === petData?.name?.toLowerCase().trim()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: `💔 ${data.receiverPetName}님이 친구 요청을 거절했습니다.`,
+            timestamp: new Date(),
+            isSystem: true,
+          },
+        ]);
+      }
+    });
+
     socket.on("online_users_list", (users) => {
       setOnlineUsers(users);
     });
@@ -370,6 +398,8 @@ const DatingPage = () => {
       socket.off("receive_breeding_request");
       socket.off("breeding_accepted");
       socket.off("breeding_rejected");
+      socket.off("friend_request_accepted");
+      socket.off("friend_request_rejected");
     };
   }, [petData, roomId, navigate, fetchRoomInfo]);
 
@@ -764,16 +794,37 @@ const DatingPage = () => {
         onClose={() => setIsFriendRequestModalOpen(false)}
         requesterPetName={friendRequestData?.requesterPetName}
         requestId={friendRequestData?.requestId}
-        onFriendSuccess={(target, acc) =>
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "시스템",
-              message: `🎉 ${target}님과 친구가 되었습니다!`,
-              isSystem: true,
-            },
-          ])
-        }
+        onFriendSuccess={(target, acc) => {
+          if (acc) {
+            socket.emit("accept_friend_request", {
+              roomId,
+              requesterPetName: target,
+              receiverPetName: petData?.name,
+            });
+            setMessages((prev) => [
+              ...prev,
+              {
+                sender: "시스템",
+                message: `🎉 ${target}님과 친구가 되었습니다!`,
+                isSystem: true,
+              },
+            ]);
+          } else {
+            socket.emit("reject_friend_request", {
+              roomId,
+              requesterPetName: target,
+              receiverPetName: petData?.name,
+            });
+            setMessages((prev) => [
+              ...prev,
+              {
+                sender: "시스템",
+                message: `❌ ${target}님의 친구 요청을 거절했습니다.`,
+                isSystem: true,
+              },
+            ]);
+          }
+        }}
       />
       <BreedingRequestModal
         isOpen={isBreedingRequestModalOpen}
