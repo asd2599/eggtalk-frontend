@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-// 사용할 서버의 주소 주석을 해제하여 사용하세요.
-
-// [환경별 서버 URL 자동 설정]
+// 환경별 서버 URL 자동 설정
 const isProd =
   import.meta.env.PROD || window.location.hostname.includes('gamestack.store');
 export const SERVER_URL = isProd
@@ -17,7 +15,7 @@ export const api = axios.create({
   baseURL: SERVER_URL,
 });
 
-// [Interceptor 추가] 모든 API 요청 전 자동으로 localStorage의 토큰을 헤더에 집어넣습니다.
+// 모든 API 요청 전 자동으로 localStorage의 토큰을 헤더에 집어넣음
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
@@ -31,7 +29,7 @@ api.interceptors.request.use(
   },
 );
 
-// [Response Interceptor 추가] 401(인증안됨) 또는 403(만료/권한없음) 발생 시 자동 로그아웃
+// 401(인증안됨) 또는 403(만료/권한없음) 발생 시 자동 로그아웃
 api.interceptors.response.use(
   (response) => {
     return response;

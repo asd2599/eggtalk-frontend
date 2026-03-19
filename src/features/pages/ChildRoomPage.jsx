@@ -11,8 +11,8 @@ import {
   FiClock,
   FiTrash2,
   FiZap,
-  FiSun, // ✅ 아이콘 추가
-  FiMoon, // ✅ 아이콘 추가
+  FiSun, 
+  FiMoon, 
 } from "react-icons/fi";
 import { api } from "../../utils/config";
 import socket from "../../utils/socket";
@@ -57,7 +57,7 @@ const ChildRoomPage = () => {
     }
   }, []);
 
-  // ✅ 다크모드 토글 함수 추가
+  // 다크모드 토글 함수
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
     localStorage.setItem("theme", isDark ? "dark" : "light");
@@ -499,7 +499,7 @@ const ChildRoomPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0b0f1a] p-4 lg:p-10 font-sans flex flex-col transition-colors relative overflow-x-hidden">
-      {/* ✅ 우측 상단 다크모드 전환 아이콘 */}
+      {/* 우측 상단 다크모드 전환 아이콘 */}
       <button
         onClick={toggleTheme}
         className="fixed top-4 right-4 lg:top-10 lg:right-10 p-2.5 rounded-full bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 text-slate-400 hover:text-sky-400 z-[60] shadow-sm transition-all"
@@ -579,7 +579,7 @@ const ChildRoomPage = () => {
                     });
                     alert(`${spousePet.name}님에게 초대장을 보냈습니다! ✉️`);
                   }}
-                  className="px-2 py-0.5 bg-rose-500 text-white rounded-md text-[7px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-rose-500/20"
+                  className="px-2 py-0.5 bg-sky-500 text-white rounded-md text-[7px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-sky-500/20"
                 >
                   데려오기
                 </button>

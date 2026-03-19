@@ -18,10 +18,10 @@ const ConnectedUsersModal = ({
     return String(user);
   };
 
-  // 1. 모든 유저 데이터를 문자열(이름)로 정규화 (name, petName 모두 대응)
+  // 모든 유저 데이터를 문자열(이름)로 정규화 (name, petName 모두 대응)
   const userNames = (users || []).map(getUserName);
   
-  // 2. 중복 제거 및 본인 제외
+  // 중복 제거 및 본인 제외
   const otherUsers = Array.from(new Set(userNames)).filter(
     (name) => name && name !== myPetName
   );

@@ -29,7 +29,7 @@ const PetStatusPage = ({ petData, setPetData }) => {
       <div className="bg-white dark:bg-[#0b0f1a] rounded-[3rem] lg:rounded-[4rem] p-8 lg:p-14 shadow-2xl lg:shadow-none border border-slate-100 dark:border-slate-900 flex flex-col lg:flex-row gap-12 lg:gap-20 items-stretch h-auto min-h-max mb-1 transition-colors duration-500 overflow-hidden relative z-10">
         <div className="absolute top-[-5%] left-[-5%] w-[40%] h-[40%] bg-sky-100 dark:bg-sky-400/5 rounded-full blur-[100px] pointer-events-none opacity-50"></div>
 
-        {/* [왼쪽 프로필 영역] */}
+        {/* 왼쪽 프로필 영역 */}
         <div className="w-full lg:w-[320px] flex flex-col items-center lg:items-stretch flex-shrink-0">
           <div className="aspect-square w-full max-w-[260px] lg:max-w-none bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] border border-slate-100 dark:border-slate-800 mb-8 flex items-center justify-center shadow-inner relative overflow-hidden group">
             {petData &&
@@ -103,7 +103,7 @@ const PetStatusPage = ({ petData, setPetData }) => {
           </div>
         </div>
 
-        {/* [오른쪽 상세 스탯 영역] */}
+        {/* 오른쪽 상세 스탯 영역 */}
         <div className="flex-1 flex flex-col gap-10">
           {[
             {

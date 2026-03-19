@@ -24,7 +24,7 @@ import {
   Polyline,
 } from 'react-kakao-maps-sdk';
 
-// --- [상수 정의] ---
+// 상수 정의
 export const SUBWAY_LINE_COLORS = {
   '1호선': '#0052A4',
   '1호선(경인선)': '#0052A4',
@@ -410,7 +410,6 @@ const MS = () => {
           </div>
         )}
 
-        {/* 모바일 전용 경로 목록 바텀 시트 */}
         {isRouteListOpen && (
           <div className="fixed inset-0 z-[100] flex flex-col justify-end pointer-events-auto md:hidden">
             {!routeResult && (
@@ -670,9 +669,7 @@ const MS = () => {
             </Map>
           )}
 
-          {/* 펫 아이콘
-               모바일: fixed → 뷰포트 기준 left-1/2(=50vw), top calc(50vh-40px)
-               데스크탑(lg): absolute → 지도 컨테이너 기준 top-1/2 left-1/2 */}
+          {/* 펫 아이콘 */}
           <div className="fixed lg:absolute top-[calc(50%-40px)] lg:top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-none">
             <div className="relative w-16 h-16 sm:w-20 sm:h-20 animate-bounce-slight">
               <div
@@ -702,7 +699,7 @@ const MS = () => {
           {/* 상세 경로 결과 */}
           {routeResult && (
             <>
-              {/* PC: 지도 위에 좌측 고정 패널 */}
+              {/* PC */}
               <div className="hidden md:block absolute top-6 left-10 z-[200] w-[350px] max-h-[85vh] overflow-y-auto no-scrollbar pointer-events-auto rounded-[2.5rem] border-2 border-slate-100 shadow-2xl bg-white dark:bg-slate-950">
                 <RouteResult
                   result={routeResult}
@@ -717,7 +714,7 @@ const MS = () => {
                 />
               </div>
 
-              {/* 모바일: 하단 바텀시트 */}
+              {/* 모바일 */}
               <div
                 className="md:hidden fixed bottom-0 left-0 right-0 z-[150] max-h-[65vh] overflow-y-auto no-scrollbar rounded-t-[3rem] bg-white dark:bg-slate-950 shadow-2xl pointer-events-auto"
                 style={{
