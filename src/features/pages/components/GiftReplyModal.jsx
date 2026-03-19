@@ -12,7 +12,7 @@ const GiftReplyModal = ({ isOpen, replyMsg, targetName, stats, onClose }) => {
     directness: "솔직함", curiosity: "호기심",
   };
 
-  // ✅ 스탯별 맞춤 문구 데이터베이스
+  // 스탯별 맞춤 문구 데이터베이스
   const customMessages = {
     affection: [
       "너의 마음이 느껴져... 나도 네가 정말 좋아! ❤️",
@@ -43,13 +43,13 @@ const GiftReplyModal = ({ isOpen, replyMsg, targetName, stats, onClose }) => {
 
   useEffect(() => {
     if (isOpen) {
-      // 1. 서버에서 온 특별한 메시지가 있다면 그걸 보여줌
+      // 서버에서 온 특별한 메시지가 있다면 그걸 보여줌
       if (replyMsg) {
         setRandomMsg(replyMsg);
         return;
       }
 
-      // 2. 어떤 스탯이 가장 많이 올랐는지 확인
+      // 어떤 스탯이 가장 많이 올랐는지 확인
       let topStat = "default";
       if (stats && typeof stats === "object") {
         // stats 객체에서 가장 높은 값을 가진 키를 찾음
@@ -61,7 +61,7 @@ const GiftReplyModal = ({ isOpen, replyMsg, targetName, stats, onClose }) => {
         }
       }
 
-      // 3. 해당 스탯 문구 세트 선택 (없으면 default)
+      // 해당 스탯 문구 세트 선택 (없으면 default)
       const messagePool = customMessages[topStat] || customMessages.default;
       const randomIndex = Math.floor(Math.random() * messagePool.length);
       setRandomMsg(messagePool[randomIndex]);

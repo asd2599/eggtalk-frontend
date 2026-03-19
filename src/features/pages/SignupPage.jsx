@@ -2,14 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../utils/config";
 import { FiMail, FiLock, FiUserPlus, FiMoon, FiSun, FiAlertCircle, FiZap } from "react-icons/fi";
-import LoadingModal from "../../components/LoadingModal"; // 추가됨
+import LoadingModal from "../../components/LoadingModal"; 
 
 const SignupPage = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // 로딩 상태 추가
+  const [isLoading, setIsLoading] = useState(false); 
   const navigate = useNavigate();
 
   const [notifications, setNotifications] = useState([]);
@@ -54,11 +54,9 @@ const SignupPage = () => {
       return;
     }
     
-    setIsLoading(true); // 로딩 시작
+    setIsLoading(true); 
     
     try {
-      // ✨ Swagger 명세 및 기타 DB 제약에 따라 nickname 필드가 누락되어 400이 발생했을 가능성 처리
-      // 이메일의 아이디 부분을 기본 닉네임으로 전송합니다.
       const nickname = email.split('@')[0];
       const response = await api.post("/signup", { email, password, confirmPassword, nickname });
       
@@ -190,4 +188,4 @@ const SignupPage = () => {
   );
 };
 
-export default SignupPage;
+export default SignupPage;

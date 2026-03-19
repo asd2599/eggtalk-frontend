@@ -12,7 +12,7 @@ import { api } from "../../utils/config";
 import socket from "../../utils/socket";
 import Pet from "../pets/pet";
 
-/* ── 결과 모달 ─────────────────────────────────── */
+/* 결과 모달 */
 const ResultModal = ({ totalScore, statChanges, onClose }) => {
   const stats = [
     {
@@ -148,7 +148,7 @@ const ResultModal = ({ totalScore, statChanges, onClose }) => {
   );
 };
 
-/* ── 메인 컴포넌트 ───────────────────────────────── */
+/* 메인 컴포넌트 */
 const ChildPlayPage = () => {
   const navigate = useNavigate();
   const [childPet, setChildPet] = useState(null);

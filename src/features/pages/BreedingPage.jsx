@@ -90,7 +90,7 @@ const BreedingPage = () => {
           style={{ animationDelay: "2s" }}
         ></div>
       </div>
-{/* 테스트주석 */}
+
       <div className="relative z-10 w-full max-w-md bg-white/5 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/10 dark:border-slate-800 rounded-[3.5rem] p-10 flex flex-col items-center text-center shadow-2xl transition-all">
         {!successData ? (
           <>
