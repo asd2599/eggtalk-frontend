@@ -3,15 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./features/pages/LoginPage";
 import SignupPage from "./features/pages/SignupPage";
 import MainPage from "./features/pages/MainPage";
-import CreatePetPage from "./features/pages/CreatePetPage"; // 펫 생성 페이지
-import RankingPage from "./features/pages/RankingPage"; // 명예의 전당(랭킹)
-import ChatPage from "./features/pages/ChatPage"; // 펫 대화하기(Chat)
+import CreatePetPage from "./features/pages/CreatePetPage"; 
+import RankingPage from "./features/pages/RankingPage"; 
+import ChatPage from "./features/pages/ChatPage"; 
 import LoungePage from "./features/pages/LoungePage";
 import DatingPage from "./features/pages/DatingPage";
-import FriendPage from "./features/pages/FriendPage"; // 신규 친구 전용 페이지
-import DD from "./features/DD/DD";
+import FriendPage from "./features/pages/FriendPage"; 
 import MS from "./features/MS/MS";
-import SH from "./features/SH/SH";
 import BreedingPage from "./features/pages/BreedingPage";
 import ChildRoomPage from "./features/pages/ChildRoomPage";
 import ChildFeedPage from "./features/pages/ChildFeedPage";
@@ -21,7 +19,6 @@ import { GiftProvider } from "./contexts/GiftContext";
 import GlobalNotificationHandler from "./components/GlobalNotificationHandler";
 
 function App() {
-  // test
 
   return (
     <GiftProvider>
@@ -37,9 +34,7 @@ function App() {
           <Route path="/lounge" element={<LoungePage />} />
           <Route path="/dating/:roomId" element={<DatingPage />} />
           <Route path="/friends" element={<FriendPage />} />
-          <Route path="/dd" element={<DD />} />
           <Route path="/ms" element={<MS />} />
-          <Route path="/sh" element={<SH />} />
           <Route path="/breeding" element={<BreedingPage />} />
           <Route path="/child-room" element={<ChildRoomPage />} />
           <Route path="/child-room/feed" element={<ChildFeedPage />} />

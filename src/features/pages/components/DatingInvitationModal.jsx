@@ -11,15 +11,17 @@ const DatingInvitationModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-100 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in font-sans">
+    /* 배경 오버레이 */
+    <div className="fixed inset-0 z-[200] bg-[#0b0f1a]/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in font-sans">
       <div className="bg-white dark:bg-[#0b0f1a] w-full max-w-sm rounded-[3rem] p-8 lg:p-10 shadow-2xl border border-slate-100 dark:border-slate-800 relative animate-scale-in text-center">
         
-        <div className="w-20 h-20 bg-rose-50 dark:bg-rose-400/10 rounded-full flex items-center justify-center mb-6 mx-auto shadow-xl shadow-rose-500/10">
-          <FiHeart className="text-4xl text-rose-500 animate-pulse" />
+        {/* 상단 아이콘 */}
+        <div className="w-20 h-20 bg-sky-50 dark:bg-sky-900/30 rounded-full flex items-center justify-center mb-6 mx-auto shadow-xl shadow-sky-500/10 border border-sky-100/50 dark:border-sky-500/20">
+          <FiHeart className="text-4xl text-[#38bdf8] animate-pulse" />
         </div>
 
-        <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2 tracking-tighter uppercase italic leading-none">
-          New Invitation <span className="text-rose-500 font-sans not-italic">!</span>
+        <h2 className="text-2xl font-black text-[#0b0f1a] dark:text-white mb-2 tracking-tighter uppercase italic leading-none">
+          New Invitation <span className="text-[#38bdf8] font-sans not-italic">!</span>
         </h2>
         <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-8 uppercase tracking-widest italic">
           Someone wants to meet you
@@ -27,23 +29,26 @@ const DatingInvitationModal = ({
 
         <div className="mb-10 space-y-2">
           <p className="text-slate-600 dark:text-slate-300 text-sm font-medium">
-            <span className="text-slate-900 dark:text-white font-black text-lg mr-1">{requesterPetName}</span>님이
+            <span className="text-[#0b0f1a] dark:text-[#38bdf8] font-black text-lg mr-1">{requesterPetName}</span>님이
           </p>
           <p className="text-slate-600 dark:text-slate-300 text-[13px]">
-            '<span className="font-bold text-sky-500">{roomName}</span>' 방으로 초대했습니다!
+            '<span className="font-bold text-[#38bdf8]">{roomName}</span>' 방으로 초대했습니다!
           </p>
         </div>
 
         <div className="flex gap-4">
+          {/* 거절 버튼 */}
           <button 
             onClick={onClose}
-            className="flex-1 py-4 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:text-slate-900 dark:hover:text-slate-200 flex items-center justify-center gap-2"
+            className="flex-1 py-4 bg-slate-50 dark:bg-slate-900 text-slate-400 dark:text-slate-500 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all hover:text-[#0b0f1a] dark:hover:text-slate-200 flex items-center justify-center gap-2 border border-slate-100 dark:border-slate-800"
           >
             <FiX /> 거절
           </button>
+          
+          {/* 수락 버튼 */}
           <button 
             onClick={onAccept}
-            className="flex-1 py-4 bg-slate-900 dark:bg-rose-500 text-white dark:text-white rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] shadow-xl shadow-rose-500/10 transition-all flex items-center justify-center gap-2"
+            className="flex-1 py-4 bg-[#0b0f1a] dark:bg-[#38bdf8] text-white dark:text-[#0b0f1a] rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] shadow-xl shadow-sky-500/20 transition-all flex items-center justify-center gap-2"
           >
             <FiCheck /> 수락하기
           </button>

@@ -34,7 +34,7 @@ const MainPage = () => {
     setIsDarkMode(isDark);
   };
 
-  // 데이터 페칭 및 소켓 이벤트 (알림 기능 통합)
+  // 데이터 페칭 및 소켓 이벤트
   useEffect(() => {
     // 다른 유저 로그인 알림
     socket.on("new_user_login", (incomingPetName) => {
@@ -113,7 +113,7 @@ const MainPage = () => {
 
   return (
     <div className="flex flex-col lg:flex-row w-full h-screen bg-white dark:bg-[#0b0f1a] transition-colors duration-500 font-sans relative overflow-hidden custom-scrollbar">
-      {/* 실시간 접속자 수 표시 (최적화된 별도 컴포넌트) */}
+      {/* 실시간 접속자 수 표시 */}
       <LiveUserCounter />
 
       {/* 테마 버튼 */}
@@ -188,10 +188,7 @@ const MainPage = () => {
   );
 };
 
-/**
- * 실시간 접속자 수 카운터 컴포넌트
- * 소켓 이벤트를 독립적으로 수신하여 부모(MainPage)의 리렌더링을 방지합니다.
- */
+/* 실시간 접속자 수 카운터 컴포넌트 */
 const LiveUserCounter = React.memo(() => {
   const [count, setCount] = useState(1);
 

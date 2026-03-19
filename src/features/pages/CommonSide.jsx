@@ -4,7 +4,7 @@ import {
   FiLogOut, FiSmile, FiAward, FiMessageCircle,
   FiUsers, FiUserCheck, FiHeart, FiMap,
 } from 'react-icons/fi';
-import socket from '../../utils/socket'; // 소켓 임포트 추가
+import socket from '../../utils/socket';
 
 const CommonSide = ({ activeMenu }) => {
   const navigate = useNavigate();
@@ -12,13 +12,13 @@ const CommonSide = ({ activeMenu }) => {
   const buttonRefs = useRef({});
 
   const handleLogout = () => {
-    // 1. 소켓 연결 해제 신호 전송 (온라인 리스트 제거용)
+    // 소켓 연결 해제 신호 전송 (온라인 리스트 제거용)
     const petName = localStorage.getItem('petName');
     if (petName) {
       socket.emit("user_logout", petName);
     }
     
-    // 2. 스토리지 비우기 및 라우팅
+    // 스토리지 비우기 및 라우팅
     localStorage.removeItem('token');
     localStorage.removeItem('petName');
     localStorage.removeItem('petId');
@@ -52,7 +52,7 @@ const CommonSide = ({ activeMenu }) => {
     }
   };
 
-  // 페이지 진입 시 activeMenu 중앙 정렬 //test
+  // 페이지 진입 시 activeMenu 중앙 정렬
   useEffect(() => {
     scrollToCenter(activeMenu);
   }, [activeMenu]);

@@ -33,7 +33,6 @@ const CATEGORY_ICONS = {
   why: "❓",
 };
 
-// 🌟 React 컴포넌트는 반드시 외부에서 정의해야 포커스를 잃지 않습니다.🐾
 const CategoryCard = ({ cat, isOwner, word, inputValue, onChange, onSubmit }) => {
   const isSubmitted = !!word;
 
@@ -98,7 +97,7 @@ const ChildFeedPage = () => {
   const [childPet, setChildPet] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // 📝 육하원칙 게임 상태
+  // 육하원칙 게임 상태
   const [gameMode, setGameMode] = useState(false);
   const [assignments, setAssignments] = useState({}); // { petId: ["who", "when"] }
   const [allWords, setAllWords] = useState({}); // { who: "단어", ... }
@@ -316,7 +315,7 @@ const ChildFeedPage = () => {
                 이야기를 짓는 중...
               </h2>
               <p className="text-sky-400/50 text-xs font-black italic">
-                AI가 여러분의 단어로 마법을 부리고 있어요!
+                AI 몽글이가 여러분의 단어로 마법을 부리고 있어요!
               </p>
             </div>
           ) : (

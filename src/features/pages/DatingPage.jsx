@@ -14,7 +14,7 @@ import {
   FiUserPlus,
   FiHeart,
   FiZap,
-  FiMessageSquare, // ✅ 더 직관적인 AI 메시지 아이콘 추가
+  FiMessageSquare, 
 } from "react-icons/fi";
 import Pet from "../pets/pet";
 import socket from "../../utils/socket";
@@ -71,7 +71,7 @@ const DatingPage = () => {
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [isAutoCommentEnabled, setIsAutoCommentEnabled] = useState(true);
 
-  // 교배 관련 상태 (HB 브랜치 기능 유지)
+  // 교배 관련 상태
   const [isBreedingRequestModalOpen, setIsBreedingRequestModalOpen] =
     useState(false);
   const [isSendingBreedingRequest, setIsSendingBreedingRequest] =
@@ -124,7 +124,7 @@ const DatingPage = () => {
     }
   }, [roomId, navigate]);
 
-  // 1️⃣ 초기 방 정보 및 소켓 연결 로직 (중복 제거 및 통합)
+  // 방 정보 및 소켓 연결 로직
   useEffect(() => {
     if (!petData?.name || !roomId) return;
 
@@ -144,7 +144,7 @@ const DatingPage = () => {
     };
   }, [petData, roomId, fetchRoomInfo]);
 
-  // 2️⃣ 테마 및 펫 데이터 로드
+  // 테마 및 펫 데이터 로드
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme");
     const isDark =
@@ -179,7 +179,7 @@ const DatingPage = () => {
     fetchPetData();
   }, [navigate]);
 
-  // 3️⃣ AI 자동 답변 로직 (HB 브랜치 유지)
+  // AI 자동 답변 로직
   const silenceTimerRef = useRef(null);
   const isAutoCommenting = useRef(false);
 
@@ -254,7 +254,7 @@ const DatingPage = () => {
     };
   }, [resetSilenceTimer]);
 
-  // 4️⃣ 소켓 리스너 (교배/친구 통합)
+  // 소켓 리스너 (교배/친구 통합)
   useEffect(() => {
     if (!petData?.name) return;
 
@@ -354,6 +354,34 @@ const DatingPage = () => {
       }
     });
 
+    socket.on("friend_request_accepted", (data) => {
+      if (data.requesterPetName?.toLowerCase().trim() === petData?.name?.toLowerCase().trim()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: `🎉 ${data.receiverPetName}님이 친구 요청을 수락했습니다!`,
+            timestamp: new Date(),
+            isSystem: true,
+          },
+        ]);
+      }
+    });
+
+    socket.on("friend_request_rejected", (data) => {
+      if (data.requesterPetName?.toLowerCase().trim() === petData?.name?.toLowerCase().trim()) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            sender: "시스템",
+            message: `💔 ${data.receiverPetName}님이 친구 요청을 거절했습니다.`,
+            timestamp: new Date(),
+            isSystem: true,
+          },
+        ]);
+      }
+    });
+
     socket.on("online_users_list", (users) => {
       setOnlineUsers(users);
     });
@@ -370,10 +398,12 @@ const DatingPage = () => {
       socket.off("receive_breeding_request");
       socket.off("breeding_accepted");
       socket.off("breeding_rejected");
+      socket.off("friend_request_accepted");
+      socket.off("friend_request_rejected");
     };
   }, [petData, roomId, navigate, fetchRoomInfo]);
 
-  // 5️⃣ 핸들러 함수들 (Develop의 예외처리 + HB의 기능)
+  // 핸들러 함수들
   const handleGiftSuccess = (
     giftName,
     targetName,
@@ -660,7 +690,7 @@ const DatingPage = () => {
             <span className="hidden sm:inline">교배</span>
           </button>
 
-          {/* [모바일] AI 자동 답변 스위치 - 아이콘 변경 (FiZap -> FiMessageSquare) */}
+          {/* AI 자동 답변 스위치 */}
           <button 
             onClick={() => setIsAutoCommentEnabled(!isAutoCommentEnabled)}
             className={`p-2 lg:p-2.5 rounded-xl transition-all border ${isAutoCommentEnabled ? "bg-sky-500/10 border-sky-500 text-sky-500" : "bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 text-slate-400"}`}
@@ -701,7 +731,7 @@ const DatingPage = () => {
                   className={`flex ${isFromMe ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2`}
                 >
                   <div className={`max-w-[85%] lg:max-w-[80%] flex items-start gap-2.5 lg:gap-3 ${isFromMe ? "flex-row-reverse" : ""}`}>
-                    <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden border-2 shrink-0 ${isFromMe ? "bg-slate-900 border-slate-800" : "bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700 shadow-sm"}`}>
+                    <div className={`w-9 h-9 lg:w-10 lg:h-10 rounded-xl overflow-hidden shrink-0 ${isFromMe ? "bg-slate-900" : "bg-white dark:bg-slate-600 shadow-sm"}`}>
                       {msg.isPetReply ? (
                         isFromMe ? petData?.draw("scale-125") : otherPet?.petInstance?.draw("scale-125")
                       ) : (
@@ -764,16 +794,37 @@ const DatingPage = () => {
         onClose={() => setIsFriendRequestModalOpen(false)}
         requesterPetName={friendRequestData?.requesterPetName}
         requestId={friendRequestData?.requestId}
-        onFriendSuccess={(target, acc) =>
-          setMessages((prev) => [
-            ...prev,
-            {
-              sender: "시스템",
-              message: `🎉 ${target}님과 친구가 되었습니다!`,
-              isSystem: true,
-            },
-          ])
-        }
+        onFriendSuccess={(target, acc) => {
+          if (acc) {
+            socket.emit("accept_friend_request", {
+              roomId,
+              requesterPetName: target,
+              receiverPetName: petData?.name,
+            });
+            setMessages((prev) => [
+              ...prev,
+              {
+                sender: "시스템",
+                message: `🎉 ${target}님과 친구가 되었습니다!`,
+                isSystem: true,
+              },
+            ]);
+          } else {
+            socket.emit("reject_friend_request", {
+              roomId,
+              requesterPetName: target,
+              receiverPetName: petData?.name,
+            });
+            setMessages((prev) => [
+              ...prev,
+              {
+                sender: "시스템",
+                message: `❌ ${target}님의 친구 요청을 거절했습니다.`,
+                isSystem: true,
+              },
+            ]);
+          }
+        }}
       />
       <BreedingRequestModal
         isOpen={isBreedingRequestModalOpen}

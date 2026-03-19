@@ -79,7 +79,7 @@ const MessageSendModal = ({ isOpen, onClose, receiverId, receiverPetName, sender
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 text-rose-500 text-[11px] font-bold bg-rose-50 dark:bg-rose-900/20 p-3 rounded-xl animate-shake">
+            <div className="flex items-center gap-2 text-sky-500 text-[11px] font-bold bg-rose-50 dark:bg-sky-900/20 p-3 rounded-xl animate-shake">
               <FiAlertCircle />
               <span>{error}</span>
             </div>

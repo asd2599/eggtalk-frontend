@@ -32,7 +32,7 @@ const ChildCleanPage = () => {
   const [giveupProposer, setGiveupProposer] = useState(null);
   const [extraHintProposer, setExtraHintProposer] = useState(null);
 
-  // 🔔 모달 전용 상태 추가
+  // 모달 전용 상태 추가
   const [confirmModal, setConfirmModal] = useState(null); // { title: "", desc: "", onConfirm: () => {} }
   const [infoModal, setInfoModal] = useState(null); // { title: "", desc: "" }
 
@@ -405,7 +405,7 @@ const ChildCleanPage = () => {
 
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden">
-      {/* ── 상단 고정 헤더 ── */}
+      {/* 상단 고정 헤더 */}
       <header className="flex-none px-4 pt-4 pb-2 flex justify-between items-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-md z-20 border-b border-slate-100 dark:border-slate-800">
         <button
           onClick={() => navigate("/child-room")}
@@ -425,7 +425,7 @@ const ChildCleanPage = () => {
         </button>
       </header>
 
-      {/* ── 힌트 고정 바 (게임 중에만) ── */}
+      {/* 힌트 고정 바 (게임 중에만) */}
       {gameMode && (
         <div className="flex-none px-4 py-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-sky-100 dark:border-slate-700 z-10">
           <div className="flex flex-col gap-2">
@@ -477,7 +477,7 @@ const ChildCleanPage = () => {
         </div>
       )}
 
-      {/* ── 중간 스크롤 채팅 영역 ── */}
+      {/* 중간 스크롤 채팅 영역 */}
       <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
         {/* 준비 중 */}
         {!gameMode && !gameResult && (
@@ -577,7 +577,7 @@ const ChildCleanPage = () => {
         <div ref={chatEndRef} />
       </div>
 
-      {/* ── 하단 고정 입력창 (게임 중에만) ── */}
+      {/* 하단 고정 입력창 (게임 중에만) */}
       {gameMode && (
         <div className="flex-none px-4 pb-6 pt-3 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 z-20">
           {wrongGuess && (
@@ -614,7 +614,7 @@ const ChildCleanPage = () => {
         </div>
       )}
 
-      {/* ── 결과 모달 ── */}
+      {/* 결과 모달 */}
       {gameResult && (
         <ResultModal
           result={gameResult}
@@ -622,7 +622,7 @@ const ChildCleanPage = () => {
         />
       )}
 
-      {/* ── 추가 힌트 동의 모달 ── */}
+      {/* 추가 힌트 동의 모달 */}
       {extraHintProposer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-sky-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
@@ -653,7 +653,7 @@ const ChildCleanPage = () => {
         </div>
       )}
 
-      {/* ── 포기 동의 모달 ── */}
+      {/* 포기 동의 모달 */}
       {giveupProposer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform scale-100 animate-in zoom-in-95 duration-300">
@@ -684,7 +684,7 @@ const ChildCleanPage = () => {
         </div>
       )}
 
-      {/* ── 선택 확인 모달 ── */}
+      {/* 선택 확인 모달 */}
       {confirmModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-sky-100 dark:border-slate-800 w-full max-w-sm text-center transform animate-in zoom-in-95 duration-300">
@@ -712,7 +712,7 @@ const ChildCleanPage = () => {
         </div>
       )}
 
-      {/* ── 일반 안내 모달 ── */}
+      {/* 일반 안내 모달 */}
       {infoModal && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300 p-4">
           <div className="bg-white dark:bg-slate-900 p-8 rounded-[40px] shadow-2xl border border-slate-100 dark:border-slate-800 w-full max-w-sm text-center transform animate-in zoom-in-95 duration-300">

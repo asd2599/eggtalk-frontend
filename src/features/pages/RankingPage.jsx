@@ -19,7 +19,7 @@ const RankingPage = () => {
       setIsDarkMode(true);
     }
   }, []);
-//테스트주석
+
   const toggleTheme = () => {
     const isDark = document.documentElement.classList.toggle("dark");
     localStorage.setItem("theme", isDark ? "dark" : "light");
@@ -93,7 +93,7 @@ const RankingPage = () => {
               </div>
             )}
 
-            {/* 1위 (Champion) */}
+            {/* 1위 */}
             {top3[0] && (
               <div className="flex flex-col items-center z-10 scale-105 md:scale-110 mx-2 md:mx-4 animate-fade-in-up delay-75">
                 <div className="relative mb-8">
