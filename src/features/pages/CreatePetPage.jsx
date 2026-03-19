@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { SERVER_URL } from "../../utils/config";
 import { FiEdit3, FiCheck, FiMoon, FiSun, FiAlertCircle, FiZap } from "react-icons/fi";
+import LoadingModal from "../../components/LoadingModal";
 
 const CreatePetPage = () => {
   const navigate = useNavigate();
   const [petName, setPetName] = useState("");
   const [selectedColor, setSelectedColor] = useState("blue");
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   // 토스트 상태
   const [notifications, setNotifications] = useState([]);
@@ -52,6 +54,8 @@ const CreatePetPage = () => {
       return;
     }
 
+    setIsLoading(true);
+
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`${SERVER_URL}/api/pets`, {
@@ -80,11 +84,15 @@ const CreatePetPage = () => {
       }
     } catch (error) {
       showToast("서버 연결 상태를 확인해주세요.", "error");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen bg-slate-50 dark:bg-[#0b0f1a] transition-colors duration-500 font-sans p-6 relative overflow-hidden">
+      
+      <LoadingModal isVisible={isLoading} message="알에서 깨어나고 있어요... ✨" />
       
       {/* 테마 버튼 */}
       <button onClick={toggleTheme} 
