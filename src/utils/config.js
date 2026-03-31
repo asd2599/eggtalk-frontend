@@ -43,11 +43,10 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('petId');
 
-      // 얼럿 창을 띄우고 확인을 누르면 로그인 페이지로 이동 (중복 방지용 체크)
       if (!window.hasAuthAlerted) {
         window.hasAuthAlerted = true;
-        alert('세션이 만료되었습니다. 다시 로그인 해주세요.');
-        window.location.href = '/login';
+        alert('세션이 만료되었습니다. 확인을 누르면 메인으로 이동합니다. 반드시 다시 로그인 해주세요!');
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);
