@@ -18,27 +18,16 @@ const GlobalNotificationHandler = () => {
     };
 
     const handleDatingInvitation = (data) => {
-      console.log("[DEBUG-FRONT] dating_invitation received:", data);
       const myPetName = localStorage.getItem("petName");
-      
       const normalizedMyName = getSanitizedName(myPetName);
       const normalizedTargetName = getSanitizedName(data.receiverPetName);
 
-      if (!normalizedMyName || !normalizedTargetName) {
-        console.warn("[DEBUG-FRONT] Missing name for comparison:", { normalizedMyName, normalizedTargetName });
-        return;
-      }
-
-      if (normalizedMyName === normalizedTargetName) {
-        console.log("[GlobalNotificationHandler] SUCCESS: It's for me!");
+      if (normalizedMyName && normalizedTargetName && normalizedMyName === normalizedTargetName) {
         setDatingInvitation(data);
-      } else {
-        console.log(`[DEBUG-FRONT] SKIP: Not for me. (${normalizedTargetName} vs ${normalizedMyName})`);
       }
     };
 
     const handleChildInvitation = (data) => {
-      console.log("[DEBUG-FRONT] child_room_invitation received:", data);
       const myPetName = localStorage.getItem("petName");
 
       const normalizedMyName = getSanitizedName(myPetName);
@@ -47,10 +36,7 @@ const GlobalNotificationHandler = () => {
       if (!normalizedMyName || !normalizedTargetName) return;
 
       if (normalizedMyName === normalizedTargetName) {
-        console.log("[GlobalNotificationHandler] SUCCESS: Matching child invitation for me!", data);
         setChildInvitation(data);
-      } else {
-        console.log(`[DEBUG-FRONT] MISMATCH: Child invite not for me. (${normalizedTargetName} vs ${normalizedMyName})`);
       }
     };
 

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRef, useEffect } from 'react';
 import {
   FiLogOut, FiSmile, FiAward, FiMessageCircle,
-  FiUsers, FiUserCheck, FiHeart, FiMap,
+  FiUsers, FiUserCheck, FiHeart, FiMap, FiShield,
 } from 'react-icons/fi';
 import socket from '../../utils/socket';
 
@@ -32,7 +32,7 @@ const CommonSide = ({ activeMenu }) => {
     { icon: FiMessageCircle, label: '대화', path: '/chat' },
     { icon: FiUsers, label: '모임', path: '/lounge' },
     { icon: FiUserCheck, label: '친구', path: '/friends' },
-    { icon: FiMap, label: '길찾기', path: '/ms' },
+    { icon: FiShield, label: '마피아', path: '/mafia' },
   ];
 
   const scrollToCenter = (label) => {
