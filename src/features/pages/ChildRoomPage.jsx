@@ -221,7 +221,6 @@ const ChildRoomPage = () => {
           : actionType === "CLEAN"
             ? "스무고개 퀴즈"
             : "역할극 게임";
-      // TODO: 나중에 이 alert도 커스텀 모달로 대체할 수 있으나, 일단 모달이 닫히면서 자연스럽게 알 수 있도록 유지
       alert(`배우자가 [${actionKr}] 활동에 동의하지 않았습니다. 😿`);
     };
 
@@ -570,7 +569,6 @@ const ChildRoomPage = () => {
               {isSpouseOnline && !isSpouseInRoom && (
                 <button
                   onClick={() => {
-                    console.log("[DEBUG-FRONT] Inviting spouse to child room:", spousePet.name);
                     socket.emit("invite_to_child_room", {
                       receiverPetName: spousePet.name,
                       requesterPetName: myPet.name,
@@ -587,7 +585,7 @@ const ChildRoomPage = () => {
             </span>
           </div>
 
-          <div className="flex items-center gap-3 mb-2 z-10 pt-12 lg:pt-0">
+          <div className="flex items-center gap-3 mb-2 z-10 mt-24 pt-4 lg:mt-0 lg:pt-0">
             <h1 className="text-3xl lg:text-4xl font-black text-slate-900 dark:text-white uppercase tracking-tighter italic">
               {childPet.name}{" "}
               <span className="text-sky-400 font-sans not-italic">.</span>

@@ -567,7 +567,6 @@ const DatingPage = () => {
       );
     } catch (err) {
       // 404 Not Found 에러(방이 이미 터졌거나 가상 소켓 룸인 경우)는 무시하고 진행
-      console.warn("방 퇴장 처리 중 알림(정상 무시): API 응답을 기다리지 않고 로비로 돌아갑니다.", err.message);
     } finally {
       navigate("/lounge");
     }
@@ -583,7 +582,6 @@ const DatingPage = () => {
       roomName: roomName || "Dating Room",
     };
 
-    console.log("[DEBUG-FRONT] Emitting invite_to_dating:", inviteData);
     socket.emit("invite_to_dating", inviteData);
 
     setMessages((prev) => [
