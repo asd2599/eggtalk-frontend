@@ -4,7 +4,7 @@ import axios from 'axios';
 const isProd =
   import.meta.env.PROD || window.location.hostname.includes('gamestack.store');
 export const SERVER_URL = isProd
-  ? 'https://keepinsight.site'
+  ? 'https://eggtalk-backend-production.up.railway.app'
   : 'http://localhost:8000';
 
 export const PRESENT_TABLE_URL =
