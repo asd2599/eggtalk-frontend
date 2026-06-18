@@ -54,7 +54,7 @@ const MafiaRoomPage = () => {
           const res = await api.get(`/api/mafia/rooms/${roomId}/participants`);
           setParticipants(res.data.participants);
           setRoomInfo(res.data.room);
-          socket.emit("mafia_join_room", { roomId });
+          socket.emit("mafia_join_room", { roomId, petId: myPet.id });
         } else {
           navigate('/create-pet');
         }
