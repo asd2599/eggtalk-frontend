@@ -279,6 +279,7 @@ const ChildPlayPage = () => {
       socket.off("play_partner_left", onPartnerLeft);
       socket.off("play_game_finished", onGameFinished);
       socket.off("play_game_error", onGameError);
+      socket.off("play_game_ending");
       if (childIdRef.current) {
         socket.emit("leave_play_room", {
           childId: childIdRef.current,
