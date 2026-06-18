@@ -24,8 +24,6 @@ import BreedingRequestModal from "./components/BreedingRequestModal";
 import ConnectedUsersModal from "./components/ConnectedUsersModal";
 import { FiUsers as FiUsersIcon } from "react-icons/fi";
 
-let strictModeLeaveTimer = null;
-
 // 타이핑 효과 컴포넌트
 const TypingText = ({ text, speed = 30 }) => {
   const [displayedText, setDisplayedText] = useState("");

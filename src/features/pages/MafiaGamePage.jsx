@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { FiMessageSquare, FiSend, FiUser, FiZap, FiTarget, FiSun, FiMoon, FiShield, FiHeart, FiLogOut, FiCheckCircle } from 'react-icons/fi';
+import { FiSend, FiUser, FiZap, FiSun, FiShield, FiLogOut, FiCheckCircle } from 'react-icons/fi';
 import socket from '../../utils/socket';
 import Pet from '../pets/pet';
 import CommonSide from './CommonSide';
@@ -21,8 +21,18 @@ const MafiaGamePage = () => {
   const [bubbles, setBubbles] = useState({});
   const [gameResult, setGameResult] = useState(null);
   const [myVote, setMyVote] = useState(null);
+  const [myNightTarget, setMyNightTarget] = useState(null);
   const [roomVotes, setRoomVotes] = useState({});
   const scrollRef = useRef(null);
+  const playersRef = useRef([]);
+
+  // 소켓 콜백이 항상 최신 players를 참조하도록 ref 동기화
+  useEffect(() => { playersRef.current = players; }, [players]);
+
+  // myPet 로드 후 소켓 룸 입장 (새로고침/재접속 시 게임 상태 복구)
+  useEffect(() => {
+    if (myPet) socket.emit("mafia_join_room", { roomId, petId: myPet.id });
+  }, [myPet, roomId]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
@@ -37,8 +47,8 @@ const MafiaGamePage = () => {
 
     socket.on("mafia_message", (msg) => {
       setMessages(prev => [...prev, msg]);
-      const senderPlayer = players.find(p => p.anonName === msg.sender);
-      if (senderPlayer) {
+      const senderPlayer = playersRef.current.find(p => p.anonName === msg.sender);
+      if (senderPlayer && !msg.system) {
         setBubbles(prev => ({
           ...prev,
           [senderPlayer.id]: { text: msg.text, expiresAt: Date.now() + 3500 }
@@ -52,6 +62,16 @@ const MafiaGamePage = () => {
           setMyVote(null);
           setRoomVotes({});
       }
+      if (newPhase !== 'night') setMyNightTarget(null);
+      if (newPhase !== 'vote') setMyVote(null);
+    });
+
+    // 새로고침/재접속 시 전체 게임 상태 복구
+    socket.on("mafia_sync_game", (data) => {
+      if (data.players) setPlayers(data.players);
+      if (data.phase) setPhase(data.phase);
+      if (typeof data.timer === 'number') setTimer(data.timer);
+      if (Array.isArray(data.messages)) setMessages(data.messages);
     });
 
     socket.on("mafia_timer", (t) => {
@@ -83,8 +103,9 @@ const MafiaGamePage = () => {
       socket.off("mafia_vote_synced");
       socket.off("mafia_game_ended");
       socket.off("mafia_game_started");
+      socket.off("mafia_sync_game");
     };
-  }, [roomId, players, navigate]);
+  }, [roomId, navigate]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -105,10 +126,16 @@ const MafiaGamePage = () => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages]);
 
-  const handleCastVote = (targetId) => {
-      if (phase !== 'vote' || myInfo?.isDead) return;
-      setMyVote(targetId);
-      socket.emit("mafia_cast_vote", { roomId, targetId });
+  const handlePlayerClick = (p) => {
+    if (!myInfo || myInfo.isDead || p.isDead) return;
+    if (phase === 'vote') {
+      setMyVote(p.id);
+      socket.emit("mafia_cast_vote", { roomId, targetId: p.id });
+    } else if (phase === 'night' && myInfo.role === 'mafia') {
+      if (p.role === 'mafia') return; // 동료 마피아는 처치 대상에서 제외
+      setMyNightTarget(p.id);
+      socket.emit("mafia_night_action", { roomId, targetId: p.id });
+    }
   };
 
   const handleSendMessage = (e) => {
@@ -190,6 +217,8 @@ const MafiaGamePage = () => {
                const isMyPet = p.type === 'pet' && p.petId === myPet?.id;
                const bubble = bubbles[p.id];
                const voteCount = Object.values(roomVotes).filter(v => v === p.id).length;
+               const canTarget = (phase === 'vote' || (phase === 'night' && myInfo?.role === 'mafia')) && !myInfo?.isDead && !p.isDead;
+               const isTargeted = (phase === 'night' ? myNightTarget : myVote) === p.id;
 
                return (
                  <div key={p.id} style={{ transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))` }} className="absolute left-1/2 top-1/2 flex flex-col items-center transition-all duration-700 z-10 w-max">
@@ -206,13 +235,13 @@ const MafiaGamePage = () => {
                         </div>
                     )}
 
-                    <div 
-                        onClick={() => handleCastVote(p.id)}
-                        className={`w-12 h-12 lg:w-20 lg:h-20 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl flex items-center justify-center relative overflow-hidden transition-all duration-500 cursor-pointer ${p.isDead ? 'grayscale bg-slate-200 border-slate-300 scale-90 opacity-50' : phase === 'vote' && myVote === p.id ? 'border-4 border-rose-500 ring-8 ring-rose-500/20 scale-105' : isMe || isMyPet ? 'border-4 border-sky-400 ring-4 ring-sky-400/20' : 'border-4 border-white dark:border-slate-900 shadow-2xl'} hover:scale-110`}
+                    <div
+                        onClick={() => handlePlayerClick(p)}
+                        className={`w-12 h-12 lg:w-20 lg:h-20 bg-white dark:bg-slate-800 rounded-[2rem] shadow-xl flex items-center justify-center relative overflow-hidden transition-all duration-500 ${canTarget ? 'cursor-pointer hover:scale-110' : 'cursor-default'} ${p.isDead ? 'grayscale bg-slate-200 border-slate-300 scale-90 opacity-50' : isTargeted ? 'border-4 border-rose-500 ring-8 ring-rose-500/20 scale-105' : isMe || isMyPet ? 'border-4 border-sky-400 ring-4 ring-sky-400/20' : 'border-4 border-white dark:border-slate-900 shadow-2xl'}`}
                     >
                        {p.type === 'human' ? <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-700/50"><FiUser className="text-xl lg:text-3xl text-slate-400" /></div> : <div className="w-full h-full flex items-center justify-center bg-slate-50 dark:bg-slate-700/50"><PetAvatar id={p.petId} /></div>}
                        {p.isDead && <div className="absolute inset-0 bg-slate-950/40 flex items-center justify-center"><span className="text-white font-black text-[7px] lg:text-[10px] uppercase tracking-[.2em] -rotate-12">ELIMINATED</span></div>}
-                       {phase === 'vote' && myVote === p.id && <FiCheckCircle className="absolute inset-0 m-auto text-3xl lg:text-4xl text-rose-500 opacity-80" />}
+                       {isTargeted && <FiCheckCircle className="absolute inset-0 m-auto text-3xl lg:text-4xl text-rose-500 opacity-80" />}
                     </div>
                     <div className={`mt-2 lg:mt-3 px-2 lg:px-3 py-1 flex items-center gap-1 lg:gap-2 backdrop-blur-md rounded-full border transition-all ${p.isDead ? 'bg-slate-200 border-slate-300' : isMe || isMyPet ? 'bg-sky-400/90 border-white/20' : 'bg-slate-900/80 dark:bg-slate-800/80 border-white/10'}`}>
                        <span className={`text-[7px] lg:text-[9px] font-black uppercase italic tracking-tighter ${p.isDead ? 'text-slate-400' : isMe || isMyPet ? 'text-slate-900' : 'text-white'}`}>{p.anonName} {isMe && "(Me)"} {isMyPet && "(Pet)"}</span>
