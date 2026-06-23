@@ -18,6 +18,28 @@ import { api } from "../../utils/config";
 import socket from "../../utils/socket";
 import Pet from "../pets/pet";
 
+// 알 표면에 단계적으로 나타나는 금(crack) 경로 (viewBox 100x130 기준)
+// 진행도가 (인덱스+1) * (100/총개수) % 를 넘으면 해당 금이 보입니다.
+const CRACKS = [
+  "M50 8 L45 32 L55 50 L48 70", // 위에서 내려오는 중심 균열
+  "M48 70 L28 64 L14 74", // 왼쪽 가지
+  "M55 50 L76 44 L90 52", // 오른쪽 가지
+  "M45 32 L26 36 L12 30", // 위쪽 왼쪽 가지
+  "M48 70 L66 82 L80 92", // 아래 오른쪽 가지
+];
+
+// 부화 순간 사방으로 흩어지는 껍질 조각 (각도·거리 고정 계산)
+const SHARDS = Array.from({ length: 12 }, (_, i) => {
+  const angle = (i / 12) * Math.PI * 2;
+  const dist = 110 + (i % 3) * 40;
+  return {
+    tx: Math.round(Math.cos(angle) * dist),
+    ty: Math.round(Math.sin(angle) * dist),
+    rot: (i * 97) % 360,
+    size: 10 + (i % 4) * 4,
+  };
+});
+
 const ChildRoomPage = () => {
   const navigate = useNavigate();
   const [childPet, setChildPet] = useState(null);
@@ -31,6 +53,8 @@ const ChildRoomPage = () => {
   const [hatchProgress, setHatchProgress] = useState(0);
   const [isHatchGameActive, setIsHatchGameActive] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
+  const [isHatching, setIsHatching] = useState(false); // 껍질 깨짐 연출 중
+  const [justHatched, setJustHatched] = useState(false); // 펫 등장 팝 연출용
 
   // 대기 및 제안 모달용 State 추가
   const [waitingAction, setWaitingAction] = useState(null); // FEED, CLEAN, PLAY, ANALYZE
@@ -38,6 +62,7 @@ const ChildRoomPage = () => {
   const [analysisResult, setAnalysisResult] = useState(null); // { pet, reason }
 
   const timerRef = useRef(null);
+  const eggRef = useRef(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   const hasAlerted = useRef(false);
@@ -397,7 +422,7 @@ const ChildRoomPage = () => {
   };
 
   const handleHatchSuccess = async () => {
-    if (childPet.isHatched) return;
+    if (childPet.isHatched || isHatching) return;
 
     try {
       const token = localStorage.getItem("token");
@@ -407,9 +432,21 @@ const ChildRoomPage = () => {
         { headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.status === 200) {
-        setChildPet(new Pet(response.data.pet));
         setIsHatchGameActive(false);
-        alert("축하합니다! 새로운 생명이 부화했습니다! 🎉");
+        const hatchedPet = new Pet(response.data.pet);
+
+        // 1) 껍질이 깨지며 조각이 흩어지는 연출 시작
+        setIsHatching(true);
+
+        // 2) 연출이 끝나면 펫이 팝 하고 등장
+        setTimeout(() => {
+          setChildPet(hatchedPet);
+          setIsHatching(false);
+          setJustHatched(true);
+          alert("축하합니다! 새로운 생명이 부화했습니다! 🎉");
+          // 등장 팝 애니메이션 종료 후 플래그 해제
+          setTimeout(() => setJustHatched(false), 900);
+        }, 1300);
       }
     } catch (error) {
       console.error("Hatch API failed:", error);
@@ -419,6 +456,14 @@ const ChildRoomPage = () => {
   const handleHatchTap = () => {
     if (!isHatchGameActive || hatchProgress >= 100 || timeLeft <= 0) return;
     socket.emit("hatch_tap", { childId: childPet.id });
+
+    // 클릭할 때마다 알을 흔드는 효과 (리플로우로 애니메이션 재시작)
+    const el = eggRef.current;
+    if (el) {
+      el.classList.remove("egg-shake");
+      void el.offsetWidth;
+      el.classList.add("egg-shake");
+    }
   };
 
   const handleRenameClick = () => {
@@ -609,28 +654,86 @@ const ChildRoomPage = () => {
           >
             {childPet && (
               <div
-                className={`w-full h-full flex items-center justify-center ${childPet.isHatched ? "animate-float" : "animate-wiggle"}`}
+                className={`w-full h-full flex items-center justify-center ${childPet.isHatched ? "animate-float" : "egg-idle"}`}
                 style={{ position: "relative" }}
               >
-                {!childPet.isHatched ? (
+                {isHatching ? (
+                  <div className="relative w-[80%] h-[94%] flex items-center justify-center">
+                    {/* 부화 플래시 */}
+                    <div className="hatch-flash absolute w-32 h-32 rounded-full bg-white" />
+                    {/* 사방으로 흩어지는 껍질 조각 */}
+                    {SHARDS.map((s, i) => (
+                      <div
+                        key={i}
+                        className="shard absolute"
+                        style={{
+                          width: `${s.size}px`,
+                          height: `${s.size}px`,
+                          backgroundColor: childPet.color,
+                          borderRadius: "35% 65% 45% 55%",
+                          "--tx": `${s.tx}px`,
+                          "--ty": `${s.ty}px`,
+                          "--rot": `${s.rot}deg`,
+                          animationDelay: `${(i % 4) * 30}ms`,
+                        }}
+                      />
+                    ))}
+                    {/* 막 깨어난 아기 */}
+                    <span className="hatch-burst-emoji text-6xl lg:text-7xl relative z-10">
+                      🐣
+                    </span>
+                  </div>
+                ) : !childPet.isHatched ? (
                   <div
-                    className="w-full h-full rounded-[3.5rem] flex flex-col items-center justify-center text-white mix-blend-overlay"
+                    ref={eggRef}
+                    className="egg-visual w-[80%] h-[94%] flex flex-col items-center justify-center text-white relative"
                     style={{
                       backgroundColor: childPet.color,
+                      borderRadius: "50% 50% 50% 50% / 60% 60% 42% 42%",
                       overflow: "hidden",
+                      boxShadow:
+                        "inset -14px -18px 32px rgba(0,0,0,0.28), inset 12px 14px 26px rgba(255,255,255,0.4)",
                     }}
                   >
-                    <span className="text-6xl lg:text-8xl font-black opacity-40">
+                    {/* 진행도에 따라 단계적으로 나타나는 금(crack) */}
+                    <svg
+                      viewBox="0 0 100 130"
+                      preserveAspectRatio="none"
+                      className="absolute inset-0 w-full h-full pointer-events-none z-10"
+                    >
+                      {CRACKS.map((d, i) => (
+                        <path
+                          key={i}
+                          d={d}
+                          fill="none"
+                          stroke="rgba(0,0,0,0.55)"
+                          strokeWidth="2.4"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{
+                            opacity:
+                              hatchProgress >=
+                              (i + 1) * (100 / CRACKS.length)
+                                ? 1
+                                : 0,
+                            transition: "opacity 0.4s ease",
+                          }}
+                        />
+                      ))}
+                    </svg>
+                    <span className="text-6xl lg:text-8xl font-black opacity-30">
                       ⬤
                     </span>
                     {isHatchGameActive && (
-                      <span className="text-[11px] font-black uppercase tracking-widest mt-4 opacity-60 animate-pulse italic">
+                      <span className="text-[11px] font-black uppercase tracking-widest mt-4 opacity-70 animate-pulse italic z-10">
                         여길 눌러!
                       </span>
                     )}
                   </div>
                 ) : (
-                  <div className="w-[85%] h-[85%] pointer-events-none relative flex items-center justify-center drop-shadow-[0_20px_50px_rgba(125,211,252,0.3)]">
+                  <div
+                    className={`w-[85%] h-[85%] pointer-events-none relative flex items-center justify-center drop-shadow-[0_20px_50px_rgba(125,211,252,0.3)] ${justHatched ? "hatch-pop" : ""}`}
+                  >
                     {childPet.draw("w-full h-full scale-[1.2]")}
                   </div>
                 )}
@@ -662,7 +765,7 @@ const ChildRoomPage = () => {
             )}
           </div>
 
-          {!childPet.isHatched && !isHatchGameActive && (
+          {!childPet.isHatched && !isHatchGameActive && !isHatching && (
             <button
               onClick={handleStartHatchGame}
               disabled={!isSpouseInRoom}
@@ -961,6 +1064,60 @@ const ChildRoomPage = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        /* 알 클릭 시 흔들림 */
+        @keyframes egg-shake {
+          0%   { transform: translateX(0)    rotate(0deg); }
+          15%  { transform: translateX(-7px) rotate(-5deg); }
+          30%  { transform: translateX(7px)  rotate(5deg); }
+          45%  { transform: translateX(-5px) rotate(-3deg); }
+          60%  { transform: translateX(5px)  rotate(3deg); }
+          75%  { transform: translateX(-3px) rotate(-1.5deg); }
+          100% { transform: translateX(0)    rotate(0deg); }
+        }
+        .egg-shake { animation: egg-shake 0.42s cubic-bezier(.36,.07,.19,.97); }
+
+        /* 부화 전 알의 잔잔한 상시 움직임 */
+        @keyframes egg-idle {
+          0%, 100% { transform: rotate(-2.5deg); }
+          50%      { transform: rotate(2.5deg); }
+        }
+        .egg-idle { animation: egg-idle 2.8s ease-in-out infinite; }
+
+        /* 부화: 껍질 조각이 사방으로 튐 */
+        @keyframes shard-fly {
+          0%   { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; }
+          100% { transform: translate(var(--tx,0), var(--ty,0)) rotate(var(--rot,0deg)) scale(0.2); opacity: 0; }
+        }
+        .shard { animation: shard-fly 1.05s cubic-bezier(.22,.61,.36,1) forwards; }
+
+        /* 부화: 중앙 섬광 */
+        @keyframes hatch-flash {
+          0%   { transform: scale(0.2); opacity: 0.9; }
+          60%  { opacity: 0.55; }
+          100% { transform: scale(2.6); opacity: 0; }
+        }
+        .hatch-flash { animation: hatch-flash 0.7s ease-out forwards; }
+
+        /* 부화: 막 깨어난 아기가 튀어오름 */
+        @keyframes hatch-burst-emoji {
+          0%   { transform: scale(0) translateY(14px); opacity: 0; }
+          45%  { transform: scale(1.35) translateY(-10px); opacity: 1; }
+          70%  { transform: scale(0.9) translateY(0); }
+          100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .hatch-burst-emoji { animation: hatch-burst-emoji 0.85s ease-out; }
+
+        /* 부화 완료: 펫이 팝 하고 등장 */
+        @keyframes hatch-pop {
+          0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
+          55%  { transform: scale(1.25) rotate(9deg); opacity: 1; }
+          78%  { transform: scale(0.92) rotate(-4deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+        .hatch-pop { animation: hatch-pop 0.8s cubic-bezier(.34,1.56,.64,1); }
+      `}</style>
     </div>
   );
 };
